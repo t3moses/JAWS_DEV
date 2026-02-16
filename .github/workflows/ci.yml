@@ -2,6 +2,10 @@
 # This file defines automated tests that run whenever code is pushed to the repository
 # GitHub Actions is a CI/CD (Continuous Integration/Continuous Deployment) service
 # that automatically runs tasks like tests, builds, and deployments
+#
+# Test Strategy:
+# - On push: Run fast unit tests only (no database required)
+# - On pull request: Run full test suite (unit, integration, and API tests)
 
 name: CI Pipeline
 
@@ -28,6 +32,7 @@ jobs:
   # Job 1: Build Dependencies
   # This job installs PHP dependencies only
   # Fast and lightweight - just downloads packages
+  # Runs on both push and pull requests (required for all tests)
   # ============================================================================
   build:
     name: Build Dependencies
@@ -74,9 +79,50 @@ jobs:
           retention-days: 1
 
   # ============================================================================
-  # Job 2: Setup Database
+  # Job 2: Unit Tests
+  # This job runs tests that check individual pieces of code in isolation
+  # Unit tests don't need a database, so they can start immediately after build
+  # This is now one of the FASTEST jobs in the pipeline
+  # Runs on both push and pull requests for fast feedback
+  # ============================================================================
+  unit-tests:
+    name: Run Unit Tests
+
+    runs-on: ubuntu-latest
+
+    # Only needs build job - can run in parallel with database setup
+    needs: build
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Setup PHP
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo, pdo_sqlite, sqlite3, curl, mbstring, openssl
+          coverage: none
+
+      # Step 3: Download vendor folder only (no database needed)
+      - name: Download vendor artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vendor-artifacts
+          path: vendor
+
+      # Step 4: Run unit tests
+      # These run immediately - no waiting for database!
+      - name: Run unit tests
+        run: php vendor/bin/phpunit --testsuite=Unit
+
+  # ============================================================================
+  # Job 3: Setup Database
   # This job creates and seeds the database
   # Runs in parallel with unit tests since they're independent
+  # Only runs on pull requests (not needed for unit tests on push)
   # ============================================================================
   setup-database:
     name: Setup Database
@@ -85,6 +131,9 @@ jobs:
 
     # Needs build to complete first (requires vendor folder)
     needs: build
+
+    # Only run on pull requests
+    if: github.event_name == 'pull_request'
 
     steps:
       # Step 1: Checkout the code
@@ -128,48 +177,10 @@ jobs:
           retention-days: 1
 
   # ============================================================================
-  # Job 3: Unit Tests
-  # This job runs tests that check individual pieces of code in isolation
-  # Unit tests don't need a database, so they can start immediately after build
-  # This is now one of the FASTEST jobs in the pipeline
-  # ============================================================================
-  unit-tests:
-    name: Run Unit Tests
-
-    runs-on: ubuntu-latest
-
-    # Only needs build job - can run in parallel with database setup
-    needs: build
-
-    steps:
-      # Step 1: Checkout code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Step 2: Setup PHP
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.5'
-          extensions: pdo, pdo_sqlite, sqlite3, curl, mbstring, openssl
-          coverage: none
-
-      # Step 3: Download vendor folder only (no database needed)
-      - name: Download vendor artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: vendor-artifacts
-          path: vendor
-
-      # Step 4: Run unit tests
-      # These run immediately - no waiting for database!
-      - name: Run unit tests
-        run: php vendor/bin/phpunit --testsuite=Unit
-
-  # ============================================================================
   # Job 4: Integration Tests
   # This job runs tests that check how different parts work together
   # Integration tests need both dependencies AND database
+  # Only runs on pull requests
   # ============================================================================
   integration-tests:
     name: Run Integration Tests
@@ -178,6 +189,9 @@ jobs:
 
     # Must wait for BOTH build and database setup to complete
     needs: [build, setup-database]
+
+    # Only run on pull requests
+    if: github.event_name == 'pull_request'
 
     steps:
       # Get the code
@@ -214,7 +228,7 @@ jobs:
   # Job 5: API Tests
   # This job runs tests that verify the REST API endpoints work correctly
   # API tests need dependencies, database, AND a running web server
-  # Only runs if integration tests pass
+  # Only runs on pull requests if integration tests pass
   # ============================================================================
   api-tests:
     name: Run API Tests
@@ -223,6 +237,9 @@ jobs:
 
     # Must wait for build, database setup, AND integration tests to pass
     needs: [build, setup-database, integration-tests]
+
+    # Only run on pull requests
+    if: github.event_name == 'pull_request'
 
     steps:
       # Get the code
