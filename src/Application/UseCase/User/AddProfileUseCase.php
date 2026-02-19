@@ -110,9 +110,7 @@ class AddProfileUseCase
         $rank = $this->rankingService->calculateCrewRank($crew, []);
 
         // Set rank
-        foreach ($rank->toArray() as $dimension => $value) {
-            $crew->setRankDimension($dimension, $value);
-        }
+        $crew->setRank($rank);
 
         // Link to user
         $crew->setUserId($userId);
@@ -170,9 +168,7 @@ class AddProfileUseCase
         $rank = $this->rankingService->calculateBoatRank($boat, []);
 
         // Set rank
-        foreach ($rank->toArray() as $dimension => $value) {
-            $boat->setRankDimension($dimension, $value);
-        }
+        $boat->setRank($rank);
 
         // Link to user
         $boat->setOwnerUserId($userId);
