@@ -106,6 +106,9 @@ class ProcessSeasonUpdateUseCase
                 $this->persistCommitmentRanks($allCrews);
             }
 
+            // Phase 3.5: Promote waitlisted crews to boats with spare capacity
+            $flotilla = $this->promoteWaitlistCrew($flotilla, $eventId);
+
             // Phase 4: Update availability statuses
             $modified = $this->updateAvailabilityStatuses(
                 $selectionResult['selected_boats'],
@@ -317,7 +320,7 @@ class ProcessSeasonUpdateUseCase
 
         $serializedWaitlistCrews = [];
         foreach ($flotilla['waitlist_crews'] as $crew) {
-            $serializedWaitlistCrews[] = is_array($crew) ? $crew : $crew->toArray();
+            $serializedWaitlistCrews[] = $crew->toArray();
         }
 
         return [
@@ -354,48 +357,80 @@ class ProcessSeasonUpdateUseCase
     }
 
     /**
-     * Build synthetic crew waitlist entries for flex boat owners whose boat was cut
+     * Build Crew entities for flex boat owners whose boat was waitlisted
      *
      * When a flex boat (rank_flexibility=0) is waitlisted, its owner should appear
-     * in the crew waitlist so they can be considered for assignment to other boats.
+     * in the crew waitlist so they can be promoted to another boat with spare capacity.
      *
      * @param array<Boat> $waitlistedBoats Boats that were not selected
-     * @return array<array<string, mixed>> Synthetic crew entries for flex boat owners
+     * @return array<Crew> Crew entities for flex boat owners
      */
     private function buildFlexCrewEntries(array $waitlistedBoats): array
     {
         $entries = [];
         foreach ($waitlistedBoats as $boat) {
             if ($boat->isWillingToCrew()) {
-                $entries[] = [
-                    'id' => null,
-                    'key' => CrewKey::fromName(
-                        $boat->getOwnerFirstName(),
-                        $boat->getOwnerLastName()
-                    )->toString(),
-                    'display_name' => $boat->getOwnerDisplayName(),
-                    'first_name' => $boat->getOwnerFirstName(),
-                    'last_name' => $boat->getOwnerLastName(),
-                    'partner_key' => null,
-                    'email' => $boat->getOwnerEmail(),
-                    'mobile' => $boat->getOwnerMobile(),
-                    'social_preference' => $boat->hasSocialPreference(),
-                    'membership_number' => '99999',
-                    'skill' => SkillLevel::ADVANCED->value,
-                    'experience' => null,
-                    'rank' => Rank::forCrew(
-                        commitment: 2,    // Available (willing to crew)
-                        membership: 1,    // Club member (implied by boat ownership)
-                        absence: 0        // No crew absence history
-                    )->toArray(),
-                    'availability' => [],
-                    'history' => [],
-                    'whitelist' => [],
-                    'is_flex_owner' => true,
-                ];
+                $crew = new Crew(
+                    key: CrewKey::fromName($boat->getOwnerFirstName(), $boat->getOwnerLastName()),
+                    displayName: $boat->getOwnerDisplayName(),
+                    firstName: $boat->getOwnerFirstName(),
+                    lastName: $boat->getOwnerLastName(),
+                    partnerKey: null,
+                    mobile: $boat->getOwnerMobile(),
+                    socialPreference: $boat->hasSocialPreference(),
+                    membershipNumber: '99999',
+                    skill: SkillLevel::ADVANCED,
+                    experience: null,
+                );
+                $crew->setRank(Rank::forCrew(
+                    commitment: 2,  // Available (willing to crew)
+                    membership: 1,  // Club member (implied by boat ownership)
+                    absence: 0      // No crew absence history
+                ));
+                $entries[] = $crew;
             }
         }
         return $entries;
+    }
+
+    /**
+     * Promote waitlisted crews into crewed boats that have spare berth capacity
+     *
+     * After selection (case 1 — too few crews), selected boats are filled to minBerths
+     * but may have offered more berths. Waitlisted crew (including synthetic flex owner
+     * entries) are promoted in priority order into those spare slots.
+     *
+     * Synthetic flex arrays are converted to Crew entities before being placed in
+     * crewed_boats, so serializeFlotilla() can call toArray() uniformly.
+     *
+     * @param array $flotilla
+     * @param EventId $eventId
+     * @return array Updated flotilla with promotions applied
+     */
+    private function promoteWaitlistCrew(array $flotilla, EventId $eventId): array
+    {
+        if (empty($flotilla['waitlist_crews'])) {
+            return $flotilla;
+        }
+
+        $waitlistCrews = $flotilla['waitlist_crews'];
+
+        foreach ($flotilla['crewed_boats'] as &$crewedBoat) {
+            $boat = $crewedBoat['boat'];
+            $spare = $boat->getBerths($eventId) - count($crewedBoat['crews']);
+
+            for ($i = 0; $i < $spare && !empty($waitlistCrews); $i++) {
+                $crewedBoat['crews'][] = array_shift($waitlistCrews);
+            }
+
+            if (empty($waitlistCrews)) {
+                break;
+            }
+        }
+        unset($crewedBoat);
+
+        $flotilla['waitlist_crews'] = $waitlistCrews;
+        return $flotilla;
     }
 
     /**
