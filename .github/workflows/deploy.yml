@@ -61,10 +61,51 @@ jobs:
           echo "Migration files found:"
           ls -la database/migrations/
 
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo, pdo_sqlite, sqlite3, curl, mbstring, openssl
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Create database directory
+        run: mkdir -p database
+
+      - name: Run Phinx migrations
+        run: php vendor/bin/phinx migrate -e development
+
+      - name: Seed test data
+        run: php vendor/bin/phinx seed:run -e development
+
+      - name: Run API tests
+        run: |
+          php -S localhost:8000 -t public > /dev/null 2>&1 &
+          SERVER_PID=$!
+          sleep 2
+          php vendor/bin/phpunit --testsuite=API
+          kill $SERVER_PID
+
+      # Placeholder: Playwright E2E tests
+      # TODO: Replace this step with actual Playwright test execution once implemented
+      - name: Run Playwright tests
+        run: echo "Playwright tests not yet implemented - skipping"
+
   backup-database:
     name: Backup Production Database
     runs-on: ubuntu-latest
-    needs: pre-deployment-checks
+    needs: e2e-tests
     if: inputs.skip_backup == false
 
     steps:
@@ -92,8 +133,8 @@ jobs:
   deploy:
     name: Deploy Application
     runs-on: ubuntu-latest
-    needs: [pre-deployment-checks, backup-database]
-    if: always() && (needs.backup-database.result == 'success' || needs.backup-database.result == 'skipped')
+    needs: [e2e-tests, backup-database]
+    if: always() && needs.e2e-tests.result == 'success' && (needs.backup-database.result == 'success' || needs.backup-database.result == 'skipped')
 
     steps:
       - name: Checkout code

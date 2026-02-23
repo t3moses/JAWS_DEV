@@ -5,7 +5,8 @@
 #
 # Test Strategy:
 # - On push: Run fast unit tests only (no database required)
-# - On pull request: Run full test suite (unit, integration, and API tests)
+# - On pull request: Run unit and integration tests
+# - On deployment (deploy.yml): Run API tests and Playwright E2E tests as a pre-deployment gate
 
 name: CI Pipeline
 
@@ -23,9 +24,9 @@ on:
   workflow_dispatch:
 
 # Define the jobs to run
-# By separating build, database setup, and tests, we can:
+# By separating build and tests, we can:
 # 1. Run unit tests immediately after dependencies are installed (no database needed)
-# 2. Run database-dependent tests after database is ready
+# 2. Run integration tests after dependencies are ready (integration tests use in-memory SQLite)
 # 3. Maximize parallelism to reduce overall pipeline time
 jobs:
   # ============================================================================
@@ -119,67 +120,9 @@ jobs:
         run: php vendor/bin/phpunit --testsuite=Unit
 
   # ============================================================================
-  # Job 3: Setup Database
-  # This job creates and seeds the database
-  # Runs in parallel with unit tests since they're independent
-  # Only runs on pull requests (not needed for unit tests on push)
-  # ============================================================================
-  setup-database:
-    name: Setup Database
-
-    runs-on: ubuntu-latest
-
-    # Needs build to complete first (requires vendor folder)
-    needs: build
-
-    # Only run on pull requests
-    if: github.event_name == 'pull_request'
-
-    steps:
-      # Step 1: Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Step 2: Setup PHP environment
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.5'
-          extensions: pdo, pdo_sqlite, sqlite3, curl, mbstring, openssl
-          coverage: none
-
-      # Step 3: Download vendor folder from build job
-      - name: Download vendor artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: vendor-artifacts
-          path: vendor
-
-      # Step 4: Create database directory
-      - name: Create database directory
-        run: mkdir -p database
-
-      # Step 5: Run Phinx migrations
-      - name: Run Phinx migrations
-        run: php vendor/bin/phinx migrate -e development
-
-      # Step 6: Seed test data
-      - name: Seed test data
-        run: php vendor/bin/phinx seed:run -e development
-
-      # Step 8: Upload database as separate artifact
-      # Integration and API tests will download this
-      - name: Upload database artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-artifacts
-          path: database/jaws.db
-          retention-days: 1
-
-  # ============================================================================
   # Job 4: Integration Tests
   # This job runs tests that check how different parts work together
-  # Integration tests need both dependencies AND database
+  # Integration tests use in-memory SQLite - no external database setup needed
   # Only runs on pull requests
   # ============================================================================
   integration-tests:
@@ -187,8 +130,8 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    # Must wait for BOTH build and database setup to complete
-    needs: [build, setup-database]
+    # Only needs build to complete first (integration tests use in-memory SQLite)
+    needs: build
 
     # Only run on pull requests
     if: github.event_name == 'pull_request'
@@ -212,80 +155,13 @@ jobs:
         with:
           name: vendor-artifacts
           path: vendor
-
-      # Download database
-      - name: Download database artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: database-artifacts
-          path: database/
 
       # Run integration tests (excludes API tests via phpunit.xml)
       - name: Run integration tests
         run: php vendor/bin/phpunit --testsuite=Integration
 
   # ============================================================================
-  # Job 5: API Tests
-  # This job runs tests that verify the REST API endpoints work correctly
-  # API tests need dependencies, database, AND a running web server
-  # Only runs on pull requests if integration tests pass
-  # ============================================================================
-  api-tests:
-    name: Run API Tests
-
-    runs-on: ubuntu-latest
-
-    # Must wait for build, database setup, AND integration tests to pass
-    needs: [build, setup-database, integration-tests]
-
-    # Only run on pull requests
-    if: github.event_name == 'pull_request'
-
-    steps:
-      # Get the code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Install PHP
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.5'
-          extensions: pdo, pdo_sqlite, sqlite3, curl, mbstring, openssl
-          coverage: none
-
-      # Download vendor folder
-      - name: Download vendor artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: vendor-artifacts
-          path: vendor
-
-      # Download database
-      - name: Download database artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: database-artifacts
-          path: database/
-
-      # Run API tests with web server
-      - name: Run API tests
-        run: |
-          # Start PHP built-in web server in the background
-          php -S localhost:8000 -t public > /dev/null 2>&1 &
-          SERVER_PID=$!
-
-          # Wait for server to start
-          sleep 2
-
-          # Run the API tests (PHPUnit test suite)
-          php vendor/bin/phpunit --testsuite=API
-
-          # Cleanup
-          kill $SERVER_PID
-
-
-  # ============================================================================
-  # Job 6: Deploy to AWS Lightsail
+  # Job 5: Deploy to AWS Lightsail
   # ============================================================================
 #   See deploy.yml for deployment steps - this is just the CI pipeline for testing.
+#   API tests and Playwright E2E tests run in deploy.yml as a pre-deployment gate.
