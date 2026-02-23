@@ -703,4 +703,63 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $boatRankAfter = $this->pdo->query("SELECT rank_flexibility FROM boats WHERE id = $boatId")->fetchColumn();
         $this->assertEquals(0, (int)$boatRankAfter, 'Boat flexibility should remain 0 (not modified by pipeline)');
     }
+
+    /**
+     * Test: Flex boat owner is promoted from crew waitlist into a crewed boat with spare capacity
+     *
+     * Scenario (case 1 — too few crews):
+     * - Boat A: flex (rank_flexibility=0, lower priority) → waitlisted by SelectionService
+     * - Boat B: not flex (rank_flexibility=1, higher priority) → selected, occupied_berths=minBerths=1
+     * - Boat B offered 2 berths but only gets 1 crew assigned → spare capacity = 1
+     * - buildFlexCrewEntries() adds Boat A's owner to waitlist_crews as a synthetic entry
+     * - promoteWaitlistCrew() moves Boat A's owner onto Boat B's spare slot
+     */
+    public function testFlexOwnerPromotedFromWaitlistToCrewedBoat(): void
+    {
+        // Arrange: Boat A — flex owner willing to crew (rank_flexibility=0 → lower priority, waitlisted first)
+        $this->pdo->prepare("
+            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name,
+                              owner_email, min_berths, max_berths, assistance_required,
+                              social_preference, rank_flexibility, rank_absence)
+            VALUES ('flexy', 'Flexy', 'Alice', 'Flex', 'alice@example.com',
+                    1, 2, 'No', 'No', 0, 0)
+        ")->execute();
+        $boatAId = (int)$this->pdo->lastInsertId();
+
+        // Boat B — regular boat (rank_flexibility=1 → higher priority, gets selected)
+        $this->pdo->prepare("
+            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name,
+                              owner_email, min_berths, max_berths, assistance_required,
+                              social_preference, rank_flexibility, rank_absence)
+            VALUES ('rigger', 'Rigger', 'Bob', 'Regular', 'bob@example.com',
+                    1, 2, 'No', 'No', 1, 0)
+        ")->execute();
+        $boatBId = (int)$this->pdo->lastInsertId();
+
+        // 1 crew member — not enough for both boats (1 < min 1+1=2) → triggers case 1
+        $crewId = $this->createTestCrew('testcrew');
+
+        $this->createTestEvent('Fri May 29', '2026-05-29');
+
+        // Both boats offer 2 berths; min_berths=1 means Boat B will have spare capacity after selection
+        $this->setBoatAvailability($boatAId, 'Fri May 29', 2);
+        $this->setBoatAvailability($boatBId, 'Fri May 29', 2);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+
+        // Act
+        $this->useCase->execute();
+        $flotilla = $this->seasonRepository->getFlotilla(EventId::fromString('Fri May 29'));
+
+        // Assert: Boat B selected, Boat A waitlisted as a boat
+        $this->assertCount(1, $flotilla['crewed_boats'], 'Only Boat B should be crewed');
+        $this->assertCount(1, $flotilla['waitlist_boats'], 'Boat A should remain on the boat waitlist');
+
+        // Assert: Flex owner promoted off crew waitlist into Boat B's spare slot
+        $this->assertCount(0, $flotilla['waitlist_crews'], 'Flex owner should be promoted off the crew waitlist');
+        $this->assertCount(2, $flotilla['crewed_boats'][0]['crews'], 'Boat B should have 2 crew after promotion');
+
+        // Assert: Alice Flex (Boat A's owner, key='aliceflex') is now on Boat B
+        $crewKeys = array_column($flotilla['crewed_boats'][0]['crews'], 'key');
+        $this->assertContains('aliceflex', $crewKeys, 'Flex owner (aliceflex) should be assigned to Boat B');
+    }
 }

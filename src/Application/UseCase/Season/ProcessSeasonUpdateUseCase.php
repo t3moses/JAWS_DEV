@@ -106,6 +106,9 @@ class ProcessSeasonUpdateUseCase
                 $this->persistCommitmentRanks($allCrews);
             }
 
+            // Phase 3.5: Promote waitlisted crews to boats with spare capacity
+            $flotilla = $this->promoteWaitlistCrew($flotilla, $eventId);
+
             // Phase 4: Update availability statuses
             $modified = $this->updateAvailabilityStatuses(
                 $selectionResult['selected_boats'],
@@ -396,6 +399,78 @@ class ProcessSeasonUpdateUseCase
             }
         }
         return $entries;
+    }
+
+    /**
+     * Promote waitlisted crews into crewed boats that have spare berth capacity
+     *
+     * After selection (case 1 — too few crews), selected boats are filled to minBerths
+     * but may have offered more berths. Waitlisted crew (including synthetic flex owner
+     * entries) are promoted in priority order into those spare slots.
+     *
+     * Synthetic flex arrays are converted to Crew entities before being placed in
+     * crewed_boats, so serializeFlotilla() can call toArray() uniformly.
+     *
+     * @param array $flotilla
+     * @param EventId $eventId
+     * @return array Updated flotilla with promotions applied
+     */
+    private function promoteWaitlistCrew(array $flotilla, EventId $eventId): array
+    {
+        if (empty($flotilla['waitlist_crews'])) {
+            return $flotilla;
+        }
+
+        $waitlistCrews = $flotilla['waitlist_crews'];
+
+        foreach ($flotilla['crewed_boats'] as &$crewedBoat) {
+            $boat = $crewedBoat['boat'];
+            $spare = $boat->getBerths($eventId) - count($crewedBoat['crews']);
+
+            for ($i = 0; $i < $spare && !empty($waitlistCrews); $i++) {
+                $entry = array_shift($waitlistCrews);
+                $crewedBoat['crews'][] = is_array($entry)
+                    ? $this->buildCrewEntityFromFlexEntry($entry)
+                    : $entry;
+            }
+
+            if (empty($waitlistCrews)) {
+                break;
+            }
+        }
+        unset($crewedBoat);
+
+        $flotilla['waitlist_crews'] = $waitlistCrews;
+        return $flotilla;
+    }
+
+    /**
+     * Build a Crew entity from a synthetic flex owner array entry
+     *
+     * Synthetic entries are produced by buildFlexCrewEntries() for boat owners
+     * who are willing to crew but whose boat was waitlisted. They are plain arrays
+     * (not Crew entities) with no database record. This method converts them into
+     * a Crew entity suitable for placement in crewed_boats.
+     *
+     * @param array $entry Synthetic flex crew array
+     * @return Crew
+     */
+    private function buildCrewEntityFromFlexEntry(array $entry): Crew
+    {
+        $crew = new Crew(
+            key: CrewKey::fromString($entry['key']),
+            displayName: $entry['display_name'],
+            firstName: $entry['first_name'],
+            lastName: $entry['last_name'],
+            partnerKey: null,
+            mobile: $entry['mobile'] ?? null,
+            socialPreference: (bool)($entry['social_preference'] ?? false),
+            membershipNumber: $entry['membership_number'] ?? null,
+            skill: SkillLevel::from($entry['skill']),
+            experience: $entry['experience'] ?? null,
+        );
+        $crew->setRank(Rank::fromArray($entry['rank']));
+        return $crew;
     }
 
     /**
