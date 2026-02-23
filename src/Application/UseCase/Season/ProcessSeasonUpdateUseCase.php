@@ -320,7 +320,7 @@ class ProcessSeasonUpdateUseCase
 
         $serializedWaitlistCrews = [];
         foreach ($flotilla['waitlist_crews'] as $crew) {
-            $serializedWaitlistCrews[] = is_array($crew) ? $crew : $crew->toArray();
+            $serializedWaitlistCrews[] = $crew->toArray();
         }
 
         return [
@@ -357,45 +357,37 @@ class ProcessSeasonUpdateUseCase
     }
 
     /**
-     * Build synthetic crew waitlist entries for flex boat owners whose boat was cut
+     * Build Crew entities for flex boat owners whose boat was waitlisted
      *
      * When a flex boat (rank_flexibility=0) is waitlisted, its owner should appear
-     * in the crew waitlist so they can be considered for assignment to other boats.
+     * in the crew waitlist so they can be promoted to another boat with spare capacity.
      *
      * @param array<Boat> $waitlistedBoats Boats that were not selected
-     * @return array<array<string, mixed>> Synthetic crew entries for flex boat owners
+     * @return array<Crew> Crew entities for flex boat owners
      */
     private function buildFlexCrewEntries(array $waitlistedBoats): array
     {
         $entries = [];
         foreach ($waitlistedBoats as $boat) {
             if ($boat->isWillingToCrew()) {
-                $entries[] = [
-                    'id' => null,
-                    'key' => CrewKey::fromName(
-                        $boat->getOwnerFirstName(),
-                        $boat->getOwnerLastName()
-                    )->toString(),
-                    'display_name' => $boat->getOwnerDisplayName(),
-                    'first_name' => $boat->getOwnerFirstName(),
-                    'last_name' => $boat->getOwnerLastName(),
-                    'partner_key' => null,
-                    'email' => $boat->getOwnerEmail(),
-                    'mobile' => $boat->getOwnerMobile(),
-                    'social_preference' => $boat->hasSocialPreference(),
-                    'membership_number' => '99999',
-                    'skill' => SkillLevel::ADVANCED->value,
-                    'experience' => null,
-                    'rank' => Rank::forCrew(
-                        commitment: 2,    // Available (willing to crew)
-                        membership: 1,    // Club member (implied by boat ownership)
-                        absence: 0        // No crew absence history
-                    )->toArray(),
-                    'availability' => [],
-                    'history' => [],
-                    'whitelist' => [],
-                    'is_flex_owner' => true,
-                ];
+                $crew = new Crew(
+                    key: CrewKey::fromName($boat->getOwnerFirstName(), $boat->getOwnerLastName()),
+                    displayName: $boat->getOwnerDisplayName(),
+                    firstName: $boat->getOwnerFirstName(),
+                    lastName: $boat->getOwnerLastName(),
+                    partnerKey: null,
+                    mobile: $boat->getOwnerMobile(),
+                    socialPreference: $boat->hasSocialPreference(),
+                    membershipNumber: '99999',
+                    skill: SkillLevel::ADVANCED,
+                    experience: null,
+                );
+                $crew->setRank(Rank::forCrew(
+                    commitment: 2,  // Available (willing to crew)
+                    membership: 1,  // Club member (implied by boat ownership)
+                    absence: 0      // No crew absence history
+                ));
+                $entries[] = $crew;
             }
         }
         return $entries;
@@ -428,10 +420,7 @@ class ProcessSeasonUpdateUseCase
             $spare = $boat->getBerths($eventId) - count($crewedBoat['crews']);
 
             for ($i = 0; $i < $spare && !empty($waitlistCrews); $i++) {
-                $entry = array_shift($waitlistCrews);
-                $crewedBoat['crews'][] = is_array($entry)
-                    ? $this->buildCrewEntityFromFlexEntry($entry)
-                    : $entry;
+                $crewedBoat['crews'][] = array_shift($waitlistCrews);
             }
 
             if (empty($waitlistCrews)) {
@@ -442,35 +431,6 @@ class ProcessSeasonUpdateUseCase
 
         $flotilla['waitlist_crews'] = $waitlistCrews;
         return $flotilla;
-    }
-
-    /**
-     * Build a Crew entity from a synthetic flex owner array entry
-     *
-     * Synthetic entries are produced by buildFlexCrewEntries() for boat owners
-     * who are willing to crew but whose boat was waitlisted. They are plain arrays
-     * (not Crew entities) with no database record. This method converts them into
-     * a Crew entity suitable for placement in crewed_boats.
-     *
-     * @param array $entry Synthetic flex crew array
-     * @return Crew
-     */
-    private function buildCrewEntityFromFlexEntry(array $entry): Crew
-    {
-        $crew = new Crew(
-            key: CrewKey::fromString($entry['key']),
-            displayName: $entry['display_name'],
-            firstName: $entry['first_name'],
-            lastName: $entry['last_name'],
-            partnerKey: null,
-            mobile: $entry['mobile'] ?? null,
-            socialPreference: (bool)($entry['social_preference'] ?? false),
-            membershipNumber: $entry['membership_number'] ?? null,
-            skill: SkillLevel::from($entry['skill']),
-            experience: $entry['experience'] ?? null,
-        );
-        $crew->setRank(Rank::fromArray($entry['rank']));
-        return $crew;
     }
 
     /**
