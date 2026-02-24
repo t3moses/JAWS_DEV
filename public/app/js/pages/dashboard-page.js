@@ -78,6 +78,12 @@ if (user.accountType === 'crew') {
             <span class="profile-label">WhatsApp Group:</span>
             <span class="profile-value">${user.profile.whatsappGroup ? 'Yes, enrolled' : 'Not enrolled'}</span>
         </div>
+        ${user.profile.mobile ? `
+        <div class="profile-item">
+            <span class="profile-label">Mobile:</span>
+            <span class="profile-value">${user.profile.mobile}</span>
+        </div>
+        ` : ''}
     `;
 } else {
     profileHTML = `

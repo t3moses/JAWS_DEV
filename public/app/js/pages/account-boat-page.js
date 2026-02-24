@@ -14,12 +14,19 @@ if (await isSignedIn()) {
 document.querySelector('form').addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    const submitButton = this.querySelector('[type="submit"]');
+    const originalLabel = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = 'Creating account...';
+
     // Get password values
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirm_password').value;
 
     // Validate passwords match
     if (password !== confirmPassword) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalLabel;
         alert('Passwords do not match! Please try again.');
         return;
     }
@@ -27,6 +34,8 @@ document.querySelector('form').addEventListener('submit', async function(e) {
     // Validate password requirements
     const validation = validatePassword(password);
     if (!validation.isValid) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalLabel;
         alert(validation.error);
         return;
     }
@@ -55,6 +64,8 @@ document.querySelector('form').addEventListener('submit', async function(e) {
     if (result.success) {
         window.location.href = 'dashboard.html';
     } else {
+        submitButton.disabled = false;
+        submitButton.textContent = originalLabel;
         alert('Error: ' + result.error);
     }
 });

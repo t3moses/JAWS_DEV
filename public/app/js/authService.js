@@ -112,7 +112,8 @@ function transformProfile(profileData, accountType) {
             lastName: profileData.lastName || '',
             membershipNumber: profileData.membershipNumber || '',
             experience: profileData.experience,
-            whatsappGroup: profileData.socialPreference || false
+            whatsappGroup: profileData.socialPreference || false,
+            mobile: profileData.mobile || ''
         };
     } else {
         // Boat owner profile - map from backend BoatResponse fields
