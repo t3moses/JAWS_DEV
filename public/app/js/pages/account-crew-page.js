@@ -77,6 +77,7 @@ document.querySelector('form').addEventListener('submit', async function(e) {
             lastName: document.getElementById('last_name').value,
             membershipNumber: document.getElementById('membership_number').value,
             skill: parseInt(document.getElementById('skill').value, 10),
+            experience: document.getElementById('experience').value.trim() || undefined,
             socialPreference: wantsWhatsapp,
             ...(wantsWhatsapp && mobile ? { mobile } : {})
         }

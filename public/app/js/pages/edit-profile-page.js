@@ -62,6 +62,12 @@ if (user.accountType === 'crew') {
         </div>
 
         <div class="form-group">
+            <label for="experience">Qualifications and Experience</label>
+            <textarea id="experience" name="experience" maxlength="120" rows="3" placeholder="e.g. CANSail courses, 3 seasons racing at NSC">${user.profile.experience || ''}</textarea>
+            <small>This information will be provided to your skipper. Limited to 120 characters.</small>
+        </div>
+
+        <div class="form-group">
             <label style="display: flex; align-items: center; cursor: pointer;">
                 <input type="checkbox" id="whatsapp_group" name="whatsapp_group" style="width: auto; margin-right: 0.75rem;" ${user.profile.whatsappGroup ? 'checked' : ''}>
                 Enrol me in the program's WhatsApp group
@@ -269,6 +275,7 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
             firstName: document.getElementById('first_name').value,
             lastName: document.getElementById('last_name').value,
             membershipNumber: document.getElementById('membership_number').value,
+            experience: document.getElementById('experience').value.trim(),
             socialPreference: document.getElementById('whatsapp_group').checked,
             mobile: document.getElementById('mobile').value
         };

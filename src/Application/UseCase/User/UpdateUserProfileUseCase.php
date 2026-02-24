@@ -132,6 +132,9 @@ class UpdateUserProfileUseCase
         if (isset($profile['membershipNumber'])) {
             $crew->setMembershipNumber($profile['membershipNumber']);
         }
+        if (array_key_exists('experience', $profile)) {
+            $crew->setExperience($profile['experience'] ?: null);
+        }
         // Restore original rank before saving to avoid overwriting flexibility
         $crew->setRank($originalRank);
 

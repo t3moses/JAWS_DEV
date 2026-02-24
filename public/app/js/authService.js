@@ -112,6 +112,7 @@ function transformProfile(profileData, accountType) {
             lastName: profileData.lastName || '',
             membershipNumber: profileData.membershipNumber || '',
             skill: profileData.skill,
+            experience: profileData.experience || '',
             whatsappGroup: profileData.socialPreference || false,
             mobile: profileData.mobile || ''
         };
