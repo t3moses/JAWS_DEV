@@ -71,10 +71,6 @@ if (user.accountType === 'crew') {
         </div>
         ` : ''}
         <div class="profile-item">
-            <span class="profile-label">Experience:</span>
-            <span class="profile-value">${formatExperience(user.profile.experience)}</span>
-        </div>
-        <div class="profile-item">
             <span class="profile-label">WhatsApp Group:</span>
             <span class="profile-value">${user.profile.whatsappGroup ? 'Yes, enrolled' : 'Not enrolled'}</span>
         </div>
@@ -119,16 +115,6 @@ if (user.accountType === 'crew') {
 }
 
 profileDetails.innerHTML = profileHTML;
-
-// Helper function for formatting
-function formatExperience(value) {
-    const labels = {
-        'none': 'None',
-        'competent_crew': 'Competent Crew',
-        'competent_first_mate': 'Competent First Mate'
-    };
-    return labels[value] || value;
-}
 
 /**
  * Populate user's boat assignments

@@ -76,7 +76,7 @@ document.querySelector('form').addEventListener('submit', async function(e) {
             firstName: document.getElementById('first_name').value,
             lastName: document.getElementById('last_name').value,
             membershipNumber: document.getElementById('membership_number').value,
-            experience: document.getElementById('experience').value,
+            skill: parseInt(document.getElementById('skill').value, 10),
             socialPreference: wantsWhatsapp,
             ...(wantsWhatsapp && mobile ? { mobile } : {})
         }

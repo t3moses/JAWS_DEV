@@ -62,16 +62,6 @@ if (user.accountType === 'crew') {
         </div>
 
         <div class="form-group">
-            <label for="experience">Sailing Experience *</label>
-            <select id="experience" name="experience" required>
-                <option value="">How much have you sailed?</option>
-                <option value="none" ${user.profile.experience === 'none' ? 'selected' : ''}>None</option>
-                <option value="competent_crew" ${user.profile.experience === 'competent_crew' ? 'selected' : ''}>Competent Crew</option>
-                <option value="competent_first_mate" ${user.profile.experience === 'competent_first_mate' ? 'selected' : ''}>Competent First Mate</option>
-            </select>
-        </div>
-
-        <div class="form-group">
             <label style="display: flex; align-items: center; cursor: pointer;">
                 <input type="checkbox" id="whatsapp_group" name="whatsapp_group" style="width: auto; margin-right: 0.75rem;" ${user.profile.whatsappGroup ? 'checked' : ''}>
                 Enrol me in the program's WhatsApp group
@@ -279,7 +269,6 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
             firstName: document.getElementById('first_name').value,
             lastName: document.getElementById('last_name').value,
             membershipNumber: document.getElementById('membership_number').value,
-            experience: document.getElementById('experience').value,
             socialPreference: document.getElementById('whatsapp_group').checked,
             mobile: document.getElementById('mobile').value
         };

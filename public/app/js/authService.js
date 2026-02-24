@@ -111,7 +111,7 @@ function transformProfile(profileData, accountType) {
             firstName: profileData.firstName || '',
             lastName: profileData.lastName || '',
             membershipNumber: profileData.membershipNumber || '',
-            experience: profileData.experience,
+            skill: profileData.skill,
             whatsappGroup: profileData.socialPreference || false,
             mobile: profileData.mobile || ''
         };

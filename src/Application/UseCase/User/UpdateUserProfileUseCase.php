@@ -132,10 +132,6 @@ class UpdateUserProfileUseCase
         if (isset($profile['membershipNumber'])) {
             $crew->setMembershipNumber($profile['membershipNumber']);
         }
-        if (isset($profile['experience'])) {
-            $crew->setExperience($profile['experience']);
-        }
-
         // Restore original rank before saving to avoid overwriting flexibility
         $crew->setRank($originalRank);
 
