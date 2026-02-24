@@ -259,26 +259,20 @@ class UserProfileApiTest extends TestCase
 
         // Boat owner adds crew profile (becomes flex)
         $response = $this->makeRequest('POST', "{$this->baseUrl}/users/me", [
+            'profileType' => 'crew',
             'crewProfile' => [
                 'firstName' => "Flex{$suffix}",
                 'lastName' => "Crew",
                 'displayName' => "Flex Crew {$suffix}",
                 'skill' => 1,
                 'mobile' => '555-1111',
+                'socialPreference' => false,
             ],
         ], [
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // May return 200, 201, 400 (not implemented), or 404 (endpoint not found)
-        $this->assertContains($response['status'], [200, 201, 400, 404]);
-
-        // Skip verification if endpoint doesn't exist
-        if ($response['status'] === 404 || $response['status'] === 400) {
-            $this->markTestSkipped('POST /api/users/me endpoint may not be implemented');
-            $this->cleanupTestUser($testData['userId']);
-            return;
-        }
+        $this->assertEquals(201, $response['status']);
 
         $this->assertTrue($response['body']['success']);
 
@@ -305,6 +299,7 @@ class UserProfileApiTest extends TestCase
 
         // Crew adds boat profile (becomes flex)
         $response = $this->makeRequest('POST', "{$this->baseUrl}/users/me", [
+            'profileType' => 'boat',
             'boatProfile' => [
                 'ownerFirstName' => "Flex{$suffix}",
                 'ownerLastName' => "Boat",
@@ -313,20 +308,13 @@ class UserProfileApiTest extends TestCase
                 'minBerths' => 2,
                 'maxBerths' => 4,
                 'assistanceRequired' => false,
+                'socialPreference' => false,
             ],
         ], [
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // May return 200, 201, 400 (not implemented), or 404 (endpoint not found)
-        $this->assertContains($response['status'], [200, 201, 400, 404]);
-
-        // Skip verification if endpoint doesn't exist
-        if ($response['status'] === 404 || $response['status'] === 400) {
-            $this->markTestSkipped('POST /api/users/me endpoint may not be implemented');
-            $this->cleanupTestUser($testData['userId']);
-            return;
-        }
+        $this->assertEquals(201, $response['status']);
 
         $this->assertTrue($response['body']['success']);
 
