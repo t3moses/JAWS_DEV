@@ -346,6 +346,104 @@ class UserProfileApiTest extends TestCase
         $this->cleanupTestUser($testData['userId']);
     }
 
+    public function testRegistrationCapturesExperience(): void
+    {
+        $suffix = $this->makeUniqueSuffix();
+
+        $response = $this->makeRequest('POST', "{$this->baseUrl}/auth/register", [
+            'email' => $this->makeUniqueEmail('experience.crew'),
+            'password' => 'TestPass123',
+            'accountType' => 'crew',
+            'profile' => [
+                'displayName' => "Exp Crew {$suffix}",
+                'firstName' => "Exp{$suffix}",
+                'lastName' => "Crew",
+                'skill' => 1,
+                'experience' => 'CANSail 1, 2 seasons racing at NSC',
+            ],
+        ]);
+
+        $this->assertEquals(201, $response['status']);
+        $userId = $response['body']['data']['user']['id'] ?? null;
+        $token = $response['body']['data']['token'];
+
+        $profileResponse = $this->makeRequest('GET', "{$this->baseUrl}/users/me", null, [
+            "Authorization: Bearer {$token}",
+        ]);
+
+        $this->assertEquals(200, $profileResponse['status']);
+        $crew = $profileResponse['body']['data']['crewProfile'];
+        $this->assertEquals('CANSail 1, 2 seasons racing at NSC', $crew['experience']);
+
+        $this->cleanupTestUser($userId);
+    }
+
+    public function testUpdateCrewProfileExperience(): void
+    {
+        $testData = $this->createTestCrew($this->baseUrl);
+
+        $response = $this->makeRequest('PATCH', "{$this->baseUrl}/users/me", [
+            'crewProfile' => [
+                'experience' => 'Competent Crew course, club racing since 2022',
+            ],
+        ], [
+            "Authorization: Bearer {$testData['token']}",
+        ]);
+
+        $this->assertEquals(200, $response['status']);
+        $this->assertTrue($response['body']['success']);
+
+        $crew = $response['body']['data']['profile']['crewProfile'];
+        $this->assertEquals('Competent Crew course, club racing since 2022', $crew['experience']);
+
+        $this->cleanupTestUser($testData['userId']);
+    }
+
+    public function testClearCrewProfileExperience(): void
+    {
+        $suffix = $this->makeUniqueSuffix();
+
+        // Register with experience set
+        $registerResponse = $this->makeRequest('POST', "{$this->baseUrl}/auth/register", [
+            'email' => $this->makeUniqueEmail('clear.experience'),
+            'password' => 'TestPass123',
+            'accountType' => 'crew',
+            'profile' => [
+                'displayName' => "Clear Exp {$suffix}",
+                'firstName' => "ClearExp{$suffix}",
+                'lastName' => "Crew",
+                'skill' => 1,
+                'experience' => 'Some initial experience',
+            ],
+        ]);
+
+        $this->assertEquals(201, $registerResponse['status']);
+        $userId = $registerResponse['body']['data']['user']['id'] ?? null;
+        $token = $registerResponse['body']['data']['token'];
+
+        // Clear experience by sending an empty string
+        $patchResponse = $this->makeRequest('PATCH', "{$this->baseUrl}/users/me", [
+            'crewProfile' => [
+                'experience' => '',
+            ],
+        ], [
+            "Authorization: Bearer {$token}",
+        ]);
+
+        $this->assertEquals(200, $patchResponse['status']);
+
+        // Verify experience is now null
+        $profileResponse = $this->makeRequest('GET', "{$this->baseUrl}/users/me", null, [
+            "Authorization: Bearer {$token}",
+        ]);
+
+        $this->assertEquals(200, $profileResponse['status']);
+        $crew = $profileResponse['body']['data']['crewProfile'];
+        $this->assertNull($crew['experience']);
+
+        $this->cleanupTestUser($userId);
+    }
+
     public function testProfileBoundaryValues(): void
     {
         $testData = $this->createTestCrew($this->baseUrl);
