@@ -43,6 +43,42 @@ class AuthApiTest extends TestCase
         $this->cleanupTestUser($userId);
     }
 
+    public function testRegisterCrewAccountWithExperience(): void
+    {
+        $suffix = $this->makeUniqueSuffix();
+
+        $response = $this->makeRequest('POST', "{$this->baseUrl}/auth/register", [
+            'email' => $this->makeUniqueEmail('crew.experience'),
+            'password' => 'TestPass123',
+            'accountType' => 'crew',
+            'profile' => [
+                'displayName' => "Exp Crew {$suffix}",
+                'firstName' => "ExpCrew{$suffix}",
+                'lastName' => "Sailor",
+                'skill' => 1,
+                'experience' => 'CANSail 1 and 2, 5 seasons at NSC',
+            ],
+        ]);
+
+        $this->assertEquals(201, $response['status']);
+        $this->assertTrue($response['body']['success']);
+        $userId = $response['body']['data']['user']['id'] ?? null;
+        $token = $response['body']['data']['token'];
+
+        // Verify the experience field was stored and is returned in the profile
+        $profileResponse = $this->makeRequest('GET', "{$this->baseUrl}/users/me", null, [
+            "Authorization: Bearer {$token}",
+        ]);
+
+        $this->assertEquals(200, $profileResponse['status']);
+        $this->assertEquals(
+            'CANSail 1 and 2, 5 seasons at NSC',
+            $profileResponse['body']['data']['crewProfile']['experience']
+        );
+
+        $this->cleanupTestUser($userId);
+    }
+
     public function testRegisterBoatOwnerAccount(): void
     {
         $suffix = $this->makeUniqueSuffix();
