@@ -125,7 +125,6 @@ class UserProfileApiTest extends TestCase
                 'skill' => 2,
                 'socialPreference' => false,
                 'membershipNumber' => 'NSC99999',
-                'experience' => 'Updated experience text',
             ],
         ], [
             "Authorization: Bearer {$testData['token']}",
@@ -143,7 +142,6 @@ class UserProfileApiTest extends TestCase
         $this->assertEquals(2, $crew['skill']);
         $this->assertFalse($crew['socialPreference']);
         $this->assertEquals('NSC99999', $crew['membershipNumber']);
-        $this->assertEquals('Updated experience text', $crew['experience']);
 
         // Cleanup
         $this->cleanupTestUser($testData['userId']);
