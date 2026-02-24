@@ -26,7 +26,7 @@ if (!user) {
 }
 
 // Update navigation with user info
-updateAuthenticatedNavigation(user);
+updateAuthenticatedNavigation(user, signOut);
 
 // Add admin link if user is admin
 addAdminLink(user);
@@ -79,6 +79,12 @@ if (user.accountType === 'crew') {
             <small>Stay connected with other sailors and get event updates!</small>
         </div>
 
+        <div class="form-group" id="mobile-group" style="display: ${user.profile.whatsappGroup || user.profile.mobile ? '' : 'none'};">
+            <label for="mobile">Mobile Number${user.profile.whatsappGroup ? ' *' : ''}</label>
+            <input type="tel" id="mobile" name="mobile" placeholder="(555) 123-4567" value="${user.profile.mobile || ''}" ${user.profile.whatsappGroup ? 'required' : ''}>
+            <small>Required to add you to the WhatsApp group.</small>
+        </div>
+
         <h2 style="margin-top: 4rem; margin-bottom: 2rem;">Change Password (Optional)</h2>
 
         <div class="form-group">
@@ -122,7 +128,7 @@ if (user.accountType === 'crew') {
         <div class="form-group">
             <label for="phone">Phone Number *</label>
             <input type="tel" id="phone" name="phone" required placeholder="(555) 123-4567" value="${user.profile.phone}">
-            <small>For weather-related morning calls from the coordinator.</small>
+            <small>For weather-related morning calls and the WhatsApp group (if you join).</small>
         </div>
 
         <h2 style="margin-top: 4rem; margin-bottom: 2rem;">About Your Boat</h2>
@@ -201,6 +207,26 @@ if (user.accountType === 'crew') {
 
 formContent.innerHTML = formHTML;
 
+// Wire up WhatsApp → mobile toggle for crew
+if (user.accountType === 'crew') {
+    const whatsappCheckbox = document.getElementById('whatsapp_group');
+    const mobileGroup = document.getElementById('mobile-group');
+    const mobileInput = document.getElementById('mobile');
+    const mobileLabel = mobileGroup.querySelector('label');
+
+    whatsappCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            mobileGroup.style.display = '';
+            mobileInput.required = true;
+            mobileLabel.textContent = 'Mobile Number *';
+        } else {
+            mobileGroup.style.display = 'none';
+            mobileInput.required = false;
+            mobileLabel.textContent = 'Mobile Number';
+        }
+    });
+}
+
 // Handle form submission
 document.getElementById('edit-profile-form').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -254,7 +280,8 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
             lastName: document.getElementById('last_name').value,
             membershipNumber: document.getElementById('membership_number').value,
             experience: document.getElementById('experience').value,
-            socialPreference: document.getElementById('whatsapp_group').checked
+            socialPreference: document.getElementById('whatsapp_group').checked,
+            mobile: document.getElementById('mobile').value
         };
     } else {
         profileUpdates = {
