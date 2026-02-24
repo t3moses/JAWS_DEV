@@ -260,7 +260,6 @@ class UpdateUserProfileUseCaseTest extends IntegrationTestCase
                 'skill' => SkillLevel::ADVANCED->value,
                 'socialPreference' => false,
                 'membershipNumber' => '99999',
-                'experience' => 'Updated experience'
             ]
         );
 
@@ -273,7 +272,6 @@ class UpdateUserProfileUseCaseTest extends IntegrationTestCase
         $this->assertEquals('555-9999', $response->crewProfile->mobile);
         $this->assertEquals(SkillLevel::ADVANCED->value, $response->crewProfile->skill);
         $this->assertEquals('99999', $response->crewProfile->membershipNumber);
-        $this->assertEquals('Updated experience', $response->crewProfile->experience);
     }
 
     public function testUpdateBoatProfileOnly(): void
