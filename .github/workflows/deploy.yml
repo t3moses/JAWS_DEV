@@ -160,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: [e2e-tests, backup-database]
-    if: always() && needs.e2e-tests.result == 'success' && (needs.backup-database.result == 'success' || needs.backup-database.result == 'skipped')
+    if: always() && needs.e2e-tests.result == 'success' && (needs['backup-database'].result == 'success' || needs['backup-database'].result == 'skipped')
 
     steps:
       - name: Checkout code
@@ -398,9 +398,17 @@ jobs:
           echo "**Deployed By:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy | ${{ needs.deploy.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Verify Deployment | ${{ needs['verify-deployment'].result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.verify-deployment.result }}" == "success" ]; then
+          if [ "${{ needs.deploy.result }}" == "success" ] && [ "${{ needs['verify-deployment'].result }}" == "success" ]; then
             echo "✅ **Deployment Status:** SUCCESS" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.deploy.result }}" == "skipped" ] || [ "${{ needs['verify-deployment'].result }}" == "skipped" ]; then
+            echo "⏭️ **Deployment Status:** SKIPPED" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Deployment Status:** FAILED" >> $GITHUB_STEP_SUMMARY
           fi
