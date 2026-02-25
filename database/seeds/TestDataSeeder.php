@@ -38,7 +38,7 @@ use Phinx\Seed\AbstractSeed;
  * CMxSxFxnx; M=Member{0,1}, S=Skill[0,2},F=Flexible[0,1], n=Serial
  *
  */
-class TestDataSeeder2 extends AbstractSeed
+class TestDataSeeder extends AbstractSeed
 {
     /**
      * Run Method.
