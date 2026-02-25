@@ -242,6 +242,7 @@ $container->set(\App\Application\UseCase\Admin\SendNotificationsUseCase::class, 
     return new \App\Application\UseCase\Admin\SendNotificationsUseCase(
         $c->get(EventRepositoryInterface::class),
         $c->get(SeasonRepositoryInterface::class),
+        $c->get(UserRepositoryInterface::class),
         $c->get(EmailServiceInterface::class),
         $c->get(EmailTemplateServiceInterface::class),
         $c->get(CalendarServiceInterface::class)

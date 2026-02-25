@@ -33,8 +33,6 @@ class Boat
      */
     public int $occupied_berths = 0;
 
-    private string $ownerEmail = '';
-
     public function __construct(
         private BoatKey $key,
         private ?string $displayName,
@@ -117,16 +115,6 @@ class Boat
     public function getOwnerKey(): CrewKey
     {
         return CrewKey::fromName($this->ownerFirstName, $this->ownerLastName);
-    }
-
-    public function getOwnerEmail(): string
-    {
-        return $this->ownerEmail;
-    }
-
-    public function setOwnerEmail(string $email): void
-    {
-        $this->ownerEmail = $email;
     }
 
     public function getOwnerMobile(): string
@@ -308,7 +296,7 @@ class Boat
             'display_name' => $this->displayName,
             'owner_first_name' => $this->ownerFirstName,
             'owner_last_name' => $this->ownerLastName,
-            'owner_email' => $this->ownerEmail,
+            'owner_user_id' => $this->userId,
             'owner_mobile' => $this->ownerMobile,
             'min_berths' => $this->minBerths,
             'max_berths' => $this->maxBerths,

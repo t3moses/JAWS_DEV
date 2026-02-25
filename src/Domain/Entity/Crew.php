@@ -32,8 +32,6 @@ class Crew
     /** @var array<string> List of whitelisted boat keys */
     private array $whitelist = [];
 
-    private string $email = '';
-
     public function __construct(
         private CrewKey $key,
         private ?string $displayName,
@@ -131,16 +129,6 @@ class Crew
     }
 
     // === Contact ===
-
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(string $email): void
-    {
-        $this->email = $email;
-    }
 
     public function getMobile(): ?string
     {
@@ -411,7 +399,7 @@ class Crew
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,
             'partner_key' => $this->partnerKey?->toString(),
-            'email' => $this->email,
+            'user_id' => $this->userId,
             'mobile' => $this->mobile,
             'social_preference' => $this->socialPreference,
             'membership_number' => $this->membershipNumber,

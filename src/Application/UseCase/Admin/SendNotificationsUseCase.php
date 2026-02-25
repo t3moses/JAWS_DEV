@@ -8,6 +8,7 @@ use App\Application\Exception\EventNotFoundException;
 use App\Application\Exception\FlotillaNotFoundException;
 use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\SeasonRepositoryInterface;
+use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Service\EmailServiceInterface;
 use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Application\Port\Service\CalendarServiceInterface;
@@ -24,6 +25,7 @@ class SendNotificationsUseCase
     public function __construct(
         private EventRepositoryInterface $eventRepository,
         private SeasonRepositoryInterface $seasonRepository,
+        private UserRepositoryInterface $userRepository,
         private EmailServiceInterface $emailService,
         private EmailTemplateServiceInterface $emailTemplateService,
         private CalendarServiceInterface $calendarService,
@@ -107,17 +109,20 @@ class SendNotificationsUseCase
                 $crews
             );
 
+            $ownerUser = $this->userRepository->findById((int)($boat['owner_user_id'] ?? 0));
+            $ownerEmail = $ownerUser?->getEmail() ?? '';
+
             // Note: Calendar attachments require direct PHPMailer access
             // For now, we send without attachments when using the simple send() method
             // TODO: Extend EmailServiceInterface to support attachments
             if ($this->emailService->send(
-                $boat['owner_email'],
+                $ownerEmail,
                 $subject,
                 $body
             )) {
                 $emailsSent++;
             } else {
-                error_log("Failed to send email to boat owner: {$boat['owner_email']}");
+                error_log("Failed to send email to boat owner: {$ownerEmail}");
             }
 
             // Send email to each crew member
@@ -129,14 +134,17 @@ class SendNotificationsUseCase
                     $crews
                 );
 
+                $crewUser = $this->userRepository->findById((int)($crew['user_id'] ?? 0));
+                $crewEmail = $crewUser?->getEmail() ?? '';
+
                 if ($this->emailService->send(
-                    $crew['email'],
+                    $crewEmail,
                     $subject,
                     $body
                 )) {
                     $emailsSent++;
                 } else {
-                    error_log("Failed to send email to crew member: {$crew['email']}");
+                    error_log("Failed to send email to crew member: {$crewEmail}");
                 }
             }
         }

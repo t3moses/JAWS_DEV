@@ -265,13 +265,13 @@ class CrewRepository implements CrewRepositoryInterface
         $stmt = $this->pdo->prepare('
             INSERT INTO crews (
                 key, display_name, first_name, last_name, partner_key,
-                email, mobile, social_preference, membership_number,
+                mobile, social_preference, membership_number,
                 skill, experience,
                 rank_commitment, rank_membership, rank_absence,
                 user_id
             ) VALUES (
                 :key, :display_name, :first_name, :last_name, :partner_key,
-                :email, :mobile, :social_preference, :membership_number,
+                :mobile, :social_preference, :membership_number,
                 :skill, :experience,
                 :rank_commitment, :rank_membership, :rank_absence,
                 :user_id
@@ -285,7 +285,6 @@ class CrewRepository implements CrewRepositoryInterface
             'first_name' => $crew->getFirstName(),
             'last_name' => $crew->getLastName(),
             'partner_key' => $crew->getPartnerKey()?->toString(),
-            'email' => $crew->getEmail(),
             'mobile' => $crew->getMobile(),
             'social_preference' => $crew->hasSocialPreference() ? 'Yes' : 'No',
             'membership_number' => $crew->getMembershipNumber(),
@@ -314,7 +313,6 @@ class CrewRepository implements CrewRepositoryInterface
                 first_name = :first_name,
                 last_name = :last_name,
                 partner_key = :partner_key,
-                email = :email,
                 mobile = :mobile,
                 social_preference = :social_preference,
                 membership_number = :membership_number,
@@ -334,7 +332,6 @@ class CrewRepository implements CrewRepositoryInterface
             'first_name' => $crew->getFirstName(),
             'last_name' => $crew->getLastName(),
             'partner_key' => $crew->getPartnerKey()?->toString(),
-            'email' => $crew->getEmail(),
             'mobile' => $crew->getMobile(),
             'social_preference' => $crew->hasSocialPreference() ? 'Yes' : 'No',
             'membership_number' => $crew->getMembershipNumber(),
@@ -433,9 +430,8 @@ class CrewRepository implements CrewRepositoryInterface
         );
 
         $crew->setId((int)$row['id']);
-        $crew->setEmail($row['email']);
 
-        // Set user_id if present (nullable during migration)
+        // Set user_id if present
         if (isset($row['user_id']) && $row['user_id'] !== null) {
             $crew->setUserId((int)$row['user_id']);
         }
@@ -633,7 +629,6 @@ class CrewRepository implements CrewRepositoryInterface
         );
 
         $crew->setId((int)$row['id']);
-        $crew->setEmail($row['email']);
 
         $rank = Rank::forCrew(
             commitment: (int)$row['rank_commitment'],

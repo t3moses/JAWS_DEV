@@ -319,19 +319,19 @@ class TestDataSeeder2 extends AbstractSeed
         // ====================================================================
         // Link boats to users by fetching user IDs from emails
         $this->execute("
-            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name, owner_email, owner_mobile, min_berths, max_berths, assistance_required, social_preference, owner_user_id)
+            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name, owner_mobile, min_berths, max_berths, assistance_required, social_preference, owner_user_id)
             VALUES
-                ('ba1b2f1n0', 'BA1B2F1n0', 'A', 'A', 'ba1b2f1n0@example.com', '555-0001', 1, 2, 'Yes', 'Yes',
+                ('ba1b2f1n0', 'BA1B2F1n0', 'A', 'A', '555-0001', 1, 2, 'Yes', 'Yes',
                  (SELECT id FROM users WHERE email = 'ba1b2f1n0@example.com')),
-                ('ba0b3f1n0', 'BA0B3F1n0', 'B', 'A', 'ba0b3f1n0@example.com', '555-0001', 1, 3, 'No', 'Yes',
+                ('ba0b3f1n0', 'BA0B3F1n0', 'B', 'A', '555-0001', 1, 3, 'No', 'Yes',
                  (SELECT id FROM users WHERE email = 'ba0b3f1n0@example.com')),
-                ('ba0b4f0n0', 'BA0B4F0n0', 'C', 'A', 'ba0b4f0n0@example.com', '555-0001', 1, 4, 'No', 'Yes',
+                ('ba0b4f0n0', 'BA0B4F0n0', 'C', 'A', '555-0001', 1, 4, 'No', 'Yes',
                  (SELECT id FROM users WHERE email = 'ba0b4f0n0@example.com')),
-                ('ba1b4f1n1', 'BA1B4F1n1', 'D', 'A', 'ba1b4f1n1@example.com', '555-0001', 1, 4, 'Yes', 'Yes',
+                ('ba1b4f1n1', 'BA1B4F1n1', 'D', 'A', '555-0001', 1, 4, 'Yes', 'Yes',
                  (SELECT id FROM users WHERE email = 'ba1b4f1n1@example.com')),
-                ('ba0b3f1n1', 'BA0B3F1n1', 'E', 'A', 'ba0b3f1n1@example.com', '555-0001', 1, 3, 'No', 'Yes',
+                ('ba0b3f1n1', 'BA0B3F1n1', 'E', 'A', '555-0001', 1, 3, 'No', 'Yes',
                  (SELECT id FROM users WHERE email = 'ba0b3f1n1@example.com')),
-                ('ba0b5f1n2', 'BA0B5F1n2', 'F', 'A', 'ba0b5f1n2@example.com', '555-0001', 1, 5, 'No', 'Yes',
+                ('ba0b5f1n2', 'BA0B5F1n2', 'F', 'A', '555-0001', 1, 5, 'No', 'Yes',
                  (SELECT id FROM users WHERE email = 'ba0b5f1n2@example.com'))
         ");
 
@@ -340,31 +340,31 @@ class TestDataSeeder2 extends AbstractSeed
         // ====================================================================
         // Link crews to users by fetching user IDs from emails
         $this->execute("
-            INSERT INTO crews (key, display_name, first_name, last_name, email, mobile, skill, membership_number, user_id)
+            INSERT INTO crews (key, display_name, first_name, last_name, mobile, skill, membership_number, user_id)
             VALUES
-                ('cm0s0f1n0', 'CM0S0F1n0', 'C', 'M0S0F1n0', 'cm0s0f1n0@example.com', '555-1001', 0, 'NSC001',
+                ('cm0s0f1n0', 'CM0S0F1n0', 'C', 'M0S0F1n0', '555-1001', 0, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm0s0f1n0@example.com')),
-                ('cm0s1f1n1', 'CM0S1F1n1', 'C', 'M0S1F1n1', 'cm0s1f1n1@example.com', '555-1001', 1, '',
+                ('cm0s1f1n1', 'CM0S1F1n1', 'C', 'M0S1F1n1', '555-1001', 1, '',
                  (SELECT id FROM users WHERE email = 'cm0s1f1n1@example.com')),
-                ('cm0s2f1n2', 'CM0S2F1n2', 'C', 'M0S2F1n2', 'cm0s2f1n2@example.com', '555-1001', 2, '',
+                ('cm0s2f1n2', 'CM0S2F1n2', 'C', 'M0S2F1n2', '555-1001', 2, '',
                  (SELECT id FROM users WHERE email = 'cm0s2f1n2@example.com')),
-                ('cm1s0f0n0', 'CM1S0F0n0', 'C', 'M1S0F0n0', 'cm1s0f0n0@example.com', '555-1001', 0, 'NSC001',
+                ('cm1s0f0n0', 'CM1S0F0n0', 'C', 'M1S0F0n0', '555-1001', 0, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s0f0n0@example.com')),
-                ('cm1s1f1n0', 'CM1S1F1n0', 'C', 'M1S1F1n0', 'cm1s1f1n0@example.com', '555-1001', 1, 'NSC001',
+                ('cm1s1f1n0', 'CM1S1F1n0', 'C', 'M1S1F1n0', '555-1001', 1, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s1f1n0@example.com')),
-                ('cm1s2f1n1', 'CM1S2F1n1', 'C', 'M1S2F1n1', 'cm1s2f1n1@example.com', '555-1001', 2, 'NSC001',
+                ('cm1s2f1n1', 'CM1S2F1n1', 'C', 'M1S2F1n1', '555-1001', 2, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s2f1n1@example.com')),
-                ('cm1s0f1n2', 'CM1S0F1n2', 'C', 'M1S0F1n2', 'cm1s0f1n2@example.com', '555-1001', 0, 'NSC001',
+                ('cm1s0f1n2', 'CM1S0F1n2', 'C', 'M1S0F1n2', '555-1001', 0, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s0f1n2@example.com')),
-                ('cm1s1f1n3', 'CM1S1F1n3', 'C', 'M1S1F1n3', 'cm1s1f1n3@example.com', '555-1001', 1, 'NSC001',
+                ('cm1s1f1n3', 'CM1S1F1n3', 'C', 'M1S1F1n3', '555-1001', 1, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s1f1n3@example.com')),
-                ('cm1s2f1$4', 'CM1S2F1$4', 'C', 'M1S2F1$4', 'cm1s2f1$4@example.com', '555-1001', 2, 'NSC001',
+                ('cm1s2f1$4', 'CM1S2F1$4', 'C', 'M1S2F1$4', '555-1001', 2, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s2f1$4@example.com')),
-                ('cm1s0f1$5', 'CM1S0F1$5', 'C', 'M1S0F1$5', 'cm1s0f1$5@example.com', '555-1001', 0, 'NSC001',
+                ('cm1s0f1$5', 'CM1S0F1$5', 'C', 'M1S0F1$5', '555-1001', 0, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s0f1$5@example.com')),
-                ('cm1s1f1$6', 'CM1S1F1$6', 'C', 'M1S1F1$6', 'cm1s1f1$6@example.com', '555-1001', 1, 'NSC001',
+                ('cm1s1f1$6', 'CM1S1F1$6', 'C', 'M1S1F1$6', '555-1001', 1, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s1f1$6@example.com')),
-                ('cm1s2f1n7', 'CM1S2F1n7', 'C', 'M1S2F1n7', 'cm1s2f1n7@example.com', '555-1001', 2, 'NSC001',
+                ('cm1s2f1n7', 'CM1S2F1n7', 'C', 'M1S2F1n7', '555-1001', 2, 'NSC001',
                  (SELECT id FROM users WHERE email = 'cm1s2f1n7@example.com'))
         ");
 

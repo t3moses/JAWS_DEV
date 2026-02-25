@@ -223,11 +223,11 @@ class TestDataSeeder extends AbstractSeed
         // ====================================================================
         // Link boats to users by fetching user IDs from emails
         $this->execute("
-            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name, owner_email, owner_mobile, min_berths, max_berths, assistance_required, social_preference, owner_user_id)
+            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name, owner_mobile, min_berths, max_berths, assistance_required, social_preference, owner_user_id)
             VALUES
-                ('sailaway', 'Sailaway', 'Alice', 'Johnson', 'alice@example.com', '555-0001', 2, 4, 'No', 'Yes',
+                ('sailaway', 'Sailaway', 'Alice', 'Johnson', '555-0001', 2, 4, 'No', 'Yes',
                  (SELECT id FROM users WHERE email = 'alice@example.com')),
-                ('windchaser', 'Windchaser', 'Bob', 'Smith', 'bob@example.com', '555-0002', 2, 3, 'Yes', 'No',
+                ('windchaser', 'Windchaser', 'Bob', 'Smith', '555-0002', 2, 3, 'Yes', 'No',
                  (SELECT id FROM users WHERE email = 'bob@example.com'))
         ");
 
@@ -236,11 +236,11 @@ class TestDataSeeder extends AbstractSeed
         // ====================================================================
         // Link crews to users by fetching user IDs from emails
         $this->execute("
-            INSERT INTO crews (key, display_name, first_name, last_name, email, mobile, skill, membership_number, user_id)
+            INSERT INTO crews (key, display_name, first_name, last_name, mobile, skill, membership_number, user_id)
             VALUES
-                ('jane_doe', 'Jane Doe', 'Jane', 'Doe', 'jane@example.com', '555-1001', 1, 'NSC001',
+                ('jane_doe', 'Jane Doe', 'Jane', 'Doe', '555-1001', 1, 'NSC001',
                  (SELECT id FROM users WHERE email = 'jane@example.com')),
-                ('mike_wilson', 'Mike Wilson', 'Mike', 'Wilson', 'mike@example.com', '555-1002', 2, 'NSC002',
+                ('mike_wilson', 'Mike Wilson', 'Mike', 'Wilson', '555-1002', 2, 'NSC002',
                  (SELECT id FROM users WHERE email = 'mike@example.com'))
         ");
 

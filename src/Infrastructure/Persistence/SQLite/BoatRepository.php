@@ -212,13 +212,13 @@ class BoatRepository implements BoatRepositoryInterface
         $stmt = $this->pdo->prepare('
             INSERT INTO boats (
                 key, display_name, owner_first_name, owner_last_name,
-                owner_email, owner_mobile, min_berths, max_berths,
+                owner_mobile, min_berths, max_berths,
                 assistance_required, social_preference,
                 rank_flexibility, rank_absence,
                 owner_user_id
             ) VALUES (
                 :key, :display_name, :owner_first_name, :owner_last_name,
-                :owner_email, :owner_mobile, :min_berths, :max_berths,
+                :owner_mobile, :min_berths, :max_berths,
                 :assistance_required, :social_preference,
                 :rank_flexibility, :rank_absence,
                 :owner_user_id
@@ -231,7 +231,6 @@ class BoatRepository implements BoatRepositoryInterface
             'display_name' => $boat->getDisplayName(),
             'owner_first_name' => $boat->getOwnerFirstName(),
             'owner_last_name' => $boat->getOwnerLastName(),
-            'owner_email' => $boat->getOwnerEmail(),
             'owner_mobile' => $boat->getOwnerMobile(),
             'min_berths' => $boat->getMinBerths(),
             'max_berths' => $boat->getMaxBerths(),
@@ -258,7 +257,6 @@ class BoatRepository implements BoatRepositoryInterface
                 display_name = :display_name,
                 owner_first_name = :owner_first_name,
                 owner_last_name = :owner_last_name,
-                owner_email = :owner_email,
                 owner_mobile = :owner_mobile,
                 min_berths = :min_berths,
                 max_berths = :max_berths,
@@ -276,7 +274,6 @@ class BoatRepository implements BoatRepositoryInterface
             'display_name' => $boat->getDisplayName(),
             'owner_first_name' => $boat->getOwnerFirstName(),
             'owner_last_name' => $boat->getOwnerLastName(),
-            'owner_email' => $boat->getOwnerEmail(),
             'owner_mobile' => $boat->getOwnerMobile(),
             'min_berths' => $boat->getMinBerths(),
             'max_berths' => $boat->getMaxBerths(),
@@ -353,9 +350,8 @@ class BoatRepository implements BoatRepositoryInterface
         );
 
         $boat->setId((int)$row['id']);
-        $boat->setOwnerEmail($row['owner_email']);
 
-        // Set owner_user_id if present (nullable during migration)
+        // Set owner_user_id if present
         if (isset($row['owner_user_id']) && $row['owner_user_id'] !== null) {
             $boat->setOwnerUserId((int)$row['owner_user_id']);
         }
@@ -498,7 +494,6 @@ class BoatRepository implements BoatRepositoryInterface
         );
 
         $boat->setId((int)$row['id']);
-        $boat->setOwnerEmail($row['owner_email']);
 
         // Set rank
         $rank = Rank::forBoat(
