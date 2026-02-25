@@ -108,7 +108,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: null
         );
-        $crew->setEmail('crewuser@example.com');
         $crew->setUserId($user->getId());
         $this->crewRepository->save($crew);
 
@@ -147,7 +146,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             assistanceRequired: false,
             socialPreference: false
         );
-        $boat->setOwnerEmail('boatowner@example.com');
         $boat->setOwnerUserId($user->getId());
         $this->boatRepository->save($boat);
 
@@ -178,7 +176,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::ADVANCED,
             experience: null
         );
-        $crew->setEmail('both@example.com');
         $crew->setUserId($user->getId());
         $this->crewRepository->save($crew);
 
@@ -194,7 +191,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             assistanceRequired: true,
             socialPreference: false
         );
-        $boat->setOwnerEmail('both@example.com');
         $boat->setOwnerUserId($user->getId());
         $this->boatRepository->save($boat);
 
@@ -233,7 +229,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::NOVICE,
             experience: null
         );
-        $crew->setEmail('crewwithmobile@example.com');
         $crew->setUserId($user->getId());
         $this->crewRepository->save($crew);
 
@@ -259,7 +254,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             assistanceRequired: true,
             socialPreference: false
         );
-        $boat->setOwnerEmail('boatneedshelp@example.com');
         $boat->setOwnerUserId($user->getId());
         $this->boatRepository->save($boat);
 
@@ -285,7 +279,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: null
         );
-        $crew->setEmail('arraytest@example.com');
         $crew->setUserId($user->getId());
         $this->crewRepository->save($crew);
 
@@ -322,7 +315,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::ADVANCED,
             experience: null
         );
-        $crew1->setEmail('user1@example.com');
         $crew1->setUserId($user1->getId());
         $this->crewRepository->save($crew1);
 
@@ -337,7 +329,6 @@ class UserProfileQueryUseCaseTest extends IntegrationTestCase
             assistanceRequired: false,
             socialPreference: false
         );
-        $boat2->setOwnerEmail('user2@example.com');
         $boat2->setOwnerUserId($user2->getId());
         $this->boatRepository->save($boat2);
 

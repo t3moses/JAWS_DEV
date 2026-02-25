@@ -32,7 +32,6 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: '5 years'
         );
-        $crew->setEmail('john@example.com');
         return $crew;
     }
 

@@ -18,7 +18,7 @@ class CrewTest extends TestCase
 {
     private function createCrew(): Crew
     {
-        $crew = new Crew(
+        return new Crew(
             key: CrewKey::fromString('johndoe'),
             displayName: 'John Doe',
             firstName: 'John',
@@ -30,8 +30,6 @@ class CrewTest extends TestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: '5 years'
         );
-        $crew->setEmail('john@example.com');
-        return $crew;
     }
 
     public function testConstructorSetsProperties(): void
@@ -45,7 +43,6 @@ class CrewTest extends TestCase
         $this->assertEquals('John', $crew->getFirstName());
         $this->assertEquals('Doe', $crew->getLastName());
         $this->assertNull($crew->getPartnerKey());
-        $this->assertEquals('john@example.com', $crew->getEmail());
         $this->assertEquals('555-1234', $crew->getMobile());
         $this->assertTrue($crew->hasSocialPreference());
         $this->assertEquals('12345', $crew->getMembershipNumber());
@@ -80,7 +77,6 @@ class CrewTest extends TestCase
             skill: SkillLevel::NOVICE,
             experience: null
         );
-        $crew->setEmail('john@example.com');
 
         $rank = $crew->getRank();
         // Assert
@@ -116,7 +112,6 @@ class CrewTest extends TestCase
         $crew->setFirstName('Jane');
         $crew->setLastName('Doe');
         $crew->setPartnerKey($partnerKey);
-        $crew->setEmail('jane@example.com');
         $crew->setMobile('555-5678');
         $crew->setSocialPreference(false);
         $crew->setMembershipNumber('54321');
@@ -128,7 +123,6 @@ class CrewTest extends TestCase
         $this->assertEquals('Jane', $crew->getFirstName());
         $this->assertEquals('Doe', $crew->getLastName());
         $this->assertEquals($partnerKey, $crew->getPartnerKey());
-        $this->assertEquals('jane@example.com', $crew->getEmail());
         $this->assertEquals('555-5678', $crew->getMobile());
         $this->assertFalse($crew->hasSocialPreference());
         $this->assertEquals('54321', $crew->getMembershipNumber());
@@ -556,7 +550,6 @@ class CrewTest extends TestCase
         $this->assertEquals('John', $array['first_name']);
         $this->assertEquals('Doe', $array['last_name']);
         $this->assertNull($array['partner_key']);
-        $this->assertEquals('john@example.com', $array['email']);
         $this->assertEquals('555-1234', $array['mobile']);
         $this->assertTrue($array['social_preference']);
         $this->assertEquals('12345', $array['membership_number']);

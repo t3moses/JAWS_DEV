@@ -39,7 +39,7 @@ class IntegrationTestCaseTest extends IntegrationTestCase
         ")->fetchAll();
         $this->assertNotEmpty($result, 'phinxlog table should exist after running migrations');
 
-        // Verify all 5 migrations executed
+        // Verify all 6 migrations executed
         $versions = $this->pdo->query("
             SELECT version FROM phinxlog ORDER BY version
         ")->fetchAll(PDO::FETCH_COLUMN);
@@ -49,10 +49,11 @@ class IntegrationTestCaseTest extends IntegrationTestCase
             20260130000000,  // add_users_authentication
             20260131000000,  // add_last_logout_column
             20260201000000,  // make_display_name_nullable
-            20260221000000   // remove_crew_rank_flexibility
+            20260221000000,  // remove_crew_rank_flexibility
+            20260224000000   // remove_email_columns
         ];
 
-        $this->assertEquals($expected, $versions, 'All 5 migrations should be applied');
+        $this->assertEquals($expected, $versions, 'All 6 migrations should be applied');
     }
 
     public function testSeasonConfigInitialized(): void
@@ -87,10 +88,10 @@ class IntegrationTestCaseTest extends IntegrationTestCase
         // Verify migration 20260201 ran successfully (nullable constraint)
         // Insert a crew without display_name to test nullability
         $stmt = $this->pdo->prepare("
-            INSERT INTO crews (key, first_name, last_name, email)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO crews (key, first_name, last_name)
+            VALUES (?, ?, ?)
         ");
-        $stmt->execute(['test_crew', 'Test', 'Crew', 'test@example.com']);
+        $stmt->execute(['test_crew', 'Test', 'Crew']);
 
         $result = $this->pdo->query("
             SELECT display_name FROM crews WHERE key = 'test_crew'

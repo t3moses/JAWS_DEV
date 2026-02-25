@@ -145,16 +145,15 @@ trait ApiTestTrait
 
         $stmt = $pdo->prepare('
             INSERT INTO crews (
-                key, display_name, first_name, last_name, email, skill, user_id,
+                key, display_name, first_name, last_name, skill, user_id,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ) VALUES (?, ?, ?, ?, 1, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ');
         $stmt->execute([
             $crewKey,
             "Admin Test {$suffix}",
             $firstName,
             $lastName,
-            $email,
             $userId,
         ]);
 

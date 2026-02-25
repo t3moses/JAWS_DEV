@@ -64,9 +64,9 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
     protected function createTestBoat(string $key, int $minBerths, int $maxBerths): int
     {
         $stmt = $this->pdo->prepare("
-            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name, owner_email,
+            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name,
                                min_berths, max_berths, assistance_required, social_preference)
-            VALUES (?, ?, 'Test', 'Owner', 'test@example.com', ?, ?, 'No', 'No')
+            VALUES (?, ?, 'Test', 'Owner', ?, ?, 'No', 'No')
         ");
         $stmt->execute([$key, "Boat $key", $minBerths, $maxBerths]);
         return (int)$this->pdo->lastInsertId();
@@ -78,8 +78,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
     protected function createTestCrew(string $key): int
     {
         $stmt = $this->pdo->prepare("
-            INSERT INTO crews (key, display_name, first_name, last_name, email, skill, membership_number, social_preference)
-            VALUES (?, ?, 'Test', 'Crew', 'test@example.com', 1, '12345', 'No')
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference)
+            VALUES (?, ?, 'Test', 'Crew', 1, '12345', 'No')
         ");
         $stmt->execute([$key, "Crew $key"]);
         return (int)$this->pdo->lastInsertId();
@@ -666,9 +666,9 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Create boat owned by John Doe with rank_flexibility=0 (willing to crew)
         $stmt = $this->pdo->prepare("
             INSERT INTO boats (key, display_name, owner_first_name, owner_last_name,
-                              owner_email, min_berths, max_berths, assistance_required,
+                              min_berths, max_berths, assistance_required,
                               social_preference, rank_flexibility, rank_absence)
-            VALUES ('sailaway', 'Sail Away', 'John', 'Doe', 'john@example.com',
+            VALUES ('sailaway', 'Sail Away', 'John', 'Doe',
                     2, 3, 'No', 'No', 0, 0)
         ");
         $stmt->execute();
@@ -676,10 +676,10 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         // Create crew member Jane Smith (separate person — single-role model)
         $stmt = $this->pdo->prepare("
-            INSERT INTO crews (key, display_name, first_name, last_name, email,
+            INSERT INTO crews (key, display_name, first_name, last_name,
                               skill, membership_number, social_preference,
                               rank_commitment, rank_membership, rank_absence)
-            VALUES ('janesmith', 'Jane Smith', 'Jane', 'Smith', 'jane@example.com',
+            VALUES ('janesmith', 'Jane Smith', 'Jane', 'Smith',
                     1, '12345', 'No', 0, 0, 0)
         ");
         $stmt->execute();
@@ -719,9 +719,9 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Arrange: Boat A — flex owner willing to crew (rank_flexibility=0 → lower priority, waitlisted first)
         $this->pdo->prepare("
             INSERT INTO boats (key, display_name, owner_first_name, owner_last_name,
-                              owner_email, min_berths, max_berths, assistance_required,
+                              min_berths, max_berths, assistance_required,
                               social_preference, rank_flexibility, rank_absence)
-            VALUES ('flexy', 'Flexy', 'Alice', 'Flex', 'alice@example.com',
+            VALUES ('flexy', 'Flexy', 'Alice', 'Flex',
                     1, 2, 'No', 'No', 0, 0)
         ")->execute();
         $boatAId = (int)$this->pdo->lastInsertId();
@@ -729,9 +729,9 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Boat B — regular boat (rank_flexibility=1 → higher priority, gets selected)
         $this->pdo->prepare("
             INSERT INTO boats (key, display_name, owner_first_name, owner_last_name,
-                              owner_email, min_berths, max_berths, assistance_required,
+                              min_berths, max_berths, assistance_required,
                               social_preference, rank_flexibility, rank_absence)
-            VALUES ('rigger', 'Rigger', 'Bob', 'Regular', 'bob@example.com',
+            VALUES ('rigger', 'Rigger', 'Bob', 'Regular',
                     1, 2, 'No', 'No', 1, 0)
         ")->execute();
         $boatBId = (int)$this->pdo->lastInsertId();

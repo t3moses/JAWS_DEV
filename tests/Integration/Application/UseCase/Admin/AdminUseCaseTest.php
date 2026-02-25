@@ -144,6 +144,7 @@ class AdminUseCaseTest extends IntegrationTestCase
         $this->sendNotificationsUseCase = new SendNotificationsUseCase(
             $this->eventRepository,
             $this->seasonRepository,
+            $this->userRepository,
             $mockEmailService,
             $mockEmailTemplateService,
             $mockCalendarService
@@ -185,7 +186,6 @@ class AdminUseCaseTest extends IntegrationTestCase
             assistanceRequired: false,
             socialPreference: false
         );
-        $boat1->setOwnerEmail('boatowner1@example.com');
         $boat1->setOwnerUserId($boatOwner1->getId());
         $this->boatRepository->save($boat1);
 
@@ -200,7 +200,6 @@ class AdminUseCaseTest extends IntegrationTestCase
             assistanceRequired: false,
             socialPreference: false
         );
-        $boat2->setOwnerEmail('boatowner2@example.com');
         $boat2->setOwnerUserId($boatOwner2->getId());
         $this->boatRepository->save($boat2);
 
@@ -217,7 +216,6 @@ class AdminUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::ADVANCED,
             experience: null
         );
-        $crew1->setEmail('crew1@example.com');
         $crew1->setUserId($crewUser1->getId());
         $this->crewRepository->save($crew1);
 
@@ -233,7 +231,6 @@ class AdminUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: null
         );
-        $crew2->setEmail('crew2@example.com');
         $crew2->setUserId($crewUser2->getId());
         $this->crewRepository->save($crew2);
 
@@ -249,7 +246,6 @@ class AdminUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::NOVICE,
             experience: null
         );
-        $crew3->setEmail('crew3@example.com');
         $crew3->setUserId($crewUser3->getId());
         $this->crewRepository->save($crew3);
 
@@ -333,7 +329,6 @@ class AdminUseCaseTest extends IntegrationTestCase
                 skill: SkillLevel::INTERMEDIATE,
                 experience: null
             );
-            $crew->setEmail("crew{$i}@example.com");
             $crew->setUserId($user->getId());
             $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
             $this->crewRepository->save($crew);
@@ -437,6 +432,9 @@ class AdminUseCaseTest extends IntegrationTestCase
     {
         $eventId = EventId::fromString('Fri May 15');
 
+        $boatOwnerUserId = $this->userRepository->findByEmail('boatowner1@example.com')?->getId() ?? 0;
+        $crewUserId = $this->userRepository->findByEmail('crew1@example.com')?->getId() ?? 0;
+
         // Create a simple flotilla
         $flotilla = [
             'event_id' => 'Fri May 15',
@@ -445,10 +443,9 @@ class AdminUseCaseTest extends IntegrationTestCase
                     'boat' => [
                         'key' => 'Boat One',
                         'display_name' => 'Boat One',
-                                                'owner_first_name' => 'Owner',
-                                                'owner_last_name' => 'One',
-                        'email' => 'boatowner1@example.com',
-                                            'owner_email' => 'boatowner1@example.com',
+                        'owner_first_name' => 'Owner',
+                        'owner_last_name' => 'One',
+                        'owner_user_id' => $boatOwnerUserId,
                     ],
                     'crews' => [
                         [
@@ -456,7 +453,7 @@ class AdminUseCaseTest extends IntegrationTestCase
                             'display_name' => 'Alice Smith',
                             'first_name' => 'Alice',
                             'last_name' => 'Smith',
-                            'email' => 'crew1@example.com',
+                            'user_id' => $crewUserId,
                             'skill' => 2,
                         ],
                     ],
@@ -482,6 +479,9 @@ class AdminUseCaseTest extends IntegrationTestCase
     {
         $eventId = EventId::fromString('Fri May 15');
 
+        $boatOwnerUserId = $this->userRepository->findByEmail('boatowner1@example.com')?->getId() ?? 0;
+        $crewUserId = $this->userRepository->findByEmail('crew1@example.com')?->getId() ?? 0;
+
         // Create flotilla
         $flotilla = [
             'event_id' => 'Fri May 15',
@@ -492,8 +492,7 @@ class AdminUseCaseTest extends IntegrationTestCase
                         'display_name' => 'Boat One',
                         'owner_first_name' => 'Owner',
                         'owner_last_name' => 'One',
-                        'email' => 'boatowner1@example.com',
-                        'owner_email' => 'boatowner1@example.com',
+                        'owner_user_id' => $boatOwnerUserId,
                     ],
                     'crews' => [
                         [
@@ -501,7 +500,7 @@ class AdminUseCaseTest extends IntegrationTestCase
                             'display_name' => 'Alice Smith',
                             'first_name' => 'Alice',
                             'last_name' => 'Smith',
-                            'email' => 'crew1@example.com',
+                            'user_id' => $crewUserId,
                             'skill' => 2,
                         ],
                     ],

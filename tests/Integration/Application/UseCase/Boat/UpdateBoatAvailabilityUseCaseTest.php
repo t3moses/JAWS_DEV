@@ -90,10 +90,10 @@ class UpdateBoatAvailabilityUseCaseTest extends IntegrationTestCase
 
         $stmt = $this->pdo->prepare('
             INSERT INTO boats (
-                key, display_name, owner_first_name, owner_last_name, owner_email, owner_mobile,
+                key, display_name, owner_first_name, owner_last_name, owner_mobile,
                 min_berths, max_berths, assistance_required, social_preference,
                 owner_user_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ');
 
         $stmt->execute([
@@ -101,7 +101,6 @@ class UpdateBoatAvailabilityUseCaseTest extends IntegrationTestCase
             $overrides['displayName'] ?? 'Test Boat',
             $overrides['ownerFirstName'] ?? 'Test',
             $overrides['ownerLastName'] ?? 'Owner',
-            $overrides['ownerEmail'] ?? 'owner@example.com',
             $overrides['ownerMobile'] ?? '555-5678',
             $overrides['minBerths'] ?? 2,
             $overrides['maxBerths'] ?? 3,
@@ -578,7 +577,6 @@ class UpdateBoatAvailabilityUseCaseTest extends IntegrationTestCase
         $this->assertNotNull($response->key);
         $this->assertNotNull($response->ownerFirstName);
         $this->assertNotNull($response->ownerLastName);
-        $this->assertNotNull($response->ownerEmail);
         $this->assertNotNull($response->ownerMobile);
         $this->assertIsInt($response->minBerths);
         $this->assertIsInt($response->maxBerths);

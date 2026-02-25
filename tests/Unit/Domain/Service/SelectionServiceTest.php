@@ -43,8 +43,6 @@ class SelectionServiceTest extends TestCase
             assistanceRequired: false,
             socialPreference: true
         );
-        $boat->setOwnerEmail('john@example.com');
-
         if ($rank !== null) {
             $boat->setRank($rank);
         }
@@ -72,8 +70,6 @@ class SelectionServiceTest extends TestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: '5 years'
         );
-        $crew->setEmail("$key@example.com");
-
         if ($rank !== null) {
             $crew->setRank($rank);
         }

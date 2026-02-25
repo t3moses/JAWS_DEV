@@ -82,10 +82,10 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
 
         $stmt = $this->pdo->prepare('
             INSERT INTO crews (
-                key, display_name, first_name, last_name, skill, mobile, email,
+                key, display_name, first_name, last_name, skill, mobile,
                 membership_number, social_preference, experience,
                 user_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ');
 
         $stmt->execute([
@@ -95,7 +95,6 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
             $overrides['lastName'] ?? 'Crew',
             $overrides['skill'] ?? SkillLevel::INTERMEDIATE->value,
             $overrides['mobile'] ?? '555-1234',
-            $overrides['email'] ?? 'crew@example.com',
             $overrides['membershipNumber'] ?? '12345',
             $overrides['socialPreference'] ?? 'No',
             $overrides['experience'] ?? 'Some sailing experience',
@@ -503,7 +502,6 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         $this->assertNotNull($response->key);
         $this->assertNotNull($response->firstName);
         $this->assertNotNull($response->lastName);
-        $this->assertNotNull($response->email);
         $this->assertNotNull($response->skill);
         $this->assertIsArray($response->availabilities);
         $this->assertIsArray($response->rank);

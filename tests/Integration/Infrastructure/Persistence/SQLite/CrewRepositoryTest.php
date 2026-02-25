@@ -51,8 +51,6 @@ class CrewRepositoryTest extends IntegrationTestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: null
         );
-        $crew->setEmail('john.sailor@example.com');
-
         $this->repository->save($crew);
 
         $this->assertNotNull($crew->getId());
@@ -425,7 +423,6 @@ class CrewRepositoryTest extends IntegrationTestCase
             skill: SkillLevel::ADVANCED,
             experience: null
         );
-        $crew->setEmail('props@example.com');
         $crew->setMobile('555-9999');
         $crew->setSocialPreference(true);
         $crew->setMembershipNumber('MEM-123');
@@ -439,7 +436,6 @@ class CrewRepositoryTest extends IntegrationTestCase
         $this->assertEquals('Props Test', $foundCrew->getDisplayName());
         $this->assertEquals('Props', $foundCrew->getFirstName());
         $this->assertEquals('Test', $foundCrew->getLastName());
-        $this->assertEquals('props@example.com', $foundCrew->getEmail());
         $this->assertEquals(SkillLevel::ADVANCED, $foundCrew->getSkill());
         $this->assertEquals('555-9999', $foundCrew->getMobile());
         $this->assertTrue($foundCrew->hasSocialPreference());
@@ -494,7 +490,6 @@ class CrewRepositoryTest extends IntegrationTestCase
             skill: $skill,
             experience: null
         );
-        $crew->setEmail(strtolower($firstName . '.' . $lastName . '@example.com'));
         return $crew;
     }
 

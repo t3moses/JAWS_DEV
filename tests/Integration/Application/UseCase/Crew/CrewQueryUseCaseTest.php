@@ -85,7 +85,6 @@ class CrewQueryUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: null
         );
-        $crew->setEmail('testcrew@example.com');
         $crew->setUserId($user->getId());
 
         // Set availability for events
@@ -172,7 +171,6 @@ class CrewQueryUseCaseTest extends IntegrationTestCase
             skill: SkillLevel::NOVICE,
             experience: null
         );
-        $newCrew->setEmail('newcrew@example.com');
         $newCrew->setUserId($newUser->getId());
         $this->crewRepository->save($newCrew);
 
