@@ -28,7 +28,6 @@ class SquadTest extends TestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: '5 years'
         );
-        $crew->setEmail(strtolower($firstName) . '@example.com');
         return $crew;
     }
 

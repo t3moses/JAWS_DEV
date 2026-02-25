@@ -38,7 +38,6 @@ class RankingServiceTest extends TestCase
             assistanceRequired: false,
             socialPreference: true
         );
-        $boat->setOwnerEmail('john@example.com');
         return $boat;
     }
 
@@ -56,7 +55,6 @@ class RankingServiceTest extends TestCase
             skill: SkillLevel::INTERMEDIATE,
             experience: '5 years'
         );
-        $crew->setEmail('john@example.com');
         return $crew;
     }
 

@@ -25,7 +25,6 @@ class FleetTest extends TestCase
             assistanceRequired: false,
             socialPreference: true
         );
-        $boat->setOwnerEmail('john@example.com');
         return $boat;
     }
 

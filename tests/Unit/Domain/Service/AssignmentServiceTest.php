@@ -36,7 +36,6 @@ class AssignmentServiceTest extends TestCase
             assistanceRequired: $assistanceRequired,
             socialPreference: true
         );
-        $boat->setOwnerEmail('john@example.com');
         return $boat;
     }
 
@@ -59,8 +58,6 @@ class AssignmentServiceTest extends TestCase
             skill: $skill,
             experience: '5 years'
         );
-        $crew->setEmail("$key@example.com");
-
         // Set whitelist
         foreach ($whitelist as $boatKey) {
             $crew->addToWhitelist($boatKey);

@@ -47,8 +47,6 @@ class BoatRepositoryTest extends IntegrationTestCase
             assistanceRequired: false,
             socialPreference: false
         );
-        $boat->setOwnerEmail('john.smith@example.com');
-
         $this->repository->save($boat);
 
         $this->assertNotNull($boat->getId());
@@ -327,8 +325,6 @@ class BoatRepositoryTest extends IntegrationTestCase
             assistanceRequired: true,
             socialPreference: false
         );
-        $boat->setOwnerEmail('props@example.com');
-
         $this->repository->save($boat);
 
         $foundBoat = $this->repository->findByKey($boat->getKey());
@@ -337,7 +333,6 @@ class BoatRepositoryTest extends IntegrationTestCase
         $this->assertEquals('Test Properties', $foundBoat->getDisplayName());
         $this->assertEquals('Props', $foundBoat->getOwnerFirstName());
         $this->assertEquals('Test', $foundBoat->getOwnerLastName());
-        $this->assertEquals('props@example.com', $foundBoat->getOwnerEmail());
         $this->assertEquals(3, $foundBoat->getMinBerths());
         $this->assertEquals(7, $foundBoat->getMaxBerths());
         $this->assertTrue($foundBoat->requiresAssistance());
@@ -407,7 +402,6 @@ class BoatRepositoryTest extends IntegrationTestCase
             assistanceRequired: false,
             socialPreference: false
         );
-        $boat->setOwnerEmail(strtolower($firstName . '.' . $lastName . '@example.com'));
         return $boat;
     }
 

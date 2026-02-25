@@ -219,10 +219,9 @@ HTML;
         $crewList = '';
         foreach ($crews as $crew) {
             $crewList .= sprintf(
-                '<li>%s %s (%s) - Skill: %s</li>',
+                '<li>%s %s - Skill: %s</li>',
                 htmlspecialchars($crew['first_name']),
                 htmlspecialchars($crew['last_name']),
-                htmlspecialchars($crew['email']),
                 $this->getSkillLevelLabel($crew['skill'])
             );
         }

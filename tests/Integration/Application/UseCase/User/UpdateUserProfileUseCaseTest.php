@@ -124,10 +124,10 @@ class UpdateUserProfileUseCaseTest extends IntegrationTestCase
 
         $stmt = $this->pdo->prepare('
             INSERT INTO crews (
-                key, display_name, first_name, last_name, skill, mobile, email,
+                key, display_name, first_name, last_name, skill, mobile,
                 membership_number, social_preference, experience,
                 user_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ');
 
         $stmt->execute([
@@ -137,7 +137,6 @@ class UpdateUserProfileUseCaseTest extends IntegrationTestCase
             $overrides['lastName'] ?? 'Crew',
             $overrides['skill'] ?? SkillLevel::INTERMEDIATE->value,
             $overrides['mobile'] ?? '555-1234',
-            $overrides['email'] ?? 'crew@example.com',
             $overrides['membershipNumber'] ?? '12345',
             $overrides['socialPreference'] ?? 'No', // Must be 'Yes' or 'No'
             $overrides['experience'] ?? 'Some sailing experience',
@@ -156,10 +155,10 @@ class UpdateUserProfileUseCaseTest extends IntegrationTestCase
 
         $stmt = $this->pdo->prepare('
             INSERT INTO boats (
-                key, display_name, owner_first_name, owner_last_name, owner_email, owner_mobile,
+                key, display_name, owner_first_name, owner_last_name, owner_mobile,
                 min_berths, max_berths, assistance_required, social_preference,
                 owner_user_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ');
 
         $stmt->execute([
@@ -167,7 +166,6 @@ class UpdateUserProfileUseCaseTest extends IntegrationTestCase
             $overrides['displayName'] ?? 'TestBoat',
             $overrides['ownerFirstName'] ?? 'Test',
             $overrides['ownerLastName'] ?? 'Owner',
-            $overrides['ownerEmail'] ?? 'boat@example.com',
             $overrides['ownerMobile'] ?? '555-5678',
             $overrides['minBerths'] ?? 2,
             $overrides['maxBerths'] ?? 4,

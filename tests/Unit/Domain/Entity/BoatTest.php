@@ -16,7 +16,7 @@ class BoatTest extends TestCase
 {
     private function createBoat(): Boat
     {
-        $boat = new Boat(
+        return new Boat(
             key: BoatKey::fromString('sailaway'),
             displayName: 'Sail Away',
             ownerFirstName: 'John',
@@ -27,8 +27,6 @@ class BoatTest extends TestCase
             assistanceRequired: false,
             socialPreference: true
         );
-        $boat->setOwnerEmail('john@example.com');
-        return $boat;
     }
 
     public function testConstructorSetsProperties(): void
@@ -41,7 +39,6 @@ class BoatTest extends TestCase
         $this->assertEquals('Sail Away', $boat->getDisplayName());
         $this->assertEquals('John', $boat->getOwnerFirstName());
         $this->assertEquals('Doe', $boat->getOwnerLastName());
-        $this->assertEquals('john@example.com', $boat->getOwnerEmail());
         $this->assertEquals('555-1234', $boat->getOwnerMobile());
         $this->assertEquals(1, $boat->getMinBerths());
         $this->assertEquals(3, $boat->getMaxBerths());
@@ -98,7 +95,6 @@ class BoatTest extends TestCase
         $boat->setDisplayName('New Name');
         $boat->setOwnerFirstName('Jane');
         $boat->setOwnerLastName('Smith');
-        $boat->setOwnerEmail('jane@example.com');
         $boat->setOwnerMobile('555-5678');
         $boat->setMinBerths(2);
         $boat->setMaxBerths(4);
@@ -109,7 +105,6 @@ class BoatTest extends TestCase
         $this->assertEquals('New Name', $boat->getDisplayName());
         $this->assertEquals('Jane', $boat->getOwnerFirstName());
         $this->assertEquals('Smith', $boat->getOwnerLastName());
-        $this->assertEquals('jane@example.com', $boat->getOwnerEmail());
         $this->assertEquals('555-5678', $boat->getOwnerMobile());
         $this->assertEquals(2, $boat->getMinBerths());
         $this->assertEquals(4, $boat->getMaxBerths());
@@ -365,7 +360,6 @@ class BoatTest extends TestCase
         $this->assertEquals('Sail Away', $array['display_name']);
         $this->assertEquals('John', $array['owner_first_name']);
         $this->assertEquals('Doe', $array['owner_last_name']);
-        $this->assertEquals('john@example.com', $array['owner_email']);
         $this->assertEquals('555-1234', $array['owner_mobile']);
         $this->assertEquals(1, $array['min_berths']);
         $this->assertEquals(3, $array['max_berths']);
