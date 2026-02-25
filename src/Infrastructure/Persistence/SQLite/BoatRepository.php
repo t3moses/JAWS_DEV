@@ -204,6 +204,13 @@ class BoatRepository implements BoatRepositoryInterface
         return (int)$stmt->fetchColumn();
     }
 
+    public function displayNameExists(string $displayName): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM boats WHERE display_name = :display_name');
+        $stmt->execute(['display_name' => $displayName]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
     /**
      * Insert new boat
      */

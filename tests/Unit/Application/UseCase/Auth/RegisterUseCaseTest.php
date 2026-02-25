@@ -61,6 +61,10 @@ class RegisterUseCaseTest extends TestCase
         $this->tokenService->method('generate')->willReturn('mock.jwt.token');
         $this->tokenService->method('getExpirationMinutes')->willReturn(60);
 
+        // Default: no display name clashes
+        $this->crewRepository->method('displayNameExists')->willReturn(false);
+        $this->boatRepository->method('displayNameExists')->willReturn(false);
+
         // Mock user save to set ID
         $this->userRepository->method('save')->willReturnCallback(function ($user) {
             // Set user ID after save
@@ -606,6 +610,104 @@ class RegisterUseCaseTest extends TestCase
         $this->assertStringContainsString('12345', $capturedEmailBody); // membership number
         $this->assertStringContainsString('555-1234', $capturedEmailBody); // mobile
         $this->assertStringContainsString('detailed@example.com', $capturedEmailBody); // email
+    }
+
+    public function testCrewDisplayNameSuffixedOnClash(): void
+    {
+        // Arrange: first call ("JohnD") clashes, second call ("JohnD2") is free
+        $this->crewRepository = $this->createMock(CrewRepositoryInterface::class);
+        $this->crewRepository->method('findByKey')->willReturn(null);
+        $this->crewRepository->method('displayNameExists')
+            ->willReturnCallback(fn($name) => $name === 'JohnD');  // 'JohnD' taken, 'JohnD2' free
+
+        $capturedCrew = null;
+        $this->crewRepository->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function (Crew $crew) use (&$capturedCrew) {
+                $capturedCrew = $crew;
+                return true;
+            }));
+
+        // Rebuild use case with the new mock
+        $this->useCase = new RegisterUseCase(
+            $this->userRepository,
+            $this->crewRepository,
+            $this->boatRepository,
+            $this->passwordService,
+            $this->tokenService,
+            $this->rankingService,
+            $this->emailService,
+            $this->emailTemplateService,
+            $this->config
+        );
+
+        $request = new RegisterRequest(
+            email: 'john.denver@example.com',
+            password: 'SecurePass123!',
+            accountType: 'crew',
+            profile: [
+                'firstName' => 'John',
+                'lastName' => 'Denver',
+            ]
+        );
+
+        // Act
+        $this->useCase->execute($request);
+
+        // Assert: display name got the "2" suffix because "JohnD" was taken
+        $this->assertNotNull($capturedCrew);
+        $this->assertEquals('JohnD2', $capturedCrew->getDisplayName());
+    }
+
+    public function testBoatDisplayNameSuffixedOnClash(): void
+    {
+        // Arrange: "JohnD" is taken, "JohnD2" is free
+        $this->boatRepository = $this->createMock(BoatRepositoryInterface::class);
+        $this->boatRepository->method('findByKey')->willReturn(null);
+        $this->boatRepository->method('displayNameExists')
+            ->willReturnCallback(fn($name) => $name === 'JohnD');
+        $this->boatRepository->method('findAll')->willReturn([]);
+
+        $capturedBoat = null;
+        $this->boatRepository->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function (Boat $boat) use (&$capturedBoat) {
+                $capturedBoat = $boat;
+                return true;
+            }));
+
+        // Rebuild use case with the new mock
+        $this->useCase = new RegisterUseCase(
+            $this->userRepository,
+            $this->crewRepository,
+            $this->boatRepository,
+            $this->passwordService,
+            $this->tokenService,
+            $this->rankingService,
+            $this->emailService,
+            $this->emailTemplateService,
+            $this->config
+        );
+
+        $request = new RegisterRequest(
+            email: 'john.davidson@example.com',
+            password: 'SecurePass123!',
+            accountType: 'boat_owner',
+            profile: [
+                'ownerFirstName' => 'John',
+                'ownerLastName' => 'Davidson',
+                'minBerths' => 2,
+                'maxBerths' => 4,
+            ]
+        );
+
+        // Act
+        $this->useCase->execute($request);
+
+        // Assert: display name got the "2" suffix because "JohnD" was taken
+        $this->assertNotNull($capturedBoat);
+        $this->assertEquals('JohnD2', $capturedBoat->getDisplayName());
+        $this->assertEquals('johnd2', $capturedBoat->getKey()->toString());
     }
 
     public function testEmailContainsBoatDetailsForBoatOwnerRegistration(): void

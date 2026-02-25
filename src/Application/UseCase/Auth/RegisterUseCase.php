@@ -159,6 +159,28 @@ class RegisterUseCase
     }
 
     /**
+     * Resolve a unique display name by appending an incrementing counter on collision.
+     *
+     * Returns $base if it is available, otherwise tries $base . "2", $base . "3", …
+     * until a free name is found.
+     *
+     * @param string   $base   The desired display name
+     * @param callable $exists fn(string $name): bool — returns true when the name is taken
+     * @return string          A display name that does not yet exist
+     */
+    private function resolveUniqueDisplayName(string $base, callable $exists): string
+    {
+        if (!$exists($base)) {
+            return $base;
+        }
+        $counter = 2;
+        while ($exists($base . $counter)) {
+            $counter++;
+        }
+        return $base . $counter;
+    }
+
+    /**
      * Create crew profile
      *
      * @param User $user User entity
@@ -183,6 +205,12 @@ class RegisterUseCase
                 $profile['lastName']
             );
         }
+
+        // Ensure display name is unique within the crew namespace
+        $displayName = $this->resolveUniqueDisplayName(
+            $displayName,
+            fn($name) => $this->crewRepository->displayNameExists($name)
+        );
 
         // Create crew entity
         $crew = new Crew(
@@ -237,10 +265,16 @@ class RegisterUseCase
             );
         }
 
+        // Ensure display name is unique within the boat namespace
+        $displayName = $this->resolveUniqueDisplayName(
+            $displayName,
+            fn($name) => $this->boatRepository->displayNameExists($name)
+        );
+
         // Use displayName for boat key
         $boatKey = BoatKey::fromBoatName($displayName);
 
-        // Check if boat already exists with this key
+        // Check if boat already exists with this key (safeguard for explicitly-provided names)
         $existingBoat = $this->boatRepository->findByKey($boatKey);
         if ($existingBoat !== null) {
             throw new ValidationException(['profile' => 'A boat with this name already exists']);

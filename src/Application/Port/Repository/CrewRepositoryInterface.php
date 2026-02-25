@@ -142,4 +142,12 @@ interface CrewRepositoryInterface
      * @return int
      */
     public function count(): int;
+
+    /**
+     * Check if a display name already exists in the crews table
+     *
+     * @param string $displayName
+     * @return bool
+     */
+    public function displayNameExists(string $displayName): bool;
 }

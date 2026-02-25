@@ -76,7 +76,14 @@ class ProcessSeasonUpdateUseCase
             $selectionResult = $this->runSelection($fleet, $squad, $eventId);
 
             // Add flex boat owners to crew waitlist when their boat is cut
-            $flexCrewEntries = $this->buildFlexCrewEntries($selectionResult['waitlisted_boats']);
+            $existingCrewDisplayNames = array_values(array_filter(
+                array_map(fn($c) => $c->getDisplayName(), $squad->all()),
+                fn($name) => $name !== null
+            ));
+            $flexCrewEntries = $this->buildFlexCrewEntries(
+                $selectionResult['waitlisted_boats'],
+                $existingCrewDisplayNames
+            );
             $selectionResult['waitlisted_crews'] = array_merge(
                 $selectionResult['waitlisted_crews'],
                 $flexCrewEntries
@@ -357,22 +364,56 @@ class ProcessSeasonUpdateUseCase
     }
 
     /**
+     * Resolve a unique display name by appending an incrementing counter on collision.
+     *
+     * Returns $base if it is available (not in $usedNames), otherwise tries
+     * $base . "2", $base . "3", … until a free name is found.
+     *
+     * @param string   $base      The desired display name
+     * @param callable $exists    fn(string $name): bool — returns true when the name is taken
+     * @return string             A display name that is not taken
+     */
+    private function resolveUniqueDisplayName(string $base, callable $exists): string
+    {
+        if (!$exists($base)) {
+            return $base;
+        }
+        $counter = 2;
+        while ($exists($base . $counter)) {
+            $counter++;
+        }
+        return $base . $counter;
+    }
+
+    /**
      * Build Crew entities for flex boat owners whose boat was waitlisted
      *
      * When a flex boat (rank_flexibility=0) is waitlisted, its owner should appear
      * in the crew waitlist so they can be promoted to another boat with spare capacity.
      *
-     * @param array<Boat> $waitlistedBoats Boats that were not selected
+     * Display names are resolved against both the real crew squad and previously
+     * created flex entries in the same pass.
+     *
+     * @param array<Boat>   $waitlistedBoats      Boats that were not selected
+     * @param array<string> $existingDisplayNames  Display names already in use by real crew
      * @return array<Crew> Crew entities for flex boat owners
      */
-    private function buildFlexCrewEntries(array $waitlistedBoats): array
+    private function buildFlexCrewEntries(array $waitlistedBoats, array $existingDisplayNames): array
     {
         $entries = [];
+        $usedNames = $existingDisplayNames;
+
         foreach ($waitlistedBoats as $boat) {
             if ($boat->isWillingToCrew()) {
+                $displayName = $this->resolveUniqueDisplayName(
+                    $boat->getOwnerDisplayName(),
+                    fn($name) => in_array($name, $usedNames, true)
+                );
+                $usedNames[] = $displayName;
+
                 $crew = new Crew(
                     key: CrewKey::fromName($boat->getOwnerFirstName(), $boat->getOwnerLastName()),
-                    displayName: $boat->getOwnerDisplayName(),
+                    displayName: $displayName,
                     firstName: $boat->getOwnerFirstName(),
                     lastName: $boat->getOwnerLastName(),
                     partnerKey: null,

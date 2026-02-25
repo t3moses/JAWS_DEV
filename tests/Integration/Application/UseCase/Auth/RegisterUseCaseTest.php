@@ -413,16 +413,16 @@ class RegisterUseCaseTest extends IntegrationTestCase
         $this->useCase->execute($request2);
     }
 
-    public function testRegisterBoatWithDuplicateNameThrowsValidationException(): void
+    public function testRegisterBoatWithSameLastInitialGetsUniqueDisplayName(): void
     {
-        // Register first boat
+        // Register first boat owner: John Doe → "JohnD"
         $request1 = RegisterRequest::fromArray([
-            'email' => 'boat1@example.com',
+            'email' => 'john.doe@example.com',
             'password' => 'SecurePassword123',
             'accountType' => 'boat_owner',
             'profile' => [
-                'ownerFirstName' => 'Duplicate',
-                'ownerLastName' => 'Owner',
+                'ownerFirstName' => 'John',
+                'ownerLastName' => 'Doe',
                 'minBerths' => 2,
                 'maxBerths' => 6,
                 'ownerMobile' => '555-0001',
@@ -430,23 +430,90 @@ class RegisterUseCaseTest extends IntegrationTestCase
         ]);
         $this->useCase->execute($request1);
 
-        // Try to register second boat with same owner (same display name)
+        // Register second boat owner with same first-name + last-initial: John Davidson → "JohnD2"
         $request2 = RegisterRequest::fromArray([
-            'email' => 'boat2@example.com',
+            'email' => 'john.davidson@example.com',
             'password' => 'SecurePassword123',
             'accountType' => 'boat_owner',
             'profile' => [
-                'ownerFirstName' => 'Duplicate',
-                'ownerLastName' => 'Owner',
+                'ownerFirstName' => 'John',
+                'ownerLastName' => 'Davidson',
                 'minBerths' => 4,
                 'maxBerths' => 8,
                 'ownerMobile' => '555-0002',
             ]
         ]);
-
-        $this->expectException(ValidationException::class);
-
         $this->useCase->execute($request2);
+
+        $boat1 = $this->boatRepository->findByOwnerName('John', 'Doe');
+        $boat2 = $this->boatRepository->findByOwnerName('John', 'Davidson');
+
+        $this->assertNotNull($boat1);
+        $this->assertNotNull($boat2);
+        $this->assertEquals('JohnD', $boat1->getDisplayName());
+        $this->assertEquals('JohnD2', $boat2->getDisplayName());
+        // Keys are derived from display names
+        $this->assertEquals('johnd', $boat1->getKey()->toString());
+        $this->assertEquals('johnd2', $boat2->getKey()->toString());
+    }
+
+    public function testRegisterBoatWithThirdClashGetsIncrementedSuffix(): void
+    {
+        // Three owners all generating "JohnD"
+        foreach (['Doe', 'Davidson', 'Denver'] as $i => $lastName) {
+            $request = RegisterRequest::fromArray([
+                'email' => "john.{$lastName}@example.com",
+                'password' => 'SecurePassword123',
+                'accountType' => 'boat_owner',
+                'profile' => [
+                    'ownerFirstName' => 'John',
+                    'ownerLastName' => $lastName,
+                    'minBerths' => 2,
+                    'maxBerths' => 4,
+                    'ownerMobile' => "555-000{$i}",
+                ]
+            ]);
+            $this->useCase->execute($request);
+        }
+
+        $this->assertEquals('JohnD', $this->boatRepository->findByOwnerName('John', 'Doe')->getDisplayName());
+        $this->assertEquals('JohnD2', $this->boatRepository->findByOwnerName('John', 'Davidson')->getDisplayName());
+        $this->assertEquals('JohnD3', $this->boatRepository->findByOwnerName('John', 'Denver')->getDisplayName());
+    }
+
+    public function testRegisterCrewWithSameLastInitialGetsUniqueDisplayName(): void
+    {
+        // Register first crew: John Doe → "JohnD"
+        $request1 = RegisterRequest::fromArray([
+            'email' => 'john.doe@example.com',
+            'password' => 'SecurePassword123',
+            'accountType' => 'crew',
+            'profile' => [
+                'firstName' => 'John',
+                'lastName' => 'Doe',
+            ]
+        ]);
+        $this->useCase->execute($request1);
+
+        // Register second crew with same first-name + last-initial: John Denver → "JohnD2"
+        $request2 = RegisterRequest::fromArray([
+            'email' => 'john.denver@example.com',
+            'password' => 'SecurePassword123',
+            'accountType' => 'crew',
+            'profile' => [
+                'firstName' => 'John',
+                'lastName' => 'Denver',
+            ]
+        ]);
+        $this->useCase->execute($request2);
+
+        $crew1 = $this->crewRepository->findByName('John', 'Doe');
+        $crew2 = $this->crewRepository->findByName('John', 'Denver');
+
+        $this->assertNotNull($crew1);
+        $this->assertNotNull($crew2);
+        $this->assertEquals('JohnD', $crew1->getDisplayName());
+        $this->assertEquals('JohnD2', $crew2->getDisplayName());
     }
 
     public function testRegisterCrewPopulatesWhitelistWithAllBoats(): void
