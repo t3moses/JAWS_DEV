@@ -43,11 +43,16 @@ class UpdateBoatAvailabilityUseCaseTest extends IntegrationTestCase
         $this->eventRepository = new EventRepository();
 
         // Initialize use case
+        // SystemTimeService is given a SeasonRepository so it reads the simulated
+        // date/time (2026-05-01 09:00:00) from the test DB rather than the real
+        // wall-clock time. This keeps the blackout guard inactive regardless of
+        // when the tests are actually run.
+        $seasonRepository = new SeasonRepository();
         $this->useCase = new UpdateBoatAvailabilityUseCase(
             $this->boatRepository,
             $this->eventRepository,
-            new SystemTimeService(),
-            new SeasonRepository()
+            new SystemTimeService($seasonRepository),
+            $seasonRepository
         );
     }
 
