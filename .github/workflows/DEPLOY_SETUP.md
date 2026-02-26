@@ -30,6 +30,16 @@ Before using the deployment workflow, you must configure the following secrets i
 | `LIGHTSAIL_HOST` | Server IP address or hostname | `16.52.222.15` |
 | `LIGHTSAIL_USER` | SSH username | `bitnami` |
 
+### Optional Staging Secrets (Required if using `staging` environment)
+
+| Secret Name | Description | Example |
+|------------|-------------|---------|
+| `LIGHTSAIL_SSH_KEY_STAGING` | Staging private SSH key | Contents of staging PEM key |
+| `LIGHTSAIL_HOST_STAGING` | Staging server IP/hostname | `15.156.254.113` |
+| `LIGHTSAIL_USER_STAGING` | Staging SSH username | `bitnami` |
+
+If you select `staging` in the workflow and these staging secrets are not configured, the workflow fails fast with a clear error.
+
 ### How to Get the SSH Key
 
 1. **Locate your Lightsail SSH key file:**
@@ -93,6 +103,12 @@ Before using the deployment workflow, you must configure the following secrets i
    - Verify deployment was successful
 
 ### Deployment Options Explained
+
+**Deployment environment (`production` vs `staging`):**
+- ✅ The workflow now routes SSH host/user/key based on this selection
+- ✅ `production` uses `LIGHTSAIL_HOST`, `LIGHTSAIL_USER`, `LIGHTSAIL_SSH_KEY`
+- ✅ `staging` uses `LIGHTSAIL_HOST_STAGING`, `LIGHTSAIL_USER_STAGING`, `LIGHTSAIL_SSH_KEY_STAGING`
+- ✅ The selected value is also used as the GitHub job environment (`environment: ${{ inputs.environment }}`), enabling optional approval gates and environment protection rules
 
 **Run database migrations after deployment:**
 - ✅ Check this if you have new migration files in `database/migrations/`
@@ -348,27 +364,16 @@ Configure notifications for deployment events:
 
 ### Deploy to Staging Environment
 
-To add staging support:
+Staging support is already wired into the workflow.
 
 1. **Create staging server secrets:**
    - `LIGHTSAIL_HOST_STAGING`
    - `LIGHTSAIL_USER_STAGING`
    - `LIGHTSAIL_SSH_KEY_STAGING` (if different)
 
-2. **Update `deploy.yml`:**
-   ```yaml
-   - name: Set environment variables
-     run: |
-       if [ "${{ inputs.environment }}" == "staging" ]; then
-         echo "HOST=${{ secrets.LIGHTSAIL_HOST_STAGING }}" >> $GITHUB_ENV
-         echo "USER=${{ secrets.LIGHTSAIL_USER_STAGING }}" >> $GITHUB_ENV
-       else
-         echo "HOST=${{ secrets.LIGHTSAIL_HOST }}" >> $GITHUB_ENV
-         echo "USER=${{ secrets.LIGHTSAIL_USER }}" >> $GITHUB_ENV
-       fi
-   ```
+2. **Run the workflow and select `staging` as the deployment environment.**
 
-3. **Use `${{ env.HOST }}` and `${{ env.USER }}` in subsequent steps**
+3. **Optional:** configure GitHub environment protection for `staging` (or `production`) under Settings → Environments.
 
 ### Scheduled Deployments
 

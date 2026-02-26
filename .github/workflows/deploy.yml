@@ -61,24 +61,90 @@ jobs:
           echo "Migration files found:"
           ls -la database/migrations/
 
-  backup-database:
-    name: Backup Production Database
+  e2e-tests:
+    name: E2E Tests
     runs-on: ubuntu-latest
     needs: pre-deployment-checks
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo, pdo_sqlite, sqlite3, curl, mbstring, openssl
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Create database directory
+        run: mkdir -p database
+
+      - name: Run Phinx migrations
+        run: php vendor/bin/phinx migrate -e development
+
+      - name: Seed test data
+        run: php vendor/bin/phinx seed:run -e development
+
+      - name: Run API tests
+        run: |
+          php -S localhost:8000 -t public > /dev/null 2>&1 &
+          SERVER_PID=$!
+          sleep 2
+          php vendor/bin/phpunit --testsuite=API
+          kill $SERVER_PID
+
+      # Placeholder: Playwright E2E tests
+      # TODO: Replace this step with actual Playwright test execution once implemented
+      - name: Run Playwright tests
+        run: echo "Playwright tests not yet implemented - skipping"
+
+  backup-database:
+    name: Backup Target Database
+    runs-on: ubuntu-latest
+    needs: e2e-tests
     if: inputs.skip_backup == false
 
     steps:
+      - name: Resolve deployment target
+        run: |
+          if [ "${{ inputs.environment }}" == "staging" ]; then
+            TARGET_HOST="${{ secrets.LIGHTSAIL_HOST_STAGING }}"
+            TARGET_USER="${{ secrets.LIGHTSAIL_USER_STAGING }}"
+            TARGET_KEY="${{ secrets.LIGHTSAIL_SSH_KEY_STAGING }}"
+          else
+            TARGET_HOST="${{ secrets.LIGHTSAIL_HOST }}"
+            TARGET_USER="${{ secrets.LIGHTSAIL_USER }}"
+            TARGET_KEY="${{ secrets.LIGHTSAIL_SSH_KEY }}"
+          fi
+
+          if [ -z "$TARGET_HOST" ] || [ -z "$TARGET_USER" ] || [ -z "$TARGET_KEY" ]; then
+            echo "Error: Missing Lightsail secrets for environment '${{ inputs.environment }}'"
+            echo "Expected secrets for staging: LIGHTSAIL_HOST_STAGING, LIGHTSAIL_USER_STAGING, LIGHTSAIL_SSH_KEY_STAGING"
+            echo "Expected secrets for production: LIGHTSAIL_HOST, LIGHTSAIL_USER, LIGHTSAIL_SSH_KEY"
+            exit 1
+          fi
+
+          echo "TARGET_HOST=$TARGET_HOST" >> $GITHUB_ENV
+          echo "TARGET_USER=$TARGET_USER" >> $GITHUB_ENV
+          echo "TARGET_KEY<<EOF" >> $GITHUB_ENV
+          echo "$TARGET_KEY" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/lightsail_key
+          echo "$TARGET_KEY" > ~/.ssh/lightsail_key
           chmod 600 ~/.ssh/lightsail_key
-          ssh-keyscan -H ${{ secrets.LIGHTSAIL_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$TARGET_HOST" >> ~/.ssh/known_hosts
 
       - name: Create database backup
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} \
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" \
             "cd /opt/bitnami/jaws/database && \
              sudo cp jaws.db jaws.backup.${TIMESTAMP}.db && \
              echo 'Backup created: jaws.backup.${TIMESTAMP}.db' && \
@@ -86,25 +152,51 @@ jobs:
 
       - name: Verify backup
         run: |
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} \
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" \
             "ls -lh /opt/bitnami/jaws/database/jaws.backup.*.db | tail -5"
 
   deploy:
     name: Deploy Application
     runs-on: ubuntu-latest
-    needs: [pre-deployment-checks, backup-database]
-    if: always() && (needs.backup-database.result == 'success' || needs.backup-database.result == 'skipped')
+    environment: ${{ inputs.environment }}
+    needs: [e2e-tests, backup-database]
+    if: always() && needs.e2e-tests.result == 'success' && (needs['backup-database'].result == 'success' || needs['backup-database'].result == 'skipped')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Resolve deployment target
+        run: |
+          if [ "${{ inputs.environment }}" == "staging" ]; then
+            TARGET_HOST="${{ secrets.LIGHTSAIL_HOST_STAGING }}"
+            TARGET_USER="${{ secrets.LIGHTSAIL_USER_STAGING }}"
+            TARGET_KEY="${{ secrets.LIGHTSAIL_SSH_KEY_STAGING }}"
+          else
+            TARGET_HOST="${{ secrets.LIGHTSAIL_HOST }}"
+            TARGET_USER="${{ secrets.LIGHTSAIL_USER }}"
+            TARGET_KEY="${{ secrets.LIGHTSAIL_SSH_KEY }}"
+          fi
+
+          if [ -z "$TARGET_HOST" ] || [ -z "$TARGET_USER" ] || [ -z "$TARGET_KEY" ]; then
+            echo "Error: Missing Lightsail secrets for environment '${{ inputs.environment }}'"
+            echo "Expected secrets for staging: LIGHTSAIL_HOST_STAGING, LIGHTSAIL_USER_STAGING, LIGHTSAIL_SSH_KEY_STAGING"
+            echo "Expected secrets for production: LIGHTSAIL_HOST, LIGHTSAIL_USER, LIGHTSAIL_SSH_KEY"
+            exit 1
+          fi
+
+          echo "TARGET_HOST=$TARGET_HOST" >> $GITHUB_ENV
+          echo "TARGET_USER=$TARGET_USER" >> $GITHUB_ENV
+          echo "TARGET_KEY<<EOF" >> $GITHUB_ENV
+          echo "$TARGET_KEY" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/lightsail_key
+          echo "$TARGET_KEY" > ~/.ssh/lightsail_key
           chmod 600 ~/.ssh/lightsail_key
-          ssh-keyscan -H ${{ secrets.LIGHTSAIL_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$TARGET_HOST" >> ~/.ssh/known_hosts
 
       - name: Create deployment package
         run: |
@@ -130,11 +222,11 @@ jobs:
         run: |
           # Upload tarball to server
           scp -i ~/.ssh/lightsail_key deploy.tar.gz \
-            ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }}:/tmp/
+            "$TARGET_USER@$TARGET_HOST:/tmp/"
 
       - name: Extract and deploy files
         run: |
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" << 'ENDSSH'
             set -e
 
             echo "Extracting deployment package..."
@@ -150,7 +242,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" << 'ENDSSH'
             set -e
             cd /opt/bitnami/jaws
 
@@ -163,7 +255,7 @@ jobs:
       - name: Run database migrations
         if: inputs.run_migrations
         run: |
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" << 'ENDSSH'
             set -e
             cd /opt/bitnami/jaws
 
@@ -179,7 +271,7 @@ jobs:
 
       - name: Set final permissions
         run: |
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" << 'ENDSSH'
             set -e
             cd /opt/bitnami/jaws
 
@@ -207,27 +299,53 @@ jobs:
 
       - name: Restart Apache
         run: |
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} \
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" \
             "sudo /opt/bitnami/ctlscript.sh restart apache"
 
       - name: Cleanup temporary files
         if: always()
         run: |
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} \
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" \
             "rm -f /tmp/deploy.tar.gz"
 
   verify-deployment:
     name: Verify Deployment
     runs-on: ubuntu-latest
     needs: deploy
+    if: always() && needs.deploy.result == 'success'
 
     steps:
+      - name: Resolve deployment target
+        run: |
+          if [ "${{ inputs.environment }}" == "staging" ]; then
+            TARGET_HOST="${{ secrets.LIGHTSAIL_HOST_STAGING }}"
+            TARGET_USER="${{ secrets.LIGHTSAIL_USER_STAGING }}"
+            TARGET_KEY="${{ secrets.LIGHTSAIL_SSH_KEY_STAGING }}"
+          else
+            TARGET_HOST="${{ secrets.LIGHTSAIL_HOST }}"
+            TARGET_USER="${{ secrets.LIGHTSAIL_USER }}"
+            TARGET_KEY="${{ secrets.LIGHTSAIL_SSH_KEY }}"
+          fi
+
+          if [ -z "$TARGET_HOST" ] || [ -z "$TARGET_USER" ] || [ -z "$TARGET_KEY" ]; then
+            echo "Error: Missing Lightsail secrets for environment '${{ inputs.environment }}'"
+            echo "Expected secrets for staging: LIGHTSAIL_HOST_STAGING, LIGHTSAIL_USER_STAGING, LIGHTSAIL_SSH_KEY_STAGING"
+            echo "Expected secrets for production: LIGHTSAIL_HOST, LIGHTSAIL_USER, LIGHTSAIL_SSH_KEY"
+            exit 1
+          fi
+
+          echo "TARGET_HOST=$TARGET_HOST" >> $GITHUB_ENV
+          echo "TARGET_USER=$TARGET_USER" >> $GITHUB_ENV
+          echo "TARGET_KEY<<EOF" >> $GITHUB_ENV
+          echo "$TARGET_KEY" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.LIGHTSAIL_SSH_KEY }}" > ~/.ssh/lightsail_key
+          echo "$TARGET_KEY" > ~/.ssh/lightsail_key
           chmod 600 ~/.ssh/lightsail_key
-          ssh-keyscan -H ${{ secrets.LIGHTSAIL_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$TARGET_HOST" >> ~/.ssh/known_hosts
 
       - name: Wait for server to stabilize
         run: sleep 20
@@ -235,7 +353,7 @@ jobs:
       - name: Test API health
         run: |
           echo "Testing API endpoint..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" http://${{ secrets.LIGHTSAIL_HOST }}/api/events)
+          RESPONSE=$(curl -s -w "\n%{http_code}" "http://$TARGET_HOST/api/events")
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n-1)
 
@@ -260,7 +378,7 @@ jobs:
       - name: Check Apache logs for errors
         if: failure()
         run: |
-          ssh -i ~/.ssh/lightsail_key ${{ secrets.LIGHTSAIL_USER }}@${{ secrets.LIGHTSAIL_HOST }} \
+          ssh -i ~/.ssh/lightsail_key "$TARGET_USER@$TARGET_HOST" \
             "sudo tail -50 /opt/bitnami/apache/logs/error_log"
 
   post-deployment-notification:
@@ -280,9 +398,17 @@ jobs:
           echo "**Deployed By:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy | ${{ needs.deploy.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Verify Deployment | ${{ needs['verify-deployment'].result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.verify-deployment.result }}" == "success" ]; then
+          if [ "${{ needs.deploy.result }}" == "success" ] && [ "${{ needs['verify-deployment'].result }}" == "success" ]; then
             echo "✅ **Deployment Status:** SUCCESS" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.deploy.result }}" == "skipped" ] || [ "${{ needs['verify-deployment'].result }}" == "skipped" ]; then
+            echo "⏭️ **Deployment Status:** SKIPPED" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Deployment Status:** FAILED" >> $GITHUB_STEP_SUMMARY
           fi
@@ -290,6 +416,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
           echo "- [ ] Verify critical functionality (login, availability, assignments)" >> $GITHUB_STEP_SUMMARY
-          echo "- [ ] Check debug page: https://${{ secrets.LIGHTSAIL_HOST }}/app/debug.html" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.environment }}" == "staging" ]; then
+            TARGET_HOST="${{ secrets.LIGHTSAIL_HOST_STAGING }}"
+          else
+            TARGET_HOST="${{ secrets.LIGHTSAIL_HOST }}"
+          fi
+          echo "- [ ] Check debug page: https://${TARGET_HOST}/app/debug.html" >> $GITHUB_STEP_SUMMARY
           echo "- [ ] Monitor Apache logs for errors" >> $GITHUB_STEP_SUMMARY
           echo "- [ ] Test email notifications (if applicable)" >> $GITHUB_STEP_SUMMARY
