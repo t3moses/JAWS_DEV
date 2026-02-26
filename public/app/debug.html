@@ -117,6 +117,30 @@
                     </div>
                 </div>
 
+                <!-- Blackout Status -->
+                <div class="status-section">
+                    <h2>Registration Status</h2>
+                    <div class="status-item">
+                        <span class="status-label">Blackout Window Active:</span>
+                        <span id="blackout-status" class="status-value">⏳ Checking...</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Current Server Date:</span>
+                        <span id="server-date" class="status-value">—</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Time Source:</span>
+                        <span id="time-source" class="status-value">—</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Blackout Window:</span>
+                        <span id="blackout-window" class="status-value">—</span>
+                    </div>
+                    <div class="btn-group">
+                        <button id="refresh-blackout-btn" onclick="checkBlackoutStatus()" class="btn btn-primary">Refresh</button>
+                    </div>
+                </div>
+
                 <!-- Usage Instructions -->
                 <div class="status-section">
                     <h2>About This Page</h2>
@@ -126,6 +150,7 @@
                         <li><strong>Environment:</strong> Current application environment</li>
                         <li><strong>API Base URL:</strong> Backend API endpoint</li>
                         <li><strong>Connection Status:</strong> Real-time API connectivity test</li>
+                        <li><strong>Blackout Window Active:</strong> Whether registration is currently locked (uses server time)</li>
                     </ul>
                 </div>
             </section>

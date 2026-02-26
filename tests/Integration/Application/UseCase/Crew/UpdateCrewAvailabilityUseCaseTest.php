@@ -14,7 +14,9 @@ use App\Domain\Enum\SkillLevel;
 use App\Domain\ValueObject\CrewKey;
 use App\Infrastructure\Persistence\SQLite\CrewRepository;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
+use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Persistence\SQLite\Connection;
+use App\Infrastructure\Service\SystemTimeService;
 use Tests\Integration\IntegrationTestCase;
 
 /**
@@ -46,7 +48,9 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         // Initialize use case
         $this->useCase = new UpdateCrewAvailabilityUseCase(
             $this->crewRepository,
-            $this->eventRepository
+            $this->eventRepository,
+            new SystemTimeService(),
+            new SeasonRepository()
         );
     }
 

@@ -114,8 +114,8 @@ $container->set(CalendarServiceInterface::class, function () {
     return new ICalendarService();
 });
 
-$container->set(TimeServiceInterface::class, function () {
-    return new SystemTimeService();
+$container->set(TimeServiceInterface::class, function ($c) {
+    return new SystemTimeService($c->get(SeasonRepositoryInterface::class));
 });
 
 $container->set(TokenServiceInterface::class, function () use ($config) {
@@ -159,7 +159,9 @@ $container->set(AssignmentService::class, function () {
 $container->set(\App\Application\UseCase\Boat\UpdateBoatAvailabilityUseCase::class, function ($c) {
     return new \App\Application\UseCase\Boat\UpdateBoatAvailabilityUseCase(
         $c->get(BoatRepositoryInterface::class),
-        $c->get(EventRepositoryInterface::class)
+        $c->get(EventRepositoryInterface::class),
+        $c->get(TimeServiceInterface::class),
+        $c->get(SeasonRepositoryInterface::class)
     );
 });
 
@@ -167,7 +169,9 @@ $container->set(\App\Application\UseCase\Boat\UpdateBoatAvailabilityUseCase::cla
 $container->set(\App\Application\UseCase\Crew\UpdateCrewAvailabilityUseCase::class, function ($c) {
     return new \App\Application\UseCase\Crew\UpdateCrewAvailabilityUseCase(
         $c->get(CrewRepositoryInterface::class),
-        $c->get(EventRepositoryInterface::class)
+        $c->get(EventRepositoryInterface::class),
+        $c->get(TimeServiceInterface::class),
+        $c->get(SeasonRepositoryInterface::class)
     );
 });
 
@@ -391,7 +395,9 @@ $container->set(\App\Presentation\Controller\EventController::class, function ($
     return new \App\Presentation\Controller\EventController(
         $c->get(\App\Application\UseCase\Event\GetAllEventsUseCase::class),
         $c->get(\App\Application\UseCase\Event\GetEventUseCase::class),
-        $c->get(\App\Application\UseCase\Flotilla\GetAllFlotillasUseCase::class)
+        $c->get(\App\Application\UseCase\Flotilla\GetAllFlotillasUseCase::class),
+        $c->get(TimeServiceInterface::class),
+        $c->get(SeasonRepositoryInterface::class)
     );
 });
 

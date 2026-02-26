@@ -8,6 +8,8 @@ use App\Application\UseCase\Event\GetAllEventsUseCase;
 use App\Application\UseCase\Event\GetEventUseCase;
 use App\Application\UseCase\Flotilla\GetAllFlotillasUseCase;
 use App\Application\Exception\EventNotFoundException;
+use App\Application\Port\Repository\SeasonRepositoryInterface;
+use App\Application\Port\Service\TimeServiceInterface;
 use App\Domain\ValueObject\EventId;
 use App\Presentation\Response\JsonResponse;
 
@@ -22,6 +24,8 @@ class EventController
         private GetAllEventsUseCase $getAllEventsUseCase,
         private GetEventUseCase $getEventUseCase,
         private GetAllFlotillasUseCase $getAllFlotillasUseCase,
+        private TimeServiceInterface $timeService,
+        private SeasonRepositoryInterface $seasonRepository,
     ) {
     }
 
@@ -67,6 +71,31 @@ class EventController
             return JsonResponse::success($response);
         } catch (EventNotFoundException $e) {
             return JsonResponse::notFound($e->getMessage());
+        } catch (\Exception $e) {
+            return JsonResponse::serverError($e->getMessage());
+        }
+    }
+
+    /**
+     * GET /api/status
+     *
+     * Returns current server status including whether registration is in a blackout window.
+     */
+    public function getStatus(): JsonResponse
+    {
+        try {
+            $config = $this->seasonRepository->getConfig();
+            $now = $this->timeService->now();
+            $isBlackout = $this->timeService->isInBlackoutWindow(
+                $config['blackout_from'],
+                $config['blackout_to']
+            );
+            return JsonResponse::success([
+                'isBlackout' => $isBlackout,
+                'currentDate' => $now->format('Y-m-d'),
+                'currentTime' => $now->format('H:i:s'),
+                'timeSource'  => $config['source'],
+            ]);
         } catch (\Exception $e) {
             return JsonResponse::serverError($e->getMessage());
         }

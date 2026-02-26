@@ -32,6 +32,14 @@ return [
 
     [
         'method' => 'GET',
+        'path' => '/api/status',
+        'controller' => EventController::class,
+        'action' => 'getStatus',
+        'auth' => false,
+    ],
+
+    [
+        'method' => 'GET',
         'path' => '/api/events',
         'controller' => EventController::class,
         'action' => 'getAll',

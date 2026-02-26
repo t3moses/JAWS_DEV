@@ -66,8 +66,8 @@ class IntegrationTestCaseTest extends IntegrationTestCase
         $this->assertEquals('2026-05-01', $result['simulated_date']);
         $this->assertEquals('12:45:00', $result['start_time']);
         $this->assertEquals('17:00:00', $result['finish_time']);
-        $this->assertEquals('10:00:00', $result['blackout_from']);
-        $this->assertEquals('18:00:00', $result['blackout_to']);
+        $this->assertEquals('00:00:00', $result['blackout_from']);
+        $this->assertEquals('00:00:01', $result['blackout_to']);
     }
 
     public function testLastLogoutColumnExists(): void

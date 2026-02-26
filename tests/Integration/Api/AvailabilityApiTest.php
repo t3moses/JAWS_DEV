@@ -27,8 +27,8 @@ class AvailabilityApiTest extends TestCase
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // May return 404 if event doesn't exist, which is acceptable
-        $this->assertContains($response['status'], [200, 404]);
+        // May return 404 if event doesn't exist, 403 during blackout window
+        $this->assertContains($response['status'], [200, 403, 404]);
         $this->assertArrayHasKey('success', $response['body']);
 
         // Cleanup
@@ -47,8 +47,8 @@ class AvailabilityApiTest extends TestCase
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // May return 404 if event doesn't exist, which is acceptable
-        $this->assertContains($response['status'], [200, 404]);
+        // May return 404 if event doesn't exist, 403 during blackout window
+        $this->assertContains($response['status'], [200, 403, 404]);
         $this->assertArrayHasKey('success', $response['body']);
 
         // If successful, verify the response indicates what was updated
@@ -73,8 +73,8 @@ class AvailabilityApiTest extends TestCase
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // May return 404 if event doesn't exist
-        $this->assertContains($response['status'], [200, 404]);
+        // May return 404 if event doesn't exist, 403 during blackout window
+        $this->assertContains($response['status'], [200, 403, 404]);
 
         // If boat exists, verify flotilla can be retrieved
         if ($response['status'] === 200) {
@@ -101,8 +101,8 @@ class AvailabilityApiTest extends TestCase
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // May return 404 if event doesn't exist
-        $this->assertContains($response['status'], [200, 404]);
+        // May return 404 if event doesn't exist, 403 during blackout window
+        $this->assertContains($response['status'], [200, 403, 404]);
 
         // If crew exists, verify flotilla endpoint works
         if ($response['status'] === 200) {
@@ -127,8 +127,8 @@ class AvailabilityApiTest extends TestCase
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // May return 404 if event doesn't exist
-        $this->assertContains($response1['status'], [200, 404]);
+        // May return 404 if event doesn't exist, 403 during blackout window
+        $this->assertContains($response1['status'], [200, 403, 404]);
 
         if ($response1['status'] === 200) {
             // Second update (same boat, different availability)
@@ -165,8 +165,8 @@ class AvailabilityApiTest extends TestCase
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // May return 404 if events don't exist
-        $this->assertContains($updateResponse['status'], [200, 404]);
+        // May return 404 if events don't exist, 403 during blackout window
+        $this->assertContains($updateResponse['status'], [200, 403, 404]);
 
         // Now get the availability
         $response = $this->makeRequest('GET', "{$this->baseUrl}/users/me/availability", null, [
@@ -208,8 +208,8 @@ class AvailabilityApiTest extends TestCase
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // 200 if event exists, 404 if not — either is acceptable
-        $this->assertContains($response['status'], [200, 404]);
+        // 200 if event exists, 404 if not, 403 during blackout window
+        $this->assertContains($response['status'], [200, 403, 404]);
         if ($response['status'] === 200) {
             $this->assertTrue($response['body']['success']);
         }
@@ -230,8 +230,8 @@ class AvailabilityApiTest extends TestCase
             "Authorization: Bearer {$testData['token']}",
         ]);
 
-        // 400 if event exists and berths > maxBerths; 404 if event doesn't exist
-        $this->assertContains($response['status'], [400, 404]);
+        // 400 if event exists and berths > maxBerths; 404 if event doesn't exist; 403 during blackout
+        $this->assertContains($response['status'], [400, 403, 404]);
 
         $this->cleanupTestUser($testData['userId']);
     }
@@ -246,13 +246,13 @@ class AvailabilityApiTest extends TestCase
         ], [
             "Authorization: Bearer {$testData['token']}",
         ]);
-        $this->assertContains($response1['status'], [200, 400]);
+        $this->assertContains($response1['status'], [200, 400, 403]);
 
         // Test missing availabilities field - may accept as "no changes"
         $response2 = $this->makeRequest('PATCH', "{$this->baseUrl}/users/me/availability", [], [
             "Authorization: Bearer {$testData['token']}",
         ]);
-        $this->assertContains($response2['status'], [200, 400]);
+        $this->assertContains($response2['status'], [200, 400, 403]);
 
         // Test invalid isAvailable value (non-boolean)
         $response3 = $this->makeRequest('PATCH', "{$this->baseUrl}/users/me/availability", [

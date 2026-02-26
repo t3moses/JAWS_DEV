@@ -115,7 +115,7 @@ abstract class IntegrationTestCase extends TestCase
                 start_time, finish_time, blackout_from, blackout_to
             ) VALUES (
                 1, 2026, 'simulated', '2026-05-01',
-                '12:45:00', '17:00:00', '10:00:00', '18:00:00'
+                '12:45:00', '17:00:00', '00:00:00', '00:00:01'
             )
         ");
     }

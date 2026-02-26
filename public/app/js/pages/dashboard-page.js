@@ -206,6 +206,22 @@ async function populateEventAvailability() {
     const availabilityList = document.getElementById('availability-list');
 
     try {
+        // Check blackout window using server time before rendering controls
+        const statusResponse = await get(API_CONFIG.ENDPOINTS.STATUS);
+        const isBlackout = statusResponse?.data?.isBlackout === true;
+
+        if (isBlackout) {
+            availabilityList.innerHTML = `
+                <div class="alert alert-info">
+                    <strong>Registration is currently closed.</strong><br>
+                    Availability cannot be changed during the event (10:00 AM – 6:00 PM).
+                    Please come back after the event ends.
+                </div>
+            `;
+            document.getElementById('save-availability').style.display = 'none';
+            return;
+        }
+
         const events = await getAllEvents();
         const isBoatOwner = user.accountType !== 'crew';
 
