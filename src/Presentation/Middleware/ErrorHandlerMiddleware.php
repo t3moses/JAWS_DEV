@@ -62,6 +62,11 @@ class ErrorHandlerMiddleware
             return JsonResponse::error($e->getMessage(), 409);
         }
 
+        // Lock timeout / concurrent update (409 Conflict)
+        if ($e instanceof \RuntimeException && $e->getCode() === 409) {
+            return JsonResponse::error($e->getMessage(), 409);
+        }
+
         // Weak password (400 Bad Request)
         if ($e instanceof WeakPasswordException) {
             return JsonResponse::error($e->getMessage(), 400);

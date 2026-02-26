@@ -9,13 +9,13 @@ use App\Infrastructure\Persistence\SQLite\BoatRepository;
 use App\Infrastructure\Persistence\SQLite\CrewRepository;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Infrastructure\Persistence\SQLite\SeasonRepository;
-use App\Infrastructure\Persistence\SQLite\Connection;
 use App\Domain\Service\SelectionService;
 use App\Domain\Service\AssignmentService;
 use App\Domain\Service\RankingService;
 use App\Domain\ValueObject\EventId;
 use App\Domain\Enum\AvailabilityStatus;
 use App\Infrastructure\Service\DatabaseTransactionService;
+use App\Infrastructure\Service\SQLiteLockService;
 use Tests\Integration\IntegrationTestCase;
 
 /**
@@ -56,7 +56,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
             $selectionService,
             $assignmentService,
             $rankingService,
-            new DatabaseTransactionService()
+            new DatabaseTransactionService(),
+            new SQLiteLockService($this->pdo)
         );
     }
 
