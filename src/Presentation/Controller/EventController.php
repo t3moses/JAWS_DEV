@@ -8,6 +8,7 @@ use App\Application\UseCase\Event\GetAllEventsUseCase;
 use App\Application\UseCase\Event\GetEventUseCase;
 use App\Application\UseCase\Flotilla\GetAllFlotillasUseCase;
 use App\Application\Exception\EventNotFoundException;
+use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\SeasonRepositoryInterface;
 use App\Application\Port\Service\TimeServiceInterface;
 use App\Domain\ValueObject\EventId;
@@ -26,6 +27,7 @@ class EventController
         private GetAllFlotillasUseCase $getAllFlotillasUseCase,
         private TimeServiceInterface $timeService,
         private SeasonRepositoryInterface $seasonRepository,
+        private EventRepositoryInterface $eventRepository,
     ) {
     }
 
@@ -86,7 +88,8 @@ class EventController
         try {
             $config = $this->seasonRepository->getConfig();
             $now = $this->timeService->now();
-            $isBlackout = $this->timeService->isInBlackoutWindow(
+            $hasEventToday = $this->eventRepository->hasEventOnDate($this->timeService->today());
+            $isBlackout = $hasEventToday && $this->timeService->isInBlackoutWindow(
                 $config['blackout_from'],
                 $config['blackout_to']
             );

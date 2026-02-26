@@ -97,4 +97,12 @@ interface EventRepositoryInterface
      * @return array<string, string> Map of event_id => event_date (ISO format)
      */
     public function getEventDateMap(): array;
+
+    /**
+     * Check whether any event is scheduled on a given date
+     *
+     * @param \DateTimeImmutable $date
+     * @return bool
+     */
+    public function hasEventOnDate(\DateTimeImmutable $date): bool;
 }

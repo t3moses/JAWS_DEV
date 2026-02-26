@@ -397,7 +397,8 @@ $container->set(\App\Presentation\Controller\EventController::class, function ($
         $c->get(\App\Application\UseCase\Event\GetEventUseCase::class),
         $c->get(\App\Application\UseCase\Flotilla\GetAllFlotillasUseCase::class),
         $c->get(TimeServiceInterface::class),
-        $c->get(SeasonRepositoryInterface::class)
+        $c->get(SeasonRepositoryInterface::class),
+        $c->get(EventRepositoryInterface::class)
     );
 });
 

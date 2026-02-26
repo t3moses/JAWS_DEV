@@ -45,9 +45,12 @@ class UpdateCrewAvailabilityUseCase
      */
     public function execute(int $userId, UpdateAvailabilityRequest $request): CrewResponse
     {
-        // Check blackout window
+        // Check blackout window — only active when an event is scheduled today
         $config = $this->seasonRepository->getConfig();
-        if ($this->timeService->isInBlackoutWindow($config['blackout_from'], $config['blackout_to'])) {
+        if (
+            $this->eventRepository->hasEventOnDate($this->timeService->today()) &&
+            $this->timeService->isInBlackoutWindow($config['blackout_from'], $config['blackout_to'])
+        ) {
             throw new BlackoutWindowException();
         }
 
