@@ -80,6 +80,18 @@ class AdminUseCaseTest extends IntegrationTestCase
                 return $result;
             }
 
+            public function sendWithBcc(
+                string $to,
+                array $bcc,
+                string $subject,
+                string $body,
+                ?string $fromName = null,
+                ?string $fromEmail = null
+            ): bool {
+                $this->emailsSent += count($bcc);
+                return true;
+            }
+
             public function validateEmail(string $email): bool
             {
                 return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
