@@ -15,6 +15,7 @@ use App\Domain\Service\AssignmentService;
 use App\Domain\Service\RankingService;
 use App\Domain\ValueObject\EventId;
 use App\Domain\Enum\AvailabilityStatus;
+use App\Infrastructure\Service\DatabaseTransactionService;
 use Tests\Integration\IntegrationTestCase;
 
 /**
@@ -54,7 +55,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
             $this->seasonRepository,
             $selectionService,
             $assignmentService,
-            $rankingService
+            $rankingService,
+            new DatabaseTransactionService()
         );
     }
 

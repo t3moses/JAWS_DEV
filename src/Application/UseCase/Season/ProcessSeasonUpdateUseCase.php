@@ -8,6 +8,7 @@ use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\SeasonRepositoryInterface;
+use App\Application\Port\Service\TransactionServiceInterface;
 use App\Domain\Collection\Fleet;
 use App\Domain\Collection\Squad;
 use App\Domain\Entity\Boat;
@@ -48,6 +49,7 @@ class ProcessSeasonUpdateUseCase
         private SelectionService $selectionService,
         private AssignmentService $assignmentService,
         private RankingService $rankingService,
+        private TransactionServiceInterface $transactionService,
     ) {
     }
 
@@ -58,7 +60,7 @@ class ProcessSeasonUpdateUseCase
      */
     public function execute(): array
     {
-        // Load all entities
+        // Load all entities (reads only — outside the transaction)
         $fleet = $this->loadFleet();
         $squad = $this->loadSquad();
         $futureEvents = $this->eventRepository->findFutureEvents();
@@ -67,8 +69,9 @@ class ProcessSeasonUpdateUseCase
         $eventsProcessed = 0;
         $flotillasGenerated = 0;
         $modifiedCrews = [];
+        $commitmentCrews = null;
 
-        // Process each future event
+        // Process each future event (in-memory only — no DB writes yet)
         foreach ($futureEvents as $eventIdString) {
             $eventId = EventId::fromString($eventIdString);
 
@@ -103,7 +106,7 @@ class ProcessSeasonUpdateUseCase
                 );
                 $allCrews = $squad->all();
                 $this->rankingService->updateCrewCommitmentRanks($allCrews, $eventId, $assignedCrewKeys);
-                $this->persistCommitmentRanks($allCrews);
+                $commitmentCrews = $allCrews;
             }
 
             // Phase 3.5: Promote waitlisted crews to boats with spare capacity
@@ -121,16 +124,31 @@ class ProcessSeasonUpdateUseCase
             // Phase 5: Update history (for past events - not applicable here for future events)
             // History is updated after events occur via separate process
 
-            // Phase 6: Save flotilla (serialize domain objects to arrays first)
-            $serializedFlotilla = $this->serializeFlotilla($flotilla);
-            $this->seasonRepository->saveFlotilla($eventId, $serializedFlotilla);
+            // Stash serialized flotilla for bulk write
+            $serializedFlotillas[$eventIdString] = $this->serializeFlotilla($flotilla);
             $flotillasGenerated++;
 
             $eventsProcessed++;
         }
 
-        // Persist only modified crews
-        $this->persistChanges($modifiedCrews);
+        // Persist all writes in a single transaction (one fsync instead of ~44)
+        $this->transactionService->begin();
+        try {
+            foreach ($serializedFlotillas ?? [] as $eventIdString => $serializedFlotilla) {
+                $this->seasonRepository->saveFlotilla(EventId::fromString($eventIdString), $serializedFlotilla);
+            }
+
+            $this->persistChanges($modifiedCrews);
+
+            if ($commitmentCrews !== null) {
+                $this->persistCommitmentRanks($commitmentCrews);
+            }
+
+            $this->transactionService->commit();
+        } catch (\Throwable $e) {
+            $this->transactionService->rollBack();
+            throw $e;
+        }
 
         return [
             'success' => true,
