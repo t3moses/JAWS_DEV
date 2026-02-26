@@ -114,7 +114,7 @@ abstract class IntegrationTestCase extends TestCase
                 id, year, source, simulated_date,
                 start_time, finish_time, blackout_from, blackout_to
             ) VALUES (
-                1, 2026, 'simulated', '2026-05-01',
+                1, 2026, 'simulated', '2026-05-01 09:00:00',
                 '12:45:00', '17:00:00', '00:00:00', '00:00:01'
             )
         ");

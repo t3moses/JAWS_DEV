@@ -237,13 +237,13 @@ class GenerateFlotillaAndConfigTest extends IntegrationTestCase
 
     public function testUpdateConfigUpdatesSimulatedDate(): void
     {
-        $request = new UpdateConfigRequest(simulatedDate: '2026-06-01');
+        $request = new UpdateConfigRequest(simulatedDate: '2026-06-01 09:00:00');
         $result = $this->updateConfigUseCase->execute($request);
 
         $this->assertTrue($result['success']);
 
         $config = $this->seasonRepository->getConfig();
-        $this->assertEquals('2026-06-01', $config['simulated_date']);
+        $this->assertEquals('2026-06-01 09:00:00', $config['simulated_date']);
     }
 
     public function testUpdateConfigUpdatesYear(): void

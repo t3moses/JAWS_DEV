@@ -71,9 +71,12 @@ function populateForm(config) {
         sourceProduction.checked = true;
     }
 
-    // Simulated date
+    // Simulated date and time (stored as "YYYY-MM-DD HH:MM:SS")
     if (config.simulated_date) {
-        document.getElementById('simulated-date').value = config.simulated_date;
+        const [datePart, timePart] = config.simulated_date.split(' ');
+        document.getElementById('simulated-date').value = datePart ?? '';
+        // <input type="time"> expects HH:MM
+        document.getElementById('simulated-time').value = timePart ? timePart.substring(0, 5) : '00:00';
     }
 
     // Year
@@ -178,11 +181,15 @@ function validateForm() {
         errors.push('Blackout end time must be after blackout start time');
     }
 
-    // Simulated date validation
+    // Simulated date/time validation
     const source = document.querySelector('input[name="source"]:checked').value;
     const simulatedDate = document.getElementById('simulated-date').value;
+    const simulatedTime = document.getElementById('simulated-time').value;
     if (source === 'simulated' && !simulatedDate) {
         errors.push('Simulated date is required when using simulated time source');
+    }
+    if (source === 'simulated' && simulatedDate && !simulatedTime) {
+        errors.push('Simulated time is required when using simulated time source');
     }
 
     return errors;
@@ -209,6 +216,7 @@ async function saveConfig() {
         // Gather form data
         const source = document.querySelector('input[name="source"]:checked').value;
         const simulatedDate = document.getElementById('simulated-date').value;
+        const simulatedTime = document.getElementById('simulated-time').value || '00:00';
         const year = parseInt(document.getElementById('year').value);
         const startTime = document.getElementById('start-time').value;
         const finishTime = document.getElementById('finish-time').value;
@@ -225,8 +233,9 @@ async function saveConfig() {
         };
 
         // Only include simulated_date if source is simulated
+        // Combine date + time into "YYYY-MM-DD HH:MM:SS" as expected by the API
         if (source === 'simulated' && simulatedDate) {
-            configData.simulated_date = simulatedDate;
+            configData.simulated_date = `${simulatedDate} ${simulatedTime}:00`;
         }
 
         // Save configuration

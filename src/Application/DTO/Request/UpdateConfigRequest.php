@@ -55,11 +55,11 @@ class UpdateConfigRequest
             $errors['source'] = 'Source must be either "simulated" or "production"';
         }
 
-        // Validate simulatedDate format (YYYY-MM-DD)
+        // Validate simulatedDate format (YYYY-MM-DD HH:MM:SS)
         if ($this->simulatedDate !== null) {
-            $date = \DateTime::createFromFormat('Y-m-d', $this->simulatedDate);
-            if (!$date || $date->format('Y-m-d') !== $this->simulatedDate) {
-                $errors['simulatedDate'] = 'Simulated date must be in format YYYY-MM-DD';
+            $date = \DateTime::createFromFormat('Y-m-d H:i:s', $this->simulatedDate);
+            if (!$date || $date->format('Y-m-d H:i:s') !== $this->simulatedDate) {
+                $errors['simulatedDate'] = 'Simulated date must be in format YYYY-MM-DD HH:MM:SS';
             }
         }
 

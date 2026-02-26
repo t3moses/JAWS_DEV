@@ -34,12 +34,7 @@ class SystemTimeService implements TimeServiceInterface
     public function now(): \DateTimeImmutable
     {
         if ($this->timeSource === TimeSource::SIMULATED && $this->simulatedDate !== null) {
-            // Return simulated time with current time component
-            return $this->simulatedDate->setTime(
-                (int)date('H'),
-                (int)date('i'),
-                (int)date('s')
-            );
+            return $this->simulatedDate;
         }
 
         return new \DateTimeImmutable();
