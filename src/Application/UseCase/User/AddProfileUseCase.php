@@ -68,6 +68,28 @@ class AddProfileUseCase
     }
 
     /**
+     * Resolve a unique display name by appending an incrementing counter on collision.
+     *
+     * Returns $base if it is available, otherwise tries $base . "2", $base . "3", …
+     * until a free name is found.
+     *
+     * @param string   $base   The desired display name
+     * @param callable $exists fn(string $name): bool — returns true when the name is taken
+     * @return string          A display name that does not yet exist
+     */
+    private function resolveUniqueDisplayName(string $base, callable $exists): string
+    {
+        if (!$exists($base)) {
+            return $base;
+        }
+        $counter = 2;
+        while ($exists($base . $counter)) {
+            $counter++;
+        }
+        return $base . $counter;
+    }
+
+    /**
      * Add crew profile
      *
      * @param int $userId User ID
@@ -92,10 +114,21 @@ class AddProfileUseCase
             throw new ValidationException(['crewProfile' => 'A crew member with this name already exists']);
         }
 
+        // Generate displayName if not provided, then resolve clashes
+        $displayName = $profile['displayName'] ?? null;
+        if ($displayName === null || trim($displayName) === '') {
+            $lastInitial = mb_substr($profile['lastName'], 0, 1);
+            $displayName = trim($profile['firstName']) . $lastInitial;
+        }
+        $displayName = $this->resolveUniqueDisplayName(
+            $displayName,
+            fn($name) => $this->crewRepository->displayNameExists($name)
+        );
+
         // Create crew entity
         $crew = new Crew(
             key: $crewKey,
-            displayName: $profile['displayName'] ?? null,
+            displayName: $displayName,
             firstName: $profile['firstName'],
             lastName: $profile['lastName'],
             partnerKey: isset($profile['partnerKey']) ? new CrewKey($profile['partnerKey']) : null,
@@ -135,17 +168,19 @@ class AddProfileUseCase
             throw new ValidationException(['boat_profile' => 'User already has a boat profile']);
         }
 
-        // If no displayName provided, generate key from owner's name; otherwise use displayName
+        // Generate displayName if not provided, then resolve clashes
         $displayName = $profile['displayName'] ?? null;
-        if ($displayName !== null && trim($displayName) !== '') {
-            $boatKey = BoatKey::fromBoatName($displayName);
-        } else {
-            // Generate key from owner's name if no boat name provided
-            $keyName = trim($profile['ownerFirstName']) . trim($profile['ownerLastName']);
-            $boatKey = BoatKey::fromBoatName($keyName);
+        if ($displayName === null || trim($displayName) === '') {
+            $lastInitial = mb_substr($profile['ownerLastName'], 0, 1);
+            $displayName = trim($profile['ownerFirstName']) . $lastInitial;
         }
+        $displayName = $this->resolveUniqueDisplayName(
+            $displayName,
+            fn($name) => $this->boatRepository->displayNameExists($name)
+        );
+        $boatKey = BoatKey::fromBoatName($displayName);
 
-        // Check if boat key already exists (different user with same boat name)
+        // Check if boat key already exists (safeguard for explicitly-provided names)
         $existingBoatByKey = $this->boatRepository->findByKey($boatKey);
         if ($existingBoatByKey !== null) {
             throw new ValidationException(['boatProfile' => 'A boat with this name already exists']);
