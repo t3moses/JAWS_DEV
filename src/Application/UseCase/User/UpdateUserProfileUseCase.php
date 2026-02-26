@@ -190,6 +190,11 @@ class UpdateUserProfileUseCase
             );
         }
 
+        // Validate berth consistency before saving
+        if ($boat->getMinBerths() > $boat->getMaxBerths()) {
+            throw new ValidationException(['maxBerths' => 'maxBerths must be greater than or equal to minBerths']);
+        }
+
         // Restore original rank to avoid overwriting pipeline-managed values,
         // but carry forward any willingToCrew change in the flexibility dimension
         $rankToRestore = $originalRank;
