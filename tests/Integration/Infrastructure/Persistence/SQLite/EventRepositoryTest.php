@@ -283,6 +283,52 @@ class EventRepositoryTest extends IntegrationTestCase
         $this->assertFalse($this->repository->exists($eventId));
     }
 
+    // ==================== hasEventOnDate Tests ====================
+
+    public function testHasEventOnDateReturnsTrueWhenEventExistsOnDate(): void
+    {
+        $this->createEvent('2026-05-15');
+
+        $result = $this->repository->hasEventOnDate(new \DateTimeImmutable('2026-05-15'));
+
+        $this->assertTrue($result);
+    }
+
+    public function testHasEventOnDateReturnsFalseWhenNoEventOnDate(): void
+    {
+        $this->createEvent('2026-05-15');
+
+        $result = $this->repository->hasEventOnDate(new \DateTimeImmutable('2026-05-16'));
+
+        $this->assertFalse($result);
+    }
+
+    public function testHasEventOnDateReturnsFalseWhenNoEventsAtAll(): void
+    {
+        $result = $this->repository->hasEventOnDate(new \DateTimeImmutable('2026-05-15'));
+
+        $this->assertFalse($result);
+    }
+
+    public function testHasEventOnDateIgnoresTimeComponent(): void
+    {
+        // The method should match on date only, not datetime
+        $this->createEvent('2026-05-15');
+
+        $this->assertTrue($this->repository->hasEventOnDate(new \DateTimeImmutable('2026-05-15 14:00:00')));
+        $this->assertTrue($this->repository->hasEventOnDate(new \DateTimeImmutable('2026-05-15 00:00:00')));
+        $this->assertTrue($this->repository->hasEventOnDate(new \DateTimeImmutable('2026-05-15 23:59:59')));
+    }
+
+    public function testHasEventOnDateMatchesOnlyExactDate(): void
+    {
+        $this->createEvent('2026-05-14');
+        $this->createEvent('2026-05-16');
+
+        // May 15 has no event even though adjacent days do
+        $this->assertFalse($this->repository->hasEventOnDate(new \DateTimeImmutable('2026-05-15')));
+    }
+
     // Helper method - different name to avoid conflict with base class
     private function createEvent(string $eventIdStr, string $startTime = '09:00:00', string $finishTime = '17:00:00'): void
     {

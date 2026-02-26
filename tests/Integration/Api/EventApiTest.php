@@ -112,4 +112,65 @@ class EventApiTest extends TestCase
         $this->assertEquals(404, $response['status']);
         $this->assertArrayHasKey('error', $response['body']);
     }
+
+    // ==================== GET /api/status ====================
+
+    public function testGetStatusReturns200(): void
+    {
+        $response = $this->makeRequest('GET', "{$this->baseUrl}/status");
+
+        $this->assertEquals(200, $response['status']);
+        $this->assertTrue($response['body']['success']);
+    }
+
+    public function testGetStatusRequiresNoAuthentication(): void
+    {
+        // No Authorization header — must still succeed
+        $response = $this->makeRequest('GET', "{$this->baseUrl}/status", null, []);
+
+        $this->assertEquals(200, $response['status']);
+    }
+
+    public function testGetStatusResponseContainsIsBlackout(): void
+    {
+        $response = $this->makeRequest('GET', "{$this->baseUrl}/status");
+
+        $this->assertArrayHasKey('isBlackout', $response['body']['data']);
+        $this->assertIsBool($response['body']['data']['isBlackout']);
+    }
+
+    public function testGetStatusResponseContainsCurrentDate(): void
+    {
+        $response = $this->makeRequest('GET', "{$this->baseUrl}/status");
+
+        $data = $response['body']['data'];
+        $this->assertArrayHasKey('currentDate', $data);
+        // Should be a valid YYYY-MM-DD date
+        $this->assertMatchesRegularExpression(
+            '/^\d{4}-\d{2}-\d{2}$/',
+            $data['currentDate']
+        );
+    }
+
+    public function testGetStatusResponseContainsCurrentTime(): void
+    {
+        $response = $this->makeRequest('GET', "{$this->baseUrl}/status");
+
+        $data = $response['body']['data'];
+        $this->assertArrayHasKey('currentTime', $data);
+        // Should be a valid HH:MM:SS time
+        $this->assertMatchesRegularExpression(
+            '/^\d{2}:\d{2}:\d{2}$/',
+            $data['currentTime']
+        );
+    }
+
+    public function testGetStatusResponseContainsTimeSource(): void
+    {
+        $response = $this->makeRequest('GET', "{$this->baseUrl}/status");
+
+        $data = $response['body']['data'];
+        $this->assertArrayHasKey('timeSource', $data);
+        $this->assertContains($data['timeSource'], ['production', 'simulated']);
+    }
 }
