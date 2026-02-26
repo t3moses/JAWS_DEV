@@ -6,7 +6,7 @@
 import { requireAuth, getCurrentUser, signOut } from '../authService.js';
 import { updateAuthenticatedNavigation } from '../navigationService.js';
 import { getAllEvents, isDeadlinePassed } from '../eventService.js';
-import { updateEventAvailability, updateBoatBerths } from '../userService.js';
+import { updateBatchAvailability } from '../userService.js';
 import { get } from '../apiService.js';
 import { API_CONFIG } from '../config.js';
 import { showSuccess, showError, showInfo } from '../toastService.js';
@@ -271,97 +271,84 @@ populateAssignments();
 // Handle save availability button
 document.getElementById('save-availability').addEventListener('click', async function() {
     const isBoatOwner = user.accountType !== 'crew';
-    let hasError = false;
-    let hasChanges = false;
-    const failedEvents = [];
-
     const saveButton = this;
     const originalLabel = saveButton.textContent;
     saveButton.disabled = true;
     saveButton.textContent = 'Saving...';
 
+    // --- Collect changes ---
+    const pendingChanges = [];
+
     if (isBoatOwner) {
-        // Boat owner path: iterate berths dropdowns
-        const selects = document.querySelectorAll('.availability-item select.berths-select');
-
-        for (const select of selects) {
-            if (select.disabled) {
-                continue;
-            }
-
+        for (const select of document.querySelectorAll('.availability-item select.berths-select')) {
+            if (select.disabled) continue;
             const eventDate = select.getAttribute('data-event-date');
             const newBerths = parseInt(select.value, 10);
             // '' means no row in DB yet; treat as always-dirty so saving at max still persists
             const originalRaw = select.dataset.original;
             const originalBerths = originalRaw === '' ? null : parseInt(originalRaw, 10);
-
-            if (originalBerths !== null && newBerths === originalBerths) {
-                continue;
-            }
-
-            hasChanges = true;
-
-            const result = await updateBoatBerths(user.userId, eventDate, newBerths);
-
-            if (!result.success) {
-                showError(result.error || 'Failed to update availability');
-                hasError = true;
-                failedEvents.push(eventDate);
-                if (originalBerths !== null) {
-                    select.value = String(originalBerths); // revert on error only if there was a prior value
-                }
-            } else {
-                select.dataset.original = String(newBerths);
-                user.eventBerths[eventDate] = newBerths;
-                user.eventAvailability[eventDate] = newBerths > 0;
-            }
+            if (originalBerths !== null && newBerths === originalBerths) continue;
+            pendingChanges.push({
+                element: select,
+                type: 'boat',
+                eventDate,
+                newValue: newBerths,
+                originalValue: originalBerths,
+                payload: { eventId: eventDate, isAvailable: newBerths > 0, berths: newBerths }
+            });
         }
     } else {
-        // Crew path: iterate checkboxes (unchanged)
-        const checkboxes = document.querySelectorAll('.availability-item input[type="checkbox"]');
-
-        for (const checkbox of checkboxes) {
-            if (checkbox.disabled) {
-                continue;
-            }
-
+        for (const checkbox of document.querySelectorAll('.availability-item input[type="checkbox"]')) {
+            if (checkbox.disabled) continue;
             const eventDate = checkbox.getAttribute('data-event-date');
             const isAvailable = checkbox.checked;
             const originalValue = checkbox.dataset.original === 'true';
-
-            if (originalValue === isAvailable) {
-                continue;
-            }
-
-            hasChanges = true;
-
-            const result = await updateEventAvailability(user.userId, eventDate, isAvailable);
-
-            if (!result.success) {
-                showError(result.error || 'Failed to update availability');
-                hasError = true;
-                failedEvents.push(eventDate);
-                checkbox.checked = originalValue; // Revert checkbox on error
-            } else {
-                checkbox.dataset.original = String(isAvailable);
-                user.eventAvailability[eventDate] = isAvailable;
-            }
+            if (originalValue === isAvailable) continue;
+            pendingChanges.push({
+                element: checkbox,
+                type: 'crew',
+                eventDate,
+                newValue: isAvailable,
+                originalValue,
+                payload: { eventId: eventDate, isAvailable }
+            });
         }
     }
 
     saveButton.disabled = false;
     saveButton.textContent = originalLabel;
 
-    if (!hasChanges) {
+    if (pendingChanges.length === 0) {
         showInfo('No changes to save.', 2000);
         return;
     }
 
-    if (hasError) {
-        if (failedEvents.length > 1) {
-            showError('Some availability updates failed. Please try again.');
+    // --- Send one batched request ---
+    const result = await updateBatchAvailability(pendingChanges.map(c => c.payload));
+
+    if (!result.success) {
+        // Revert all DOM elements
+        for (const change of pendingChanges) {
+            if (change.type === 'boat') {
+                if (change.originalValue !== null) change.element.value = String(change.originalValue);
+            } else {
+                change.element.checked = change.originalValue;
+            }
         }
+        showError(result.error || 'Failed to update availability');
         return;
+    }
+
+    // Commit all changes to local state
+    for (const change of pendingChanges) {
+        if (change.type === 'boat') {
+            change.element.dataset.original = String(change.newValue);
+            user.eventBerths[change.eventDate] = change.newValue;
+            user.eventAvailability[change.eventDate] = change.newValue > 0;
+        } else {
+            change.element.dataset.original = String(change.newValue);
+            user.eventAvailability[change.eventDate] = change.newValue;
+        }
     }
 
     showSuccess('Availability updated successfully! Your assignments have been refreshed.');

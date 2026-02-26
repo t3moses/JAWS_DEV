@@ -492,7 +492,7 @@ class UserProfileApiTest extends TestCase
         // May accept or reject depending on validation rules
         $this->assertContains($response5['status'], [200, 400]);
 
-        // Test maxBerths < minBerths - validation may not be implemented
+        // Test maxBerths < minBerths - must be rejected with 400
         $response6 = $this->makeRequest('PATCH', "{$this->baseUrl}/users/me", [
             'boatProfile' => [
                 'minBerths' => 10,
@@ -501,7 +501,7 @@ class UserProfileApiTest extends TestCase
         ], [
             "Authorization: Bearer {$testDataBoat['token']}",
         ]);
-        $this->assertContains($response6['status'], [200, 400]);
+        $this->assertEquals(400, $response6['status']);
 
         // Cleanup
         $this->cleanupTestUser($testDataBoat['userId']);
