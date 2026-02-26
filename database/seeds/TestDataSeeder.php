@@ -12,18 +12,31 @@ use Phinx\Seed\AbstractSeed;
  *
  * Seeds:
  * - Events (18 events from the full 2026 season schedule)
- * - Users (4 test accounts: 2 boat owners, 2 crew members)
- * - Boats (2 boats linked to user accounts)
- * - Crews (2 crew members linked to user accounts)
+ * - Users (18 test accounts: 6 boat owners, 12 crew members)
+ * - Boats (6 boats linked to user accounts)
+ * - Crews (12 crew members linked to user accounts)
  * - Boat/crew availability for all events
  *
- * Test credentials: All users have password "password123"
+ * Test credentials: All users have password "Password123"
  *
  * Usage:
  *   vendor/bin/phinx seed:run
- *   vendor/bin/phinx seed:run -s TestDataSeeder  # Run specific seeder
+ *   vendor/bin/phinx seed:run -s TestDataSeeder2  # Run specific seeder
  *
  * Converted from: database/seed_test_data.php
+ *
+ * Boat and crew names reflect their profiles, such that policy violations can be
+ * identified from a review of the event schedule.
+ * Note: Flexible = 0 means the owner may act as crew.
+ *
+ * Boat name conventions:
+ *
+ * BAxBxFxnx; A=Assist[0,1], B=Berths[1,4], F=Flexible[0,1], n=Serial
+ *
+ * Crew name conventions:
+ *
+ * CMxSxFxnx; M=Member{0,1}, S=Skill[0,2},F=Flexible[0,1], n=Serial
+ *
  */
 class TestDataSeeder extends AbstractSeed
 {
@@ -186,30 +199,113 @@ class TestDataSeeder extends AbstractSeed
         // ====================================================================
         // Seed users
         // ====================================================================
-        // Generate password hash for test password "password123"
-        $passwordHash = password_hash('password123', PASSWORD_DEFAULT);
+        // Generate password hash for test password "Password123"
+        $passwordHash = password_hash('Password123', PASSWORD_DEFAULT);
 
         $users = [
             [
-                'email' => 'alice@example.com',
+                'email' => 'ba1b2f1n0@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'boat_owner',
+                'is_admin' => 1
+            ],
+            [
+                'email' => 'ba0b3f1n0@example.com',
                 'password_hash' => $passwordHash,
                 'account_type' => 'boat_owner',
                 'is_admin' => 0
             ],
             [
-                'email' => 'bob@example.com',
+                'email' => 'ba0b4f0n0@example.com',
                 'password_hash' => $passwordHash,
                 'account_type' => 'boat_owner',
                 'is_admin' => 0
             ],
             [
-                'email' => 'jane@example.com',
+                'email' => 'ba1b4f1n1@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'boat_owner',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'ba0b3f1n1@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'boat_owner',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'ba0b5f1n2@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'boat_owner',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm0s0f1n0@example.com',
                 'password_hash' => $passwordHash,
                 'account_type' => 'crew',
                 'is_admin' => 0
             ],
             [
-                'email' => 'mike@example.com',
+                'email' => 'cm0s1f1n1@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm0s2f1n2@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm1s0f0n0@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm1s1f1n0@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm1s2f1n1@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [   'email' => 'cm1s0f1n2@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm1s1f1n3@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm1s2f1$4@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm1s0f1$5@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'fcm1s1f1$6@example.com',
+                'password_hash' => $passwordHash,
+                'account_type' => 'crew',
+                'is_admin' => 0
+            ],
+            [
+                'email' => 'cm1s2f1n7@example.com',
                 'password_hash' => $passwordHash,
                 'account_type' => 'crew',
                 'is_admin' => 0
@@ -225,10 +321,18 @@ class TestDataSeeder extends AbstractSeed
         $this->execute("
             INSERT INTO boats (key, display_name, owner_first_name, owner_last_name, owner_mobile, min_berths, max_berths, assistance_required, social_preference, owner_user_id)
             VALUES
-                ('sailaway', 'Sailaway', 'Alice', 'Johnson', '555-0001', 2, 4, 'No', 'Yes',
-                 (SELECT id FROM users WHERE email = 'alice@example.com')),
-                ('windchaser', 'Windchaser', 'Bob', 'Smith', '555-0002', 2, 3, 'Yes', 'No',
-                 (SELECT id FROM users WHERE email = 'bob@example.com'))
+                ('ba1b2f1n0', 'BA1B2F1n0', 'A', 'A', '555-0001', 1, 2, 'Yes', 'Yes',
+                 (SELECT id FROM users WHERE email = 'ba1b2f1n0@example.com')),
+                ('ba0b3f1n0', 'BA0B3F1n0', 'B', 'A', '555-0001', 1, 3, 'No', 'Yes',
+                 (SELECT id FROM users WHERE email = 'ba0b3f1n0@example.com')),
+                ('ba0b4f0n0', 'BA0B4F0n0', 'C', 'A', '555-0001', 1, 4, 'No', 'Yes',
+                 (SELECT id FROM users WHERE email = 'ba0b4f0n0@example.com')),
+                ('ba1b4f1n1', 'BA1B4F1n1', 'D', 'A', '555-0001', 1, 4, 'Yes', 'Yes',
+                 (SELECT id FROM users WHERE email = 'ba1b4f1n1@example.com')),
+                ('ba0b3f1n1', 'BA0B3F1n1', 'E', 'A', '555-0001', 1, 3, 'No', 'Yes',
+                 (SELECT id FROM users WHERE email = 'ba0b3f1n1@example.com')),
+                ('ba0b5f1n2', 'BA0B5F1n2', 'F', 'A', '555-0001', 1, 5, 'No', 'Yes',
+                 (SELECT id FROM users WHERE email = 'ba0b5f1n2@example.com'))
         ");
 
         // ====================================================================
@@ -238,10 +342,30 @@ class TestDataSeeder extends AbstractSeed
         $this->execute("
             INSERT INTO crews (key, display_name, first_name, last_name, mobile, skill, membership_number, user_id)
             VALUES
-                ('jane_doe', 'Jane Doe', 'Jane', 'Doe', '555-1001', 1, 'NSC001',
-                 (SELECT id FROM users WHERE email = 'jane@example.com')),
-                ('mike_wilson', 'Mike Wilson', 'Mike', 'Wilson', '555-1002', 2, 'NSC002',
-                 (SELECT id FROM users WHERE email = 'mike@example.com'))
+                ('cm0s0f1n0', 'CM0S0F1n0', 'C', 'M0S0F1n0', '555-1001', 0, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm0s0f1n0@example.com')),
+                ('cm0s1f1n1', 'CM0S1F1n1', 'C', 'M0S1F1n1', '555-1001', 1, '',
+                 (SELECT id FROM users WHERE email = 'cm0s1f1n1@example.com')),
+                ('cm0s2f1n2', 'CM0S2F1n2', 'C', 'M0S2F1n2', '555-1001', 2, '',
+                 (SELECT id FROM users WHERE email = 'cm0s2f1n2@example.com')),
+                ('cm1s0f0n0', 'CM1S0F0n0', 'C', 'M1S0F0n0', '555-1001', 0, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s0f0n0@example.com')),
+                ('cm1s1f1n0', 'CM1S1F1n0', 'C', 'M1S1F1n0', '555-1001', 1, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s1f1n0@example.com')),
+                ('cm1s2f1n1', 'CM1S2F1n1', 'C', 'M1S2F1n1', '555-1001', 2, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s2f1n1@example.com')),
+                ('cm1s0f1n2', 'CM1S0F1n2', 'C', 'M1S0F1n2', '555-1001', 0, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s0f1n2@example.com')),
+                ('cm1s1f1n3', 'CM1S1F1n3', 'C', 'M1S1F1n3', '555-1001', 1, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s1f1n3@example.com')),
+                ('cm1s2f1$4', 'CM1S2F1$4', 'C', 'M1S2F1$4', '555-1001', 2, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s2f1$4@example.com')),
+                ('cm1s0f1$5', 'CM1S0F1$5', 'C', 'M1S0F1$5', '555-1001', 0, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s0f1$5@example.com')),
+                ('cm1s1f1$6', 'CM1S1F1$6', 'C', 'M1S1F1$6', '555-1001', 1, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s1f1$6@example.com')),
+                ('cm1s2f1n7', 'CM1S2F1n7', 'C', 'M1S2F1n7', '555-1001', 2, 'NSC001',
+                 (SELECT id FROM users WHERE email = 'cm1s2f1n7@example.com'))
         ");
 
         // ====================================================================
