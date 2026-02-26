@@ -7,6 +7,128 @@
     <!-- Auth init MUST run before page renders to prevent navigation jump -->
     <script src="js/auth-init.js"></script>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* ── Admin Notifications: page-specific layout ── */
+
+        /* Widen container to fit the two-column recipient grid */
+        .form-container { max-width: 920px; }
+
+        /* Event select + Load button on one line */
+        .event-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        .event-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        @media (max-width: 560px) {
+            .event-row { flex-direction: column; align-items: stretch; }
+        }
+
+        /* Two-column grid for the two recipient cards */
+        .recipients-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 680px) {
+            .recipients-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── Recipient card ── */
+        .rc {
+            display: flex;
+            flex-direction: column;
+            border-radius: 14px;
+            border: 2px solid var(--light-gray);
+            overflow: hidden;
+            background: var(--white);
+            transition: opacity 0.25s ease, box-shadow 0.25s ease;
+        }
+        .rc:focus-within {
+            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.15);
+        }
+        .rc--boats { border-top: 5px solid var(--coral); }
+        .rc--crew  { border-top: 5px solid var(--teal); }
+
+        /* Dim the card when its "Include" checkbox is unchecked */
+        .rc.rc--excluded { opacity: 0.4; }
+
+        .rc__head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background: var(--off-white);
+            border-bottom: 1px solid var(--light-gray);
+            gap: 0.75rem;
+        }
+        .rc__title { font-weight: 700; color: var(--dark); font-size: 1rem; }
+        .rc__count { font-size: 0.85rem; color: var(--text-gray); margin-top: 0.1rem; }
+
+        .rc__body { padding: 1rem 1.25rem; flex: 1; }
+        .rc__body textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            color: var(--text-gray);
+            background: var(--off-white);
+            resize: none;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .rc__body textarea:focus {
+            outline: none;
+            border-color: var(--teal);
+            background: var(--white);
+        }
+
+        .rc__foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            border-top: 1px solid var(--light-gray);
+            background: var(--off-white);
+            gap: 0.75rem;
+        }
+
+        /* Small button variant */
+        .btn-sm {
+            padding: 0.55rem 1.1rem;
+            font-size: 0.88rem;
+            border-radius: 30px;
+        }
+
+        /* ── Compose: "TO (BCC):" summary bar ── */
+        .compose-to {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1.25rem;
+            background: linear-gradient(135deg, #e3f2fd 0%, #e8eaf6 100%);
+            border-radius: 10px;
+            border-left: 4px solid var(--teal);
+            margin-bottom: 1.75rem;
+        }
+        .compose-to__label {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-gray);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+        .compose-to__value {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--dark);
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -51,62 +173,116 @@
     <section class="hero">
         <div class="hero-content">
             <h1>Send Notifications<span class="admin-badge">Admin</span></h1>
-            <p>Send email notifications and calendar invites to participants</p>
+            <p>Compose and send a custom message to registered participants</p>
         </div>
     </section>
 
     <main>
         <div class="form-container">
+
+            <!-- ① Select Event -->
             <section class="section">
                 <h2>Select Event</h2>
-                <div class="form-group">
-                    <label for="event-select">Event</label>
-                    <select id="event-select" class="form-input">
-                        <option value="">-- Select an event --</option>
-                    </select>
-                </div>
-                <button id="preview-btn" class="btn btn-secondary" disabled>Load Preview</button>
-            </section>
-
-            <!-- Preview Section (hidden until loaded) -->
-            <section id="preview-section" class="preview-section hidden">
-                <h3>Preview</h3>
-                <div class="form-group">
-                    <h4>Event Details</h4>
-                    <p id="event-details"></p>
-                </div>
-
-                <div class="form-group">
-                    <h4>Email Recipients</h4>
-                    <p><strong id="participant-count">0</strong> people will receive notifications (boat owners + crew)</p>
-                </div>
-
-                <div class="form-group">
-                    <h4>Breakdown by Boat</h4>
-                    <div class="participant-list">
-                        <ul id="participant-list"></ul>
+                <div class="event-row">
+                    <div class="form-group">
+                        <label for="event-select">Event</label>
+                        <select id="event-select">
+                            <option value="">-- Select an event --</option>
+                        </select>
                     </div>
+                    <button id="load-btn" class="btn btn-secondary" disabled>Load Participants</button>
                 </div>
-            </section>
-
-            <!-- Notification Options (hidden until preview loaded) -->
-            <section id="options-section" class="section" style="display: none;">
-                <h2>Notification Options</h2>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="include-calendar" checked>
-                        Include calendar invites (.ics files)
-                    </label>
-                    <p class="help-text">Calendar invites allow participants to add the event directly to their calendar apps.</p>
-                </div>
-
-                <button id="send-btn" class="btn btn-primary">Send Notifications</button>
             </section>
 
             <!-- Empty State -->
             <div id="empty-state" class="empty-state">
                 <div class="empty-state-icon">✉️</div>
-                <p>Select an event and click "Load Preview" to view email recipients</p>
+                <p>Select an event and click "Load Participants" to compose a notification</p>
+            </div>
+
+            <!-- Compose Section (hidden until participants loaded) -->
+            <div id="compose-section" style="display: none;">
+
+                <!-- ② Recipients -->
+                <section class="section">
+                    <h2>Recipients</h2>
+                    <div class="recipients-grid">
+
+                        <!-- Boat Owners -->
+                        <div class="rc rc--boats" id="card-boats">
+                            <div class="rc__head">
+                                <div>
+                                    <div class="rc__title">Boat Owners</div>
+                                    <div class="rc__count">
+                                        <span id="boat-owner-count">0</span> registered
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rc__body">
+                                <textarea id="boat-owner-emails" rows="4" readonly
+                                    placeholder="No boat owners registered for this event"></textarea>
+                            </div>
+                            <div class="rc__foot">
+                                <label class="toggle-label">
+                                    <input type="checkbox" class="toggle-input" id="send-to-boat-owners" checked>
+                                    <span class="toggle-text">Include in send</span>
+                                </label>
+                                <button id="copy-boat-btn" class="btn btn-secondary btn-sm" type="button">
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Crew Members -->
+                        <div class="rc rc--crew" id="card-crew">
+                            <div class="rc__head">
+                                <div>
+                                    <div class="rc__title">Crew Members</div>
+                                    <div class="rc__count">
+                                        <span id="crew-member-count">0</span> registered
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rc__body">
+                                <textarea id="crew-member-emails" rows="4" readonly
+                                    placeholder="No crew members registered for this event"></textarea>
+                            </div>
+                            <div class="rc__foot">
+                                <label class="toggle-label">
+                                    <input type="checkbox" class="toggle-input" id="send-to-crew" checked>
+                                    <span class="toggle-text">Include in send</span>
+                                </label>
+                                <button id="copy-crew-btn" class="btn btn-secondary btn-sm" type="button">
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- ③ Compose Message -->
+                <section class="section">
+                    <h2>Compose Message</h2>
+
+                    <!-- Live recipient summary -->
+                    <div class="compose-to">
+                        <span class="compose-to__label">TO (BCC):</span>
+                        <span class="compose-to__value" id="compose-to-value">All registered participants</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" placeholder="NSC Social Day Cruising &ndash; ">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" rows="10" placeholder="Dear participant, ..."></textarea>
+                    </div>
+
+                    <button id="send-btn" class="btn btn-primary">Send Notification</button>
+                </section>
+
             </div>
         </div>
     </main>
@@ -120,8 +296,8 @@
     <!-- Confirmation Modal -->
     <div id="confirm-modal" class="modal-overlay hidden">
         <div class="modal">
-            <h3>Confirm Send Notifications</h3>
-            <p id="confirm-message">Are you sure you want to send notifications?</p>
+            <h3>Confirm Send Notification</h3>
+            <p id="confirm-message">Are you sure you want to send this notification?</p>
             <div class="modal-actions">
                 <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
                 <button id="confirm-btn" class="btn btn-primary">Send</button>

@@ -1,54 +1,44 @@
 /**
  * Admin Notifications Page
- * Send email notifications and calendar invites to participants
+ * Compose and send custom BCC notifications to event participants
  */
 
 import { requireAuth, getCurrentUser, signOut } from '../authService.js';
 import { updateAuthenticatedNavigation, addAdminLink } from '../navigationService.js';
 import { initHamburgerMenu } from '../hamburger.js';
 import * as eventService from '../eventService.js';
-import * as apiService from '../apiService.js';
 import * as adminService from '../adminService.js';
 import { showToast } from '../toast.js';
 
 let allEvents = [];
-let currentEventData = null;
+let participantData = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize hamburger menu
     initHamburgerMenu();
-
-    // Require authentication
     requireAuth();
 
-    // Get current user
     const user = await getCurrentUser();
     if (!user) {
         window.location.href = 'signin.html';
         return;
     }
 
-    // Check admin privileges
     if (!user.isAdmin) {
         console.warn('Access denied: User is not an admin');
         window.location.href = 'dashboard.html';
         return;
     }
 
-    // Update navigation
     updateAuthenticatedNavigation(user, signOut);
     addAdminLink(user);
 
-    // Load events
     await loadEvents();
-
-    // Setup event listeners
     setupEventListeners();
 });
 
 /**
- * Load all events
+ * Load all events and populate the dropdown
  */
 async function loadEvents() {
     try {
@@ -60,207 +50,239 @@ async function loadEvents() {
     }
 }
 
-/**
- * Populate event dropdown
- */
 function populateEventSelect() {
     const select = document.getElementById('event-select');
-    const previewBtn = document.getElementById('preview-btn');
 
-    // Clear existing options (keep the first placeholder)
     select.innerHTML = '<option value="">-- Select an event --</option>';
 
-    // Add event options
     allEvents.forEach(event => {
         const option = document.createElement('option');
         option.value = event.eventId;
-        // Parse date as local date by appending time component
         const localDate = new Date(event.date + 'T12:00:00');
         option.textContent = `${event.eventId} (${localDate.toLocaleDateString()})`;
         select.appendChild(option);
     });
 
-    // Enable preview button when event selected
     select.addEventListener('change', () => {
-        previewBtn.disabled = !select.value;
+        document.getElementById('load-btn').disabled = !select.value;
+
+        // Hide compose section until participants are loaded for the new selection
+        participantData = null;
+        document.getElementById('compose-section').style.display = 'none';
+        document.getElementById('empty-state').style.display = '';
     });
 }
 
-/**
- * Setup event listeners
- */
 function setupEventListeners() {
-    const previewBtn = document.getElementById('preview-btn');
-    const sendBtn = document.getElementById('send-btn');
-    const eventSelect = document.getElementById('event-select');
-    const confirmModal = document.getElementById('confirm-modal');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const confirmBtn = document.getElementById('confirm-btn');
-
-    // Load preview
-    previewBtn.addEventListener('click', async () => {
-        const eventId = eventSelect.value;
+    document.getElementById('load-btn').addEventListener('click', async () => {
+        const eventId = document.getElementById('event-select').value;
         if (!eventId) return;
-
-        await loadPreview(eventId);
+        await loadParticipants(eventId);
     });
 
-    // Send notifications (show confirmation modal)
-    sendBtn.addEventListener('click', () => {
+    document.getElementById('copy-boat-btn').addEventListener('click', () => copyEmails('boat'));
+    document.getElementById('copy-crew-btn').addEventListener('click', () => copyEmails('crew'));
+
+    // Update the summary bar and card appearance when toggles change
+    document.getElementById('send-to-boat-owners').addEventListener('change', () => {
+        syncCardState('boats');
+        updateRecipientSummary();
+    });
+    document.getElementById('send-to-crew').addEventListener('change', () => {
+        syncCardState('crew');
+        updateRecipientSummary();
+    });
+
+    document.getElementById('send-btn').addEventListener('click', () => {
+        const err = validateForm();
+        if (err) {
+            showToast(err, 'error');
+            return;
+        }
         showConfirmationModal();
     });
 
-    // Cancel modal
-    cancelBtn.addEventListener('click', () => {
+    document.getElementById('cancel-btn').addEventListener('click', () => hideConfirmationModal());
+    document.getElementById('confirm-btn').addEventListener('click', async () => {
         hideConfirmationModal();
+        await sendNotification();
     });
 
-    // Confirm send
-    confirmBtn.addEventListener('click', async () => {
-        hideConfirmationModal();
-        await sendNotifications();
-    });
-
-    // Close modal on backdrop click
-    confirmModal.addEventListener('click', (e) => {
-        if (e.target === confirmModal) {
-            hideConfirmationModal();
-        }
+    const modal = document.getElementById('confirm-modal');
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) hideConfirmationModal();
     });
 }
 
 /**
- * Load preview for selected event
+ * Load participant emails for the selected event
  */
-async function loadPreview(eventId) {
-    const previewBtn = document.getElementById('preview-btn');
+async function loadParticipants(eventId) {
+    const loadBtn    = document.getElementById('load-btn');
     const emptyState = document.getElementById('empty-state');
 
     try {
-        // Show loading state
-        previewBtn.classList.add('loading');
-        previewBtn.disabled = true;
+        loadBtn.classList.add('loading');
+        loadBtn.disabled = true;
 
-        // Fetch event with flotilla
-        currentEventData = await apiService.getEventById(eventId);
+        participantData = await adminService.getParticipantEmails(eventId);
 
-        // Hide empty state
+        // Populate BCC textareas
+        document.getElementById('boat-owner-count').textContent = participantData.boat_owners.count;
+        document.getElementById('boat-owner-emails').value = participantData.boat_owners.emails.join(', ');
+
+        document.getElementById('crew-member-count').textContent = participantData.crew_members.count;
+        document.getElementById('crew-member-emails').value = participantData.crew_members.emails.join(', ');
+
+        // Reset toggles and card states
+        document.getElementById('send-to-boat-owners').checked = true;
+        document.getElementById('send-to-crew').checked = true;
+        syncCardState('boats');
+        syncCardState('crew');
+
+        // Pre-fill default subject and update summary
+        document.getElementById('subject').value = `NSC Social Day Cruising \u2013 ${eventId}`;
+        updateRecipientSummary();
+
+        // Reveal compose section
         emptyState.style.display = 'none';
+        document.getElementById('compose-section').style.display = '';
 
-        // Render preview
-        renderPreview(currentEventData);
-
-        showToast('Preview loaded successfully', 'success');
+        showToast('Participants loaded', 'success');
     } catch (error) {
-        console.error('Failed to load preview:', error);
-        showToast(error.message || 'Failed to load preview', 'error');
+        console.error('Failed to load participants:', error);
+        showToast(error.message || 'Failed to load participants', 'error');
     } finally {
-        // Remove loading state
-        previewBtn.classList.remove('loading');
-        previewBtn.disabled = false;
+        loadBtn.classList.remove('loading');
+        loadBtn.disabled = false;
     }
 }
 
 /**
- * Render preview
+ * Dim/undim a recipient card based on its checkbox state
+ * @param {'boats'|'crew'} group
  */
-function renderPreview(eventData) {
-    const previewSection = document.getElementById('preview-section');
-    const optionsSection = document.getElementById('options-section');
-    const eventDetails = document.getElementById('event-details');
-    const participantCount = document.getElementById('participant-count');
-    const participantList = document.getElementById('participant-list');
+function syncCardState(group) {
+    const checkboxId = group === 'boats' ? 'send-to-boat-owners' : 'send-to-crew';
+    const cardId     = group === 'boats' ? 'card-boats' : 'card-crew';
+    const included   = document.getElementById(checkboxId).checked;
+    document.getElementById(cardId).classList.toggle('rc--excluded', !included);
+}
 
-    // Show sections
-    previewSection.classList.remove('hidden');
-    optionsSection.style.display = 'block';
+/**
+ * Update the "TO (BCC):" summary line in the compose section
+ */
+function updateRecipientSummary() {
+    const sendToBoats = document.getElementById('send-to-boat-owners').checked;
+    const sendToCrew  = document.getElementById('send-to-crew').checked;
 
-    // Extract event and flotilla data
-    const event = eventData.event;
-    const flotilla = eventData.flotilla;
+    const boatCount = participantData?.boat_owners?.count ?? 0;
+    const crewCount = participantData?.crew_members?.count ?? 0;
 
-    // Render event details
-    // Parse date as local date by appending time component
-    const eventDate = new Date(event.date + 'T12:00:00');
-    eventDetails.innerHTML = `
-        <strong>${event.eventId}</strong><br>
-        ${eventDate.toLocaleDateString()} at ${event.startTime}
-    `;
+    const groups = [];
+    if (sendToBoats) groups.push(`${boatCount} boat owner${boatCount !== 1 ? 's' : ''}`);
+    if (sendToCrew)  groups.push(`${crewCount} crew member${crewCount !== 1 ? 's' : ''}`);
 
-    // Get boats and count actual email recipients
-    const boats = [];
-    let totalRecipients = 0;
-
-    if (flotilla && flotilla.crewedBoats) {
-        flotilla.crewedBoats.forEach(crewedBoat => {
-            const boatName = crewedBoat.boat?.displayName || 'Unknown Boat';
-            const crewCount = crewedBoat.crews ? crewedBoat.crews.length : 0;
-
-            // Count boat owner + all crew members
-            totalRecipients += 1 + crewCount;
-
-            boats.push(`${boatName} (1 boat owner + ${crewCount} crew = ${1 + crewCount} emails)`);
-        });
-    }
-
-    // Update participant count (total people receiving emails)
-    participantCount.textContent = totalRecipients;
-
-    // Render boat list
-    if (boats.length > 0) {
-        participantList.innerHTML = boats.map(b => `<li>${b}</li>`).join('');
+    const el = document.getElementById('compose-to-value');
+    if (groups.length === 0) {
+        el.textContent = 'No recipients selected';
     } else {
-        participantList.innerHTML = '<li>No participants assigned yet</li>';
+        el.textContent = groups.join(' + ');
     }
 }
 
 /**
- * Show confirmation modal
+ * Copy BCC email list to clipboard
+ * @param {'boat'|'crew'} group
  */
+async function copyEmails(group) {
+    const textareaId = group === 'boat' ? 'boat-owner-emails' : 'crew-member-emails';
+    const btnId      = group === 'boat' ? 'copy-boat-btn'    : 'copy-crew-btn';
+    const text       = document.getElementById(textareaId).value;
+
+    if (!text) {
+        showToast('No emails to copy', 'error');
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(text);
+        const btn = document.getElementById(btnId);
+        const original = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+    } catch {
+        showToast('Failed to copy to clipboard', 'error');
+    }
+}
+
+/**
+ * Validate the compose form
+ * @returns {string|null} Error message, or null if valid
+ */
+function validateForm() {
+    const subject          = document.getElementById('subject').value.trim();
+    const message          = document.getElementById('message').value.trim();
+    const sendToBoatOwners = document.getElementById('send-to-boat-owners').checked;
+    const sendToCrew       = document.getElementById('send-to-crew').checked;
+
+    if (!subject)                         return 'Subject is required';
+    if (!message)                         return 'Message is required';
+    if (!sendToBoatOwners && !sendToCrew) return 'At least one recipient group must be selected';
+    return null;
+}
+
 function showConfirmationModal() {
-    const modal = document.getElementById('confirm-modal');
-    const confirmMessage = document.getElementById('confirm-message');
-    const participantCount = document.getElementById('participant-count');
+    const sendToBoatOwners = document.getElementById('send-to-boat-owners').checked;
+    const sendToCrew       = document.getElementById('send-to-crew').checked;
 
-    const count = parseInt(participantCount.textContent) || 0;
-    confirmMessage.textContent = `Are you sure you want to send notifications to ${count} people (boat owners + crew)?`;
+    const ownerCount = sendToBoatOwners ? (participantData?.boat_owners?.count ?? 0) : 0;
+    const crewCount  = sendToCrew       ? (participantData?.crew_members?.count ?? 0) : 0;
+    const total      = ownerCount + crewCount;
 
-    modal.classList.remove('hidden');
+    const groups = [];
+    if (sendToBoatOwners) groups.push(`${ownerCount} boat owner${ownerCount !== 1 ? 's' : ''}`);
+    if (sendToCrew)       groups.push(`${crewCount} crew member${crewCount !== 1 ? 's' : ''}`);
+
+    document.getElementById('confirm-message').textContent =
+        `Send to ${groups.join(' + ')} (~${total} participant${total !== 1 ? 's' : ''})?`;
+
+    document.getElementById('confirm-modal').classList.remove('hidden');
 }
 
-/**
- * Hide confirmation modal
- */
 function hideConfirmationModal() {
-    const modal = document.getElementById('confirm-modal');
-    modal.classList.add('hidden');
+    document.getElementById('confirm-modal').classList.add('hidden');
 }
 
 /**
- * Send notifications
+ * Send the custom notification
  */
-async function sendNotifications() {
-    const sendBtn = document.getElementById('send-btn');
-    const eventSelect = document.getElementById('event-select');
-    const includeCalendar = document.getElementById('include-calendar').checked;
+async function sendNotification() {
+    const sendBtn          = document.getElementById('send-btn');
+    const eventId          = document.getElementById('event-select').value;
+    const subject          = document.getElementById('subject').value.trim();
+    const message          = document.getElementById('message').value.trim();
+    const sendToBoatOwners = document.getElementById('send-to-boat-owners').checked;
+    const sendToCrew       = document.getElementById('send-to-crew').checked;
 
-    const eventId = eventSelect.value;
     if (!eventId) return;
 
     try {
-        // Show loading state
         sendBtn.classList.add('loading');
         sendBtn.disabled = true;
 
-        // Send notifications
-        const result = await adminService.sendNotifications(eventId, includeCalendar);
+        const result = await adminService.sendCustomNotification(eventId, {
+            subject,
+            message,
+            sendToBoatOwners,
+            sendToCrew,
+        });
 
-        showToast(`Successfully sent ${result.emails_sent || 0} email notifications`, 'success');
+        showToast(result.message || `Sent ${result.emails_sent} notification emails`, 'success');
     } catch (error) {
-        console.error('Failed to send notifications:', error);
-        showToast(error.message || 'Failed to send notifications', 'error');
+        console.error('Failed to send notification:', error);
+        showToast(error.message || 'Failed to send notification', 'error');
     } finally {
-        // Remove loading state
         sendBtn.classList.remove('loading');
         sendBtn.disabled = false;
     }

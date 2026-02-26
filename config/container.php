@@ -245,6 +245,25 @@ $container->set(\App\Application\UseCase\Admin\GetMatchingDataUseCase::class, fu
     );
 });
 
+$container->set(\App\Application\UseCase\Admin\GetParticipantEmailsUseCase::class, function ($c) {
+    return new \App\Application\UseCase\Admin\GetParticipantEmailsUseCase(
+        $c->get(BoatRepositoryInterface::class),
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(EventRepositoryInterface::class),
+        $c->get(UserRepositoryInterface::class)
+    );
+});
+
+$container->set(\App\Application\UseCase\Admin\SendCustomNotificationUseCase::class, function ($c) {
+    return new \App\Application\UseCase\Admin\SendCustomNotificationUseCase(
+        $c->get(BoatRepositoryInterface::class),
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(EventRepositoryInterface::class),
+        $c->get(UserRepositoryInterface::class),
+        $c->get(EmailServiceInterface::class)
+    );
+});
+
 $container->set(\App\Application\UseCase\Admin\SendNotificationsUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\SendNotificationsUseCase(
         $c->get(EventRepositoryInterface::class),
@@ -414,6 +433,8 @@ $container->set(\App\Presentation\Controller\AdminController::class, function ($
     return new \App\Presentation\Controller\AdminController(
         $c->get(\App\Application\UseCase\Admin\GetMatchingDataUseCase::class),
         $c->get(\App\Application\UseCase\Admin\SendNotificationsUseCase::class),
+        $c->get(\App\Application\UseCase\Admin\GetParticipantEmailsUseCase::class),
+        $c->get(\App\Application\UseCase\Admin\SendCustomNotificationUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetConfigUseCase::class),
         $c->get(\App\Application\UseCase\Season\UpdateConfigUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetAllUsersUseCase::class),
