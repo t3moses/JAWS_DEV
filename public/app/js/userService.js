@@ -5,7 +5,6 @@
 
 import { patch } from './apiService.js';
 import { API_CONFIG } from './config.js';
-import { isDeadlinePassed } from './eventService.js';
 
 /**
  * Update user profile
@@ -35,77 +34,23 @@ export async function updateUser(userId, updates) {
 }
 
 /**
- * Update event availability for current user
- * @param {string} userId - User ID (ignored - backend uses JWT token from request)
- * @param {string} eventDate - Event date (YYYY-MM-DD)
- * @param {boolean} isAvailable - Availability status
- * @returns {Promise<Object>} Result object with success status
+ * Update availability for multiple events in a single request.
+ * @param {Array<{eventId: string, isAvailable: boolean, berths?: number}>} availabilities
+ * @returns {Promise<{success: boolean, data?: any, error?: string}>}
  */
-export async function updateEventAvailability(userId, eventDate, isAvailable) {
+export async function updateBatchAvailability(availabilities) {
     try {
-        // Check deadline (10 AM on event day)
-        if (isDeadlinePassed(eventDate)) {
-            return { success: false, error: 'Registration deadline has passed' };
-        }
-
-        console.log(`Updating availability for ${eventDate}: ${isAvailable}`);
-
-        // Call PATCH /api/users/me/availability endpoint
-        // Backend uses JWT token to identify user, so userId is ignored
-        const response = await patch(API_CONFIG.ENDPOINTS.USER_AVAILABILITY, {
-            availabilities: [
-                {
-                    eventId: eventDate,
-                    isAvailable: isAvailable
-                }
-            ]
-        });
+        const response = await patch(API_CONFIG.ENDPOINTS.USER_AVAILABILITY, { availabilities });
 
         if (response?.success === false) {
-            console.error('Availability update failed:', response.error);
+            console.error('Batch availability update failed:', response.error);
             return { success: false, error: response.error || 'Failed to update availability' };
         }
 
-        console.log('Availability updated successfully');
+        console.log('Batch availability updated successfully');
         return { success: true, data: response?.data };
     } catch (error) {
-        console.error('Error updating availability:', error);
-        return { success: false, error: error.message || 'Failed to update availability' };
-    }
-}
-
-/**
- * Update boat berths for a specific event
- * @param {string} userId - User ID (ignored - backend uses JWT token from request)
- * @param {string} eventDate - Event date string (e.g. "Fri Jun 12")
- * @param {number} berths - Number of berths to offer (0 = unavailable)
- * @returns {Promise<Object>} Result object with success status
- */
-export async function updateBoatBerths(userId, eventDate, berths) {
-    try {
-        if (isDeadlinePassed(eventDate)) {
-            return { success: false, error: 'Registration deadline has passed' };
-        }
-
-        console.log(`Updating boat berths for ${eventDate}: ${berths}`);
-
-        const response = await patch(API_CONFIG.ENDPOINTS.USER_AVAILABILITY, {
-            availabilities: [{
-                eventId: eventDate,
-                isAvailable: berths > 0,   // keeps crew path working for flex members
-                berths: berths             // explicit integer for boat use case
-            }]
-        });
-
-        if (response?.success === false) {
-            console.error('Boat berths update failed:', response.error);
-            return { success: false, error: response.error || 'Failed to update availability' };
-        }
-
-        console.log('Boat berths updated successfully');
-        return { success: true, data: response?.data };
-    } catch (error) {
-        console.error('Error updating boat berths:', error);
+        console.error('Error updating batch availability:', error);
         return { success: false, error: error.message || 'Failed to update availability' };
     }
 }
