@@ -137,6 +137,7 @@ class SendCrewListUseCaseTest extends TestCase
         $this->assertSame(1, $result['skipped']);
         // Email still sent, just no CC for this owner
         $this->assertSame(0, $result['cc_count']);
+        $this->assertStringContainsString('no linked owner account', $result['details'][0]);
     }
 
     public function testSkipsOwnerWhenUserNotFound(): void
@@ -154,6 +155,7 @@ class SendCrewListUseCaseTest extends TestCase
 
         $this->assertSame(1, $result['skipped']);
         $this->assertSame(0, $result['cc_count']);
+        $this->assertStringContainsString('owner user account not found', $result['details'][0]);
     }
 
     public function testSendsEmailWithCcToOwners(): void
