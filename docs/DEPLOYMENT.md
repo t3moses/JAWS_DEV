@@ -8,6 +8,7 @@ Complete guide for deploying JAWS to production on AWS Lightsail.
 - [AWS Lightsail Deployment](#aws-lightsail-deployment)
 - [Environment Configuration](#environment-configuration)
 - [Database Management](#database-management)
+- [Cron Jobs](#cron-jobs)
 - [Monitoring](#monitoring)
 - [Rollback Procedures](#rollback-procedures)
 - [Troubleshooting](#troubleshooting)
@@ -604,6 +605,160 @@ sqlite3 jaws.db "SELECT event_id, event_date FROM events ORDER BY event_date;"
 ```
 
 **Important:** Never run UPDATE/DELETE queries directly on production database. Use migrations instead.
+
+---
+
+## Cron Jobs
+
+JAWS sends two types of automated email notifications via cron jobs:
+
+| Notification | Timing | Recipients |
+|---|---|---|
+| **Crew Reminder** | ~24 hours before event start (23–25 h window) | All registered crew members individually |
+| **Crew List** | On event day, within the first hour of the blackout window (default 10:00–11:00) | Admin (TO) + all boat owners with linked accounts (CC) |
+
+Idempotency is enforced via the `cron_notifications` database table (UNIQUE constraint on `event_id + type`), so even if the cron fires multiple times in the same window, the email is only ever sent once.
+
+### Initial Setup (One-Time)
+
+#### 1. Create Logs Directory
+
+```bash
+mkdir -p /opt/bitnami/jaws/logs
+sudo chown bitnami:daemon /opt/bitnami/jaws/logs
+sudo chmod 775 /opt/bitnami/jaws/logs
+```
+
+#### 2. Set Script Executable (optional)
+
+```bash
+chmod +x /opt/bitnami/jaws/bin/notify.php
+```
+
+#### 3. Run the Migration
+
+The `cron_notifications` table is created by Phinx migration. If you haven't already run migrations after this feature was deployed:
+
+```bash
+cd /opt/bitnami/jaws
+vendor/bin/phinx migrate --environment=production
+```
+
+#### 4. Configure Crontab
+
+```bash
+crontab -e
+```
+
+Add the following two lines (run hourly; the script handles its own timing logic):
+
+```bash
+# JAWS: crew reminder email (~24h before event)
+0 * * * * /usr/bin/php /opt/bitnami/jaws/bin/notify.php --type=reminder >> /opt/bitnami/jaws/logs/cron.log 2>&1
+
+# JAWS: crew list email (on event day when blackout window opens)
+0 * * * * /usr/bin/php /opt/bitnami/jaws/bin/notify.php --type=crew-list >> /opt/bitnami/jaws/logs/cron.log 2>&1
+```
+
+**Note:** `/usr/bin/php` is the Bitnami system PHP. Verify the path with `which php` if needed.
+
+#### 5. Verify Required Environment Variables
+
+Ensure the following is set in `/opt/bitnami/jaws/.env`:
+
+```bash
+ADMIN_NOTIFICATION_EMAIL=your-admin@example.com
+```
+
+This is the TO address for the crew list email. All other email settings (SMTP credentials, FROM address) are shared with the regular notification emails.
+
+### How the Timing Windows Work
+
+The script runs hourly but exits early unless conditions are met:
+
+**Reminder (`--type=reminder`):**
+- Checks if the next event starts between 23 and 25 hours from now
+- This 2-hour window provides tolerance for hourly cron scheduling drift
+
+**Crew List (`--type=crew-list`):**
+- Checks if today is the event day
+- Checks if the current time falls within `blackout_from` to `blackout_from + 1 hour` (as configured in `season_config`)
+- Default window: 10:00–11:00 local time
+
+### Manual Test Run
+
+You can run the script manually to test without waiting for the cron:
+
+```bash
+cd /opt/bitnami/jaws
+
+# Dry-run output only — script will exit if outside the timing window
+php bin/notify.php --type=reminder
+php bin/notify.php --type=crew-list
+```
+
+To force a send outside the normal window (e.g. for testing), temporarily comment out the timing check in `bin/notify.php`, run it, then revert.
+
+**Important:** Delete the `cron_notifications` row for that event first if you want to re-send:
+
+```bash
+sqlite3 /opt/bitnami/jaws/database/jaws.db \
+  "DELETE FROM cron_notifications WHERE event_id = 'Fri May 29' AND type = 'reminder';"
+```
+
+### Monitoring Cron Logs
+
+```bash
+# Live log tail
+tail -f /opt/bitnami/jaws/logs/cron.log
+
+# Show last 50 lines
+tail -50 /opt/bitnami/jaws/logs/cron.log
+
+# Show only sends (filter out early-exit lines)
+grep "Done\." /opt/bitnami/jaws/logs/cron.log
+```
+
+**Sample log output:**
+
+```
+[2026-05-28 10:00:01] notify.php --type=reminder
+  Sent reminder to Alice Smith (alice@example.com)
+  Sent reminder to Bob Jones (bob@example.com)
+Done. sent=2 skipped=0
+
+[2026-05-29 10:00:02] notify.php --type=crew-list
+  CC: owner@example.com (owner of Sailaway)
+  Crew list sent to admin@nsc-sdc.ca with 1 CC recipient(s)
+Done. sent=1 skipped=0
+```
+
+### Viewing Notification History
+
+Query the `cron_notifications` table to see what has been sent:
+
+```bash
+sqlite3 /opt/bitnami/jaws/database/jaws.db \
+  "SELECT event_id, type, sent_at, recipients_count, skipped_count FROM cron_notifications ORDER BY sent_at DESC LIMIT 20;"
+```
+
+### Log Rotation
+
+Cron logs will grow over time. Set up log rotation:
+
+```bash
+sudo nano /etc/logrotate.d/jaws-cron
+```
+
+```
+/opt/bitnami/jaws/logs/cron.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+}
+```
 
 ---
 
