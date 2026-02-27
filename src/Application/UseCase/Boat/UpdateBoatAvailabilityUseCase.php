@@ -7,10 +7,13 @@ namespace App\Application\UseCase\Boat;
 use App\Application\DTO\Request\UpdateAvailabilityRequest;
 use App\Application\DTO\Response\BoatResponse;
 use App\Application\Exception\ValidationException;
+use App\Application\Exception\BlackoutWindowException;
 use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\EventNotFoundException;
 use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\EventRepositoryInterface;
+use App\Application\Port\Repository\SeasonRepositoryInterface;
+use App\Application\Port\Service\TimeServiceInterface;
 use App\Domain\ValueObject\EventId;
 
 /**
@@ -23,6 +26,8 @@ class UpdateBoatAvailabilityUseCase
     public function __construct(
         private BoatRepositoryInterface $boatRepository,
         private EventRepositoryInterface $eventRepository,
+        private TimeServiceInterface $timeService,
+        private SeasonRepositoryInterface $seasonRepository,
     ) {
     }
 
@@ -38,6 +43,15 @@ class UpdateBoatAvailabilityUseCase
      */
     public function execute(int $userId, UpdateAvailabilityRequest $request): BoatResponse
     {
+        // Check blackout window — only active when an event is scheduled today
+        $config = $this->seasonRepository->getConfig();
+        if (
+            $this->eventRepository->hasEventOnDate($this->timeService->today()) &&
+            $this->timeService->isInBlackoutWindow($config['blackout_from'], $config['blackout_to'])
+        ) {
+            throw new BlackoutWindowException();
+        }
+
         // Validate request
         $errors = $request->validate();
         if (!empty($errors)) {

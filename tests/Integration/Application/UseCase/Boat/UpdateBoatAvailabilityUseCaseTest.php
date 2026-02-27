@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace Tests\Integration\Application\UseCase\Boat;
 
 use App\Application\DTO\Request\UpdateAvailabilityRequest;
+use App\Application\Exception\BlackoutWindowException;
 use App\Application\Exception\ValidationException;
 use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\EventNotFoundException;
 use App\Application\UseCase\Boat\UpdateBoatAvailabilityUseCase;
 use App\Infrastructure\Persistence\SQLite\BoatRepository;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
+use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Persistence\SQLite\Connection;
+use App\Infrastructure\Service\SystemTimeService;
 use Tests\Integration\IntegrationTestCase;
 
 /**
@@ -41,9 +44,16 @@ class UpdateBoatAvailabilityUseCaseTest extends IntegrationTestCase
         $this->eventRepository = new EventRepository();
 
         // Initialize use case
+        // SystemTimeService is given a SeasonRepository so it reads the simulated
+        // date/time (2026-05-01 09:00:00) from the test DB rather than the real
+        // wall-clock time. This keeps the blackout guard inactive regardless of
+        // when the tests are actually run.
+        $seasonRepository = new SeasonRepository();
         $this->useCase = new UpdateBoatAvailabilityUseCase(
             $this->boatRepository,
-            $this->eventRepository
+            $this->eventRepository,
+            new SystemTimeService($seasonRepository),
+            $seasonRepository
         );
     }
 
@@ -786,6 +796,85 @@ class UpdateBoatAvailabilityUseCaseTest extends IntegrationTestCase
 
         // Act
         $this->useCase->execute($userId, $request);
+    }
+
+    // ==================== BLACKOUT WINDOW TESTS ====================
+
+    public function testThrowsBlackoutWindowExceptionWhenEventTodayAndWithinWindow(): void
+    {
+        // Move simulated time to May 15 at 14:00 — an event day, inside the blackout window
+        $this->pdo->exec("UPDATE season_config SET simulated_date = '2026-05-15 14:00:00' WHERE id = 1");
+
+        $seasonRepository = new SeasonRepository();
+        $useCase = new UpdateBoatAvailabilityUseCase(
+            $this->boatRepository,
+            $this->eventRepository,
+            new SystemTimeService($seasonRepository),
+            $seasonRepository
+        );
+
+        $userId = $this->createTestUser();
+        $this->createBoatProfileForUser($userId);
+
+        $request = new UpdateAvailabilityRequest([
+            ['eventId' => 'Fri May 15', 'isAvailable' => true]
+        ]);
+
+        $this->expectException(BlackoutWindowException::class);
+        $this->expectExceptionMessage('Registration is locked during the event blackout window');
+
+        $useCase->execute($userId, $request);
+    }
+
+    public function testDoesNotThrowBlackoutExceptionWhenNoEventToday(): void
+    {
+        // Set simulated time to a day with no event scheduled, but within blackout hours
+        // (2026-05-16 has no event — initializeTestData only adds May 15, 22, 29, Jun 05)
+        $this->pdo->exec("UPDATE season_config SET simulated_date = '2026-05-16 14:00:00' WHERE id = 1");
+
+        $seasonRepository = new SeasonRepository();
+        $useCase = new UpdateBoatAvailabilityUseCase(
+            $this->boatRepository,
+            $this->eventRepository,
+            new SystemTimeService($seasonRepository),
+            $seasonRepository
+        );
+
+        $userId = $this->createTestUser();
+        $this->createBoatProfileForUser($userId, ['maxBerths' => 3]);
+
+        $request = new UpdateAvailabilityRequest([
+            ['eventId' => 'Fri May 15', 'isAvailable' => true]
+        ]);
+
+        // Should succeed — blackout only applies when an event is scheduled today
+        $response = $useCase->execute($userId, $request);
+        $this->assertEquals(3, $response->availabilities['Fri May 15']);
+    }
+
+    public function testDoesNotThrowBlackoutExceptionBeforeWindowOpens(): void
+    {
+        // Set simulated time to May 15 at 09:00 — event day but before the window
+        $this->pdo->exec("UPDATE season_config SET simulated_date = '2026-05-15 09:00:00' WHERE id = 1");
+
+        $seasonRepository = new SeasonRepository();
+        $useCase = new UpdateBoatAvailabilityUseCase(
+            $this->boatRepository,
+            $this->eventRepository,
+            new SystemTimeService($seasonRepository),
+            $seasonRepository
+        );
+
+        $userId = $this->createTestUser();
+        $this->createBoatProfileForUser($userId, ['maxBerths' => 3]);
+
+        $request = new UpdateAvailabilityRequest([
+            ['eventId' => 'Fri May 15', 'isAvailable' => true]
+        ]);
+
+        // 09:00 is before 10:00 — should succeed
+        $response = $useCase->execute($userId, $request);
+        $this->assertEquals(3, $response->availabilities['Fri May 15']);
     }
 
     public function testNegativeBerthsFailsRequestValidation(): void

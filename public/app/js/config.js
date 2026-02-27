@@ -21,6 +21,9 @@ export const API_CONFIG = {
         USER_AVAILABILITY: '/users/me/availability',
         ASSIGNMENTS: '/assignments',
 
+        // Status endpoint
+        STATUS: '/status',
+
         // Event endpoints
         EVENTS: '/events',
         EVENT_BY_ID: '/events/:id',

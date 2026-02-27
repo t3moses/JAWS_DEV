@@ -134,6 +134,13 @@ class EventRepository implements EventRepositoryInterface
         return (int)$stmt->fetchColumn();
     }
 
+    public function hasEventOnDate(\DateTimeImmutable $date): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM events WHERE event_date = :date');
+        $stmt->execute(['date' => $date->format('Y-m-d')]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
     public function getEventDateMap(): array
     {
         $stmt = $this->pdo->query('

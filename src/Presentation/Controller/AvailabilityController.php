@@ -10,6 +10,7 @@ use App\Application\UseCase\Crew\GetCrewAvailabilityUseCase;
 use App\Application\UseCase\Season\ProcessSeasonUpdateUseCase;
 use App\Application\DTO\Request\UpdateAvailabilityRequest;
 use App\Application\Exception\ValidationException;
+use App\Application\Exception\BlackoutWindowException;
 use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\CrewNotFoundException;
 use App\Application\Exception\EventNotFoundException;
@@ -86,6 +87,8 @@ class AvailabilityController
             $responseData['message'] = 'Availability updated successfully';
 
             return JsonResponse::success($responseData);
+        } catch (BlackoutWindowException $e) {
+            return JsonResponse::error($e->getMessage(), 403);
         } catch (ValidationException $e) {
             return JsonResponse::error($e->getMessage(), 400, $e->getErrors());
         } catch (EventNotFoundException $e) {

@@ -90,7 +90,7 @@ class SeasonRepository implements SeasonRepositoryInterface
         ');
         $stmt->execute([
             'source' => $source->value,
-            'simulated_date' => $simulatedDate?->format('Y-m-d'),
+            'simulated_date' => $simulatedDate?->format('Y-m-d H:i:s'),
         ]);
     }
 

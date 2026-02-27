@@ -7,10 +7,13 @@ namespace App\Application\UseCase\Crew;
 use App\Application\DTO\Request\UpdateAvailabilityRequest;
 use App\Application\DTO\Response\CrewResponse;
 use App\Application\Exception\ValidationException;
+use App\Application\Exception\BlackoutWindowException;
 use App\Application\Exception\CrewNotFoundException;
 use App\Application\Exception\EventNotFoundException;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Application\Port\Repository\EventRepositoryInterface;
+use App\Application\Port\Repository\SeasonRepositoryInterface;
+use App\Application\Port\Service\TimeServiceInterface;
 use App\Domain\ValueObject\EventId;
 use App\Domain\Enum\AvailabilityStatus;
 use App\Domain\Enum\CrewRankDimension;
@@ -25,6 +28,8 @@ class UpdateCrewAvailabilityUseCase
     public function __construct(
         private CrewRepositoryInterface $crewRepository,
         private EventRepositoryInterface $eventRepository,
+        private TimeServiceInterface $timeService,
+        private SeasonRepositoryInterface $seasonRepository,
     ) {
     }
 
@@ -40,6 +45,15 @@ class UpdateCrewAvailabilityUseCase
      */
     public function execute(int $userId, UpdateAvailabilityRequest $request): CrewResponse
     {
+        // Check blackout window — only active when an event is scheduled today
+        $config = $this->seasonRepository->getConfig();
+        if (
+            $this->eventRepository->hasEventOnDate($this->timeService->today()) &&
+            $this->timeService->isInBlackoutWindow($config['blackout_from'], $config['blackout_to'])
+        ) {
+            throw new BlackoutWindowException();
+        }
+
         // Validate request
         $errors = $request->validate();
         if (!empty($errors)) {

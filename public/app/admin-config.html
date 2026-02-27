@@ -77,12 +77,17 @@
 
                 <!-- Simulated Date Section (conditional) -->
                 <div id="simulated-date-section" class="form-section" style="display: none;">
-                    <h3>Simulated Date</h3>
-                    <p class="help-text">Set the simulated date for testing purposes (only used when time source is set to "Simulated").</p>
+                    <h3>Simulated Date &amp; Time</h3>
+                    <p class="help-text">Set the simulated date and time for testing purposes. The system will behave as though it is this exact moment.</p>
 
                     <div class="form-group">
-                        <label for="simulated-date">Simulated Date</label>
+                        <label for="simulated-date">Date</label>
                         <input type="date" id="simulated-date" name="simulated_date" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="simulated-time">Time</label>
+                        <input type="time" id="simulated-time" name="simulated_time" class="form-input">
                     </div>
                 </div>
 

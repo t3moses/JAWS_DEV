@@ -56,9 +56,9 @@ class AssignmentApiTest extends TestCase
             "Authorization: Bearer {$crewData['token']}",
         ]);
 
-        // May return 404 if event doesn't exist
-        $this->assertContains($boatAvailResponse['status'], [200, 404]);
-        $this->assertContains($crewAvailResponse['status'], [200, 404]);
+        // May return 404 if event doesn't exist, 403 during blackout window
+        $this->assertContains($boatAvailResponse['status'], [200, 403, 404]);
+        $this->assertContains($crewAvailResponse['status'], [200, 403, 404]);
 
         // If availability was set successfully, check assignments
         if ($boatAvailResponse['status'] === 200 && $crewAvailResponse['status'] === 200) {
