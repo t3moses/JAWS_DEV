@@ -75,8 +75,7 @@ class SendCrewListUseCase
 
             $ownerUser = $this->userRepository->findById($ownerUserId);
             if ($ownerUser === null) {
-                error_log("SendCrewListUseCase: user {$ownerUserId} not found for boat {$boat['display_name']} — skipping CC");
-                $details[] = "Owner of {$boat['display_name']} not found — owner not CC'd";
+                $details[] = "Boat {$boat['display_name']} has no linked owner account — owner not CC'd";
                 $skipped++;
                 continue;
             }
