@@ -115,6 +115,51 @@ class PhpMailerEmailService implements EmailServiceInterface
         return $results;
     }
 
+    public function sendWithBcc(
+        string $to,
+        array $bcc,
+        string $subject,
+        string $body,
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool {
+        try {
+            $mail = $this->createMailer();
+
+            $mail->setFrom(
+                $fromEmail ?? $this->defaultFromEmail,
+                $fromName ?? $this->defaultFromName
+            );
+
+            $mail->addAddress($to);
+
+            foreach ($bcc as $bccEmail) {
+                $mail->addBCC($bccEmail);
+            }
+
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            $mail->isHTML(true);
+
+            $result = $mail->send();
+
+            if ($result) {
+                error_log("BCC email sent to " . count($bcc) . " recipients via: {$to}");
+                return true;
+            }
+
+            error_log("BCC email send failed - No result returned");
+            return false;
+
+        } catch (PHPMailerException $e) {
+            error_log("BCC email send failed - PHPMailer Error: " . $e->getMessage());
+            return false;
+        } catch (\Exception $e) {
+            error_log("BCC email send failed - General Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function validateEmail(string $email): bool
     {
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;

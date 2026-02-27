@@ -49,6 +49,26 @@ interface EmailServiceInterface
     ): array;
 
     /**
+     * Send an email with BCC recipients
+     *
+     * @param string $to Primary recipient email address (typically the from address)
+     * @param array<string> $bcc BCC recipient email addresses
+     * @param string $subject Email subject
+     * @param string $body Email body (HTML)
+     * @param string|null $fromName Optional sender name
+     * @param string|null $fromEmail Optional sender email
+     * @return bool True if sent successfully
+     */
+    public function sendWithBcc(
+        string $to,
+        array $bcc,
+        string $subject,
+        string $body,
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool;
+
+    /**
      * Validate an email address
      *
      * @param string $email

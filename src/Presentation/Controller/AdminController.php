@@ -6,6 +6,8 @@ namespace App\Presentation\Controller;
 
 use App\Application\UseCase\Admin\GetMatchingDataUseCase;
 use App\Application\UseCase\Admin\SendNotificationsUseCase;
+use App\Application\UseCase\Admin\GetParticipantEmailsUseCase;
+use App\Application\UseCase\Admin\SendCustomNotificationUseCase;
 use App\Application\UseCase\Admin\GetConfigUseCase;
 use App\Application\UseCase\Admin\GetAllUsersUseCase;
 use App\Application\UseCase\Admin\SetUserAdminUseCase;
@@ -36,6 +38,8 @@ class AdminController
     public function __construct(
         private GetMatchingDataUseCase $getMatchingDataUseCase,
         private SendNotificationsUseCase $sendNotificationsUseCase,
+        private GetParticipantEmailsUseCase $getParticipantEmailsUseCase,
+        private SendCustomNotificationUseCase $sendCustomNotificationUseCase,
         private GetConfigUseCase $getConfigUseCase,
         private UpdateConfigUseCase $updateConfigUseCase,
         private GetAllUsersUseCase $getAllUsersUseCase,
@@ -110,6 +114,72 @@ class AdminController
 
             return JsonResponse::success($result);
         } catch (EventNotFoundException | FlotillaNotFoundException $e) {
+            return JsonResponse::notFound($e->getMessage());
+        } catch (\Exception $e) {
+            return JsonResponse::serverError($e->getMessage());
+        }
+    }
+
+    /**
+     * GET /api/admin/participants/{eventId}
+     *
+     * Returns registered participant emails grouped by role (boat owners, crew members).
+     *
+     * @param array $params Route parameters
+     * @param array $auth Authentication context
+     */
+    public function getParticipantEmails(array $params, array $auth): JsonResponse
+    {
+        if (!$this->isAdmin($auth)) {
+            return JsonResponse::error('Admin privileges required', 403);
+        }
+
+        try {
+            $eventId = EventId::fromString($params['eventId']);
+            $result  = $this->getParticipantEmailsUseCase->execute($eventId);
+
+            return JsonResponse::success($result);
+        } catch (EventNotFoundException $e) {
+            return JsonResponse::notFound($e->getMessage());
+        } catch (\Exception $e) {
+            return JsonResponse::serverError($e->getMessage());
+        }
+    }
+
+    /**
+     * POST /api/admin/notifications/{eventId}/custom
+     *
+     * Sends an admin-composed message to selected participant groups via BCC.
+     *
+     * @param array $params Route parameters
+     * @param array $body Request body
+     * @param array $auth Authentication context
+     */
+    public function sendCustomNotification(array $params, array $body, array $auth): JsonResponse
+    {
+        if (!$this->isAdmin($auth)) {
+            return JsonResponse::error('Admin privileges required', 403);
+        }
+
+        try {
+            $eventId         = EventId::fromString($params['eventId']);
+            $subject         = (string)($body['subject'] ?? '');
+            $message         = (string)($body['message'] ?? '');
+            $sendToBoatOwners = (bool)($body['send_to_boat_owners'] ?? false);
+            $sendToCrew      = (bool)($body['send_to_crew'] ?? false);
+
+            $result = $this->sendCustomNotificationUseCase->execute(
+                $eventId,
+                $subject,
+                $message,
+                $sendToBoatOwners,
+                $sendToCrew
+            );
+
+            return JsonResponse::success($result);
+        } catch (ValidationException $e) {
+            return JsonResponse::error($e->getMessage(), 400, $e->getErrors());
+        } catch (EventNotFoundException $e) {
             return JsonResponse::notFound($e->getMessage());
         } catch (\Exception $e) {
             return JsonResponse::serverError($e->getMessage());

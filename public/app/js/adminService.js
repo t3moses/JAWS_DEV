@@ -250,6 +250,52 @@ export async function setCrewCommitmentRank(crewKey, commitmentRank) {
 }
 
 /**
+ * Get participant emails for an event, grouped by role
+ * @param {string} eventId - Event identifier
+ * @returns {Promise<{event_id: string, boat_owners: {count: number, emails: string[]}, crew_members: {count: number, emails: string[]}}>}
+ */
+export async function getParticipantEmails(eventId) {
+    try {
+        const response = await apiService.get(API_CONFIG.ENDPOINTS.ADMIN_PARTICIPANTS, { eventId });
+
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to load participant emails');
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('AdminService: Failed to get participant emails:', error);
+        throw error;
+    }
+}
+
+/**
+ * Send a custom admin-composed notification via BCC
+ * @param {string} eventId - Event identifier
+ * @param {{subject: string, message: string, sendToBoatOwners: boolean, sendToCrew: boolean}} options
+ * @returns {Promise<{emails_sent: number, message: string}>}
+ */
+export async function sendCustomNotification(eventId, { subject, message, sendToBoatOwners, sendToCrew }) {
+    try {
+        const response = await apiService.post(API_CONFIG.ENDPOINTS.ADMIN_CUSTOM_NOTIFICATION, {
+            subject,
+            message,
+            send_to_boat_owners: sendToBoatOwners,
+            send_to_crew: sendToCrew,
+        }, { eventId });
+
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to send custom notification');
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('AdminService: Failed to send custom notification:', error);
+        throw error;
+    }
+}
+
+/**
  * Remove a boat from a crew member's whitelist
  * @param {string} crewKey - Crew key
  * @param {string} boatKey - Boat key

@@ -179,6 +179,24 @@ return [
         'auth' => true,
     ],
 
+    // Get Participant Emails for Event
+    [
+        'method' => 'GET',
+        'path' => '/api/admin/participants/{eventId}',
+        'controller' => AdminController::class,
+        'action' => 'getParticipantEmails',
+        'auth' => true,
+    ],
+
+    // Send Custom Notification (admin-composed BCC message)
+    [
+        'method' => 'POST',
+        'path' => '/api/admin/notifications/{eventId}/custom',
+        'controller' => AdminController::class,
+        'action' => 'sendCustomNotification',
+        'auth' => true,
+    ],
+
     // Get Configuration
     [
         'method' => 'GET',
