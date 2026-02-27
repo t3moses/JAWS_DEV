@@ -271,6 +271,157 @@ HTML;
     }
 
     /**
+     * Render crew reminder notification email (sent ~24h before event)
+     *
+     * @param string $firstName Crew member's first name
+     * @param string $eventId Event identifier (e.g. "Fri May 29")
+     * @param string $eventDate Event date (YYYY-MM-DD)
+     * @param string $startTime Event start time (HH:MM:SS)
+     * @return string HTML email body
+     */
+    public function renderCrewReminderNotification(
+        string $firstName,
+        string $eventId,
+        string $eventDate,
+        string $startTime
+    ): string {
+        $friendlyDate = date('l, F j, Y', strtotime($eventDate));
+        $friendlyTime = date('g:i a', strtotime($startTime));
+
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        {$this->getSharedStyles()}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Social Day Cruising - Reminder</h2>
+        </div>
+        <div class="content">
+            <p>Hi {$firstName},</p>
+
+            <p>This is a friendly reminder that you are registered for tomorrow's sailing event:</p>
+
+            <div class="section">
+                <div class="field">
+                    <span class="label">Event:</span>
+                    <span class="value">{$eventId}</span>
+                </div>
+                <div class="field">
+                    <span class="label">Date:</span>
+                    <span class="value">{$friendlyDate}</span>
+                </div>
+                <div class="field">
+                    <span class="label">Start Time:</span>
+                    <span class="value">{$friendlyTime}</span>
+                </div>
+            </div>
+
+            <p>Please ensure you are ready at the dock by start time. If your plans have changed, update your availability as soon as possible.</p>
+
+            <div class="footer">
+                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>If you have any questions, please contact the sailing coordinator.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
+    /**
+     * Render crew list notification email (sent to admin + boat owners at blackout start)
+     *
+     * @param string $eventId Event identifier (e.g. "Fri May 29")
+     * @param string $eventDate Event date (YYYY-MM-DD)
+     * @param array $crewedBoats Array of crewed boat data from flotilla['crewed_boats']
+     * @return string HTML email body
+     */
+    public function renderCrewListNotification(
+        string $eventId,
+        string $eventDate,
+        array $crewedBoats
+    ): string {
+        $friendlyDate = date('l, F j, Y', strtotime($eventDate));
+        $boatSections = '';
+
+        foreach ($crewedBoats as $crewedBoat) {
+            $boat = $crewedBoat['boat'];
+            $crews = $crewedBoat['crews'];
+            $boatName = htmlspecialchars($boat['display_name']);
+
+            $crewRows = '';
+            foreach ($crews as $crew) {
+                $name = htmlspecialchars($crew['first_name'] . ' ' . $crew['last_name']);
+                $skill = $this->getSkillLevelLabel($crew['skill'] ?? 0);
+                $experience = htmlspecialchars($crew['experience'] ?? 'Not provided');
+                $crewRows .= <<<ROW
+                    <tr>
+                        <td style="padding: 6px 10px; border-bottom: 1px solid #eee;">{$name}</td>
+                        <td style="padding: 6px 10px; border-bottom: 1px solid #eee;">{$skill}</td>
+                        <td style="padding: 6px 10px; border-bottom: 1px solid #eee;">{$experience}</td>
+                    </tr>
+ROW;
+            }
+
+            $boatSections .= <<<SECTION
+            <div class="section">
+                <h3>{$boatName}</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background-color: #e8f0fb;">
+                            <th style="padding: 6px 10px; text-align: left;">Name</th>
+                            <th style="padding: 6px 10px; text-align: left;">Skill</th>
+                            <th style="padding: 6px 10px; text-align: left;">Experience</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {$crewRows}
+                    </tbody>
+                </table>
+            </div>
+SECTION;
+        }
+
+        $boatCount = count($crewedBoats);
+
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        {$this->getSharedStyles()}
+        table { font-size: 0.95em; }
+        th { color: #0066cc; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Social Day Cruising - Crew List</h2>
+        </div>
+        <div class="content">
+            <p><strong>Event:</strong> {$eventId} &mdash; {$friendlyDate}</p>
+            <p><strong>Boats sailing today:</strong> {$boatCount}</p>
+
+            {$boatSections}
+
+            <div class="footer">
+                <p>This is an automated notification from the JAWS sailing management system.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
+    /**
      * Get shared CSS styles used across all email templates
      *
      * @return string CSS styles

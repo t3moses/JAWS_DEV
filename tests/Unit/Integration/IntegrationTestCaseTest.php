@@ -50,10 +50,11 @@ class IntegrationTestCaseTest extends IntegrationTestCase
             20260131000000,  // add_last_logout_column
             20260201000000,  // make_display_name_nullable
             20260221000000,  // remove_crew_rank_flexibility
-            20260224000000   // remove_email_columns
+            20260224000000,  // remove_email_columns
+            20260227000000   // add_cron_notifications
         ];
 
-        $this->assertEquals($expected, $versions, 'All 6 migrations should be applied');
+        $this->assertEquals($expected, $versions, 'All 7 migrations should be applied');
     }
 
     public function testSeasonConfigInitialized(): void

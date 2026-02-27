@@ -342,6 +342,28 @@ $container->set(\App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase::cla
     );
 });
 
+// Cron Use Cases
+$container->set(\App\Application\UseCase\Cron\SendCrewReminderUseCase::class, function ($c) {
+    return new \App\Application\UseCase\Cron\SendCrewReminderUseCase(
+        $c->get(EventRepositoryInterface::class),
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(UserRepositoryInterface::class),
+        $c->get(EmailServiceInterface::class),
+        $c->get(EmailTemplateServiceInterface::class)
+    );
+});
+
+$container->set(\App\Application\UseCase\Cron\SendCrewListUseCase::class, function ($c) use ($config) {
+    return new \App\Application\UseCase\Cron\SendCrewListUseCase(
+        $c->get(EventRepositoryInterface::class),
+        $c->get(SeasonRepositoryInterface::class),
+        $c->get(UserRepositoryInterface::class),
+        $c->get(EmailServiceInterface::class),
+        $c->get(EmailTemplateServiceInterface::class),
+        $config['email']['admin_notification_email']
+    );
+});
+
 // Auth Use Cases
 $container->set(\App\Application\UseCase\Auth\RegisterUseCase::class, function ($c) use ($config) {
     return new \App\Application\UseCase\Auth\RegisterUseCase(

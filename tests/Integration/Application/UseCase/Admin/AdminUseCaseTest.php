@@ -92,6 +92,18 @@ class AdminUseCaseTest extends IntegrationTestCase
                 return true;
             }
 
+            public function sendWithCc(
+                string $to,
+                array $cc,
+                string $subject,
+                string $body,
+                ?string $fromName = null,
+                ?string $fromEmail = null
+            ): bool {
+                $this->emailsSent++;
+                return true;
+            }
+
             public function validateEmail(string $email): bool
             {
                 return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
@@ -144,6 +156,23 @@ class AdminUseCaseTest extends IntegrationTestCase
                 array $crews
             ): string {
                 return '<html><body>Assignment Email</body></html>';
+            }
+
+            public function renderCrewReminderNotification(
+                string $firstName,
+                string $eventId,
+                string $eventDate,
+                string $startTime
+            ): string {
+                return '<html><body>Crew Reminder Email</body></html>';
+            }
+
+            public function renderCrewListNotification(
+                string $eventId,
+                string $eventDate,
+                array $crewedBoats
+            ): string {
+                return '<html><body>Crew List Email</body></html>';
             }
         };
 
