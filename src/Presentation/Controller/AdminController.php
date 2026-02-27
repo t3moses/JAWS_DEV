@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Presentation\Controller;
 
 use App\Application\UseCase\Admin\GetMatchingDataUseCase;
-use App\Application\UseCase\Admin\SendNotificationsUseCase;
 use App\Application\UseCase\Admin\GetParticipantEmailsUseCase;
 use App\Application\UseCase\Admin\SendCustomNotificationUseCase;
 use App\Application\UseCase\Admin\GetConfigUseCase;
@@ -23,7 +22,6 @@ use App\Application\DTO\Request\UpdateConfigRequest;
 use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\CrewNotFoundException;
 use App\Application\Exception\EventNotFoundException;
-use App\Application\Exception\FlotillaNotFoundException;
 use App\Application\Exception\ValidationException;
 use App\Domain\ValueObject\EventId;
 use App\Presentation\Response\JsonResponse;
@@ -37,7 +35,6 @@ class AdminController
 {
     public function __construct(
         private GetMatchingDataUseCase $getMatchingDataUseCase,
-        private SendNotificationsUseCase $sendNotificationsUseCase,
         private GetParticipantEmailsUseCase $getParticipantEmailsUseCase,
         private SendCustomNotificationUseCase $sendCustomNotificationUseCase,
         private GetConfigUseCase $getConfigUseCase,
@@ -85,35 +82,6 @@ class AdminController
 
             return JsonResponse::success($result);
         } catch (EventNotFoundException $e) {
-            return JsonResponse::notFound($e->getMessage());
-        } catch (\Exception $e) {
-            return JsonResponse::serverError($e->getMessage());
-        }
-    }
-
-    /**
-     * POST /api/admin/notifications/{eventId}
-     *
-     * Sends email notifications and calendar invites for an event.
-     *
-     * @param array $params Route parameters
-     * @param array $body Request body
-     * @param array $auth Authentication context
-     */
-    public function sendNotifications(array $params, array $body, array $auth): JsonResponse
-    {
-        if (!$this->isAdmin($auth)) {
-            return JsonResponse::error('Admin privileges required', 403);
-        }
-
-        try {
-            $eventId = EventId::fromString($params['eventId']);
-            $includeCalendar = $body['include_calendar'] ?? true;
-
-            $result = $this->sendNotificationsUseCase->execute($eventId, $includeCalendar);
-
-            return JsonResponse::success($result);
-        } catch (EventNotFoundException | FlotillaNotFoundException $e) {
             return JsonResponse::notFound($e->getMessage());
         } catch (\Exception $e) {
             return JsonResponse::serverError($e->getMessage());

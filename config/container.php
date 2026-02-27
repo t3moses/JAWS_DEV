@@ -268,17 +268,6 @@ $container->set(\App\Application\UseCase\Admin\SendCustomNotificationUseCase::cl
     );
 });
 
-$container->set(\App\Application\UseCase\Admin\SendNotificationsUseCase::class, function ($c) {
-    return new \App\Application\UseCase\Admin\SendNotificationsUseCase(
-        $c->get(EventRepositoryInterface::class),
-        $c->get(SeasonRepositoryInterface::class),
-        $c->get(UserRepositoryInterface::class),
-        $c->get(EmailServiceInterface::class),
-        $c->get(EmailTemplateServiceInterface::class),
-        $c->get(CalendarServiceInterface::class)
-    );
-});
-
 $container->set(\App\Application\UseCase\Admin\GetConfigUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\GetConfigUseCase(
         $c->get(SeasonRepositoryInterface::class)
@@ -461,7 +450,6 @@ $container->set(\App\Presentation\Controller\AssignmentController::class, functi
 $container->set(\App\Presentation\Controller\AdminController::class, function ($c) {
     return new \App\Presentation\Controller\AdminController(
         $c->get(\App\Application\UseCase\Admin\GetMatchingDataUseCase::class),
-        $c->get(\App\Application\UseCase\Admin\SendNotificationsUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetParticipantEmailsUseCase::class),
         $c->get(\App\Application\UseCase\Admin\SendCustomNotificationUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetConfigUseCase::class),

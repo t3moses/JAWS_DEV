@@ -50,26 +50,6 @@ interface EmailTemplateServiceInterface
     public function renderBoatOwnerRegistrationNotification(User $user, array $profile): string;
 
     /**
-     * Render assignment notification email
-     *
-     * @param string $recipientFirstName Recipient's first name
-     * @param string $eventId Event identifier
-     * @param string $boatName Boat name
-     * @param array $crews Array of crew data, each containing:
-     *   - first_name: string
-     *   - last_name: string
-     *   - email: string
-     *   - skill: int
-     * @return string HTML email body
-     */
-    public function renderAssignmentNotification(
-        string $recipientFirstName,
-        string $eventId,
-        string $boatName,
-        array $crews
-    ): string;
-
-    /**
      * Render crew reminder notification email (sent ~24h before event)
      *
      * @param string $firstName Crew member's first name

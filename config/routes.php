@@ -170,15 +170,6 @@ return [
         'auth' => true,
     ],
 
-    // Send Notifications
-    [
-        'method' => 'POST',
-        'path' => '/api/admin/notifications/{eventId}',
-        'controller' => AdminController::class,
-        'action' => 'sendNotifications',
-        'auth' => true,
-    ],
-
     // Get Participant Emails for Event
     [
         'method' => 'GET',
