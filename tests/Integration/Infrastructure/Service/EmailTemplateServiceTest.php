@@ -403,8 +403,6 @@ class EmailTemplateServiceTest extends IntegrationTestCase
         $boatProfile = ['ownerFirstName' => 'Test', 'ownerLastName' => 'User', 'minBerths' => 2, 'maxBerths' => 4];
         $boatHtml = $this->service->renderBoatOwnerRegistrationNotification($user, $boatProfile);
 
-        $assignmentHtml = $this->service->renderAssignmentNotification('Test', 'Event', 'Boat', []);
-
         // Verify all templates include shared styles
         $sharedStyleElements = [
             'font-family: Arial',
@@ -418,7 +416,6 @@ class EmailTemplateServiceTest extends IntegrationTestCase
         foreach ($sharedStyleElements as $element) {
             $this->assertStringContainsString($element, $crewHtml);
             $this->assertStringContainsString($element, $boatHtml);
-            $this->assertStringContainsString($element, $assignmentHtml);
         }
     }
 

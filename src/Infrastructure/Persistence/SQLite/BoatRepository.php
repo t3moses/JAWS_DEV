@@ -502,6 +502,11 @@ class BoatRepository implements BoatRepositoryInterface
 
         $boat->setId((int)$row['id']);
 
+        // Set owner_user_id if present
+        if (isset($row['owner_user_id']) && $row['owner_user_id'] !== null) {
+            $boat->setOwnerUserId((int)$row['owner_user_id']);
+        }
+
         // Set rank
         $rank = Rank::forBoat(
             flexibility: (int)$row['rank_flexibility'],

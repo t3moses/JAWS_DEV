@@ -113,6 +113,20 @@ class AwsSesEmailService implements EmailServiceInterface
         return $results;
     }
 
+    public function sendWithCc(
+        string $to,
+        array $cc,
+        string $subject,
+        string $body,
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool {
+        // AWS SES SDK does not support CC via this wrapper; delegate to send()
+        // CC recipients will not receive this email when using AwsSesEmailService
+        error_log("AwsSesEmailService::sendWithCc() - CC recipients ignored; sending to primary recipient only");
+        return $this->send($to, $subject, $body, $fromName, $fromEmail);
+    }
+
     public function validateEmail(string $email): bool
     {
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;

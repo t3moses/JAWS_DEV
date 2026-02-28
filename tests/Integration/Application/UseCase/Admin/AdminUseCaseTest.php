@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace Tests\Integration\Application\UseCase\Admin;
 
 use App\Application\UseCase\Admin\GetMatchingDataUseCase;
-use App\Application\UseCase\Admin\SendNotificationsUseCase;
 use App\Application\Exception\EventNotFoundException;
-use App\Application\Exception\FlotillaNotFoundException;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Infrastructure\Persistence\SQLite\BoatRepository;
 use App\Infrastructure\Persistence\SQLite\CrewRepository;
-use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
 use App\Domain\Entity\Boat;
 use App\Domain\Entity\Crew;
@@ -33,11 +30,9 @@ use Tests\Integration\IntegrationTestCase;
 class AdminUseCaseTest extends IntegrationTestCase
 {
     private GetMatchingDataUseCase $getMatchingDataUseCase;
-    private SendNotificationsUseCase $sendNotificationsUseCase;
     private EventRepository $eventRepository;
     private BoatRepository $boatRepository;
     private CrewRepository $crewRepository;
-    private SeasonRepository $seasonRepository;
     private UserRepository $userRepository;
 
     protected function setUp(): void
@@ -47,119 +42,12 @@ class AdminUseCaseTest extends IntegrationTestCase
         $this->eventRepository = new EventRepository();
         $this->boatRepository = new BoatRepository();
         $this->crewRepository = new CrewRepository();
-        $this->seasonRepository = new SeasonRepository();
         $this->userRepository = new UserRepository();
-
-        // Create mock email and calendar services
-        $mockEmailService = new class implements \App\Application\Port\Service\EmailServiceInterface {
-            public int $emailsSent = 0;
-
-            public function send(
-                string $to,
-                string $subject,
-                string $body,
-                ?string $fromName = null,
-                ?string $fromEmail = null
-            ): bool {
-                $this->emailsSent++;
-                return true;
-            }
-
-            public function sendBulk(
-                array $recipients,
-                string $subject,
-                string $body,
-                ?string $fromName = null,
-                ?string $fromEmail = null
-            ): array {
-                $result = [];
-                foreach ($recipients as $email) {
-                    $result[$email] = true;
-                    $this->emailsSent++;
-                }
-                return $result;
-            }
-
-            public function sendWithBcc(
-                string $to,
-                array $bcc,
-                string $subject,
-                string $body,
-                ?string $fromName = null,
-                ?string $fromEmail = null
-            ): bool {
-                $this->emailsSent += count($bcc);
-                return true;
-            }
-
-            public function validateEmail(string $email): bool
-            {
-                return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
-            }
-        };
-
-        $mockCalendarService = new class implements \App\Application\Port\Service\CalendarServiceInterface {
-            public function generateEventCalendar(
-                \App\Domain\ValueObject\EventId $eventId,
-                \DateTimeInterface $date,
-                string $startTime,
-                string $finishTime,
-                string $location,
-                string $description
-            ): string {
-                return 'BEGIN:VCALENDAR...END:VCALENDAR';
-            }
-
-            public function generateSeasonCalendar(array $events): string
-            {
-                return 'BEGIN:VCALENDAR...END:VCALENDAR';
-            }
-
-            public function generateCrewCalendar(string $crewName, array $assignments): string
-            {
-                return 'BEGIN:VCALENDAR...END:VCALENDAR';
-            }
-
-            public function saveCalendarFile(string $content, string $filename): string
-            {
-                return '/tmp/' . $filename;
-            }
-        };
-
-        $mockEmailTemplateService = new class implements \App\Application\Port\Service\EmailTemplateServiceInterface {
-            public function renderCrewRegistrationNotification(\App\Domain\Entity\User $user, array $profile): string
-            {
-                return '<html><body>Crew Registration Email</body></html>';
-            }
-
-            public function renderBoatOwnerRegistrationNotification(\App\Domain\Entity\User $user, array $profile): string
-            {
-                return '<html><body>Boat Owner Registration Email</body></html>';
-            }
-
-            public function renderAssignmentNotification(
-                string $recipientFirstName,
-                string $eventId,
-                string $boatName,
-                array $crews
-            ): string {
-                return '<html><body>Assignment Email</body></html>';
-            }
-        };
 
         $this->getMatchingDataUseCase = new GetMatchingDataUseCase(
             $this->boatRepository,
             $this->crewRepository,
             $this->eventRepository
-        );
-
-        $this->sendNotificationsUseCase = new SendNotificationsUseCase(
-            $this->eventRepository,
-            $this->seasonRepository,
-            $this->userRepository,
-            $mockEmailService,
-            $mockEmailTemplateService,
-            $mockCalendarService
         );
 
         $this->initializeTestData();
@@ -422,114 +310,4 @@ class AdminUseCaseTest extends IntegrationTestCase
         $this->assertEquals(0, $result['capacity']['total_crews']);
     }
 
-    // ==================== SendNotificationsUseCase Tests ====================
-
-    public function testSendNotificationsThrowsExceptionWhenEventNotFound(): void
-    {
-        $this->expectException(EventNotFoundException::class);
-
-        $eventId = EventId::fromString('Non Existent Event');
-        $this->sendNotificationsUseCase->execute($eventId);
-    }
-
-    public function testSendNotificationsThrowsExceptionWhenNoFlotilla(): void
-    {
-        $this->expectException(FlotillaNotFoundException::class);
-
-        $eventId = EventId::fromString('Fri May 15');
-        $this->sendNotificationsUseCase->execute($eventId);
-    }
-
-    public function testSendNotificationsReturnsSuccessWithFlotilla(): void
-    {
-        $eventId = EventId::fromString('Fri May 15');
-
-        $boatOwnerUserId = $this->userRepository->findByEmail('boatowner1@example.com')?->getId() ?? 0;
-        $crewUserId = $this->userRepository->findByEmail('crew1@example.com')?->getId() ?? 0;
-
-        // Create a simple flotilla
-        $flotilla = [
-            'event_id' => 'Fri May 15',
-            'crewed_boats' => [
-                [
-                    'boat' => [
-                        'key' => 'Boat One',
-                        'display_name' => 'Boat One',
-                        'owner_first_name' => 'Owner',
-                        'owner_last_name' => 'One',
-                        'owner_user_id' => $boatOwnerUserId,
-                    ],
-                    'crews' => [
-                        [
-                            'key' => 'alicesmith',
-                            'display_name' => 'Alice Smith',
-                            'first_name' => 'Alice',
-                            'last_name' => 'Smith',
-                            'user_id' => $crewUserId,
-                            'skill' => 2,
-                        ],
-                    ],
-                ],
-            ],
-            'waitlist_boats' => [],
-            'waitlist_crews' => [],
-        ];
-
-        // Save flotilla directly to database
-        $this->pdo->exec("
-            INSERT INTO flotillas (event_id, flotilla_data, generated_at)
-            VALUES ('Fri May 15', '" . json_encode($flotilla) . "', CURRENT_TIMESTAMP)
-        ");
-
-        $result = $this->sendNotificationsUseCase->execute($eventId, false);
-
-        $this->assertTrue($result['success']);
-        $this->assertGreaterThan(0, $result['emails_sent']);
-    }
-
-    public function testSendNotificationsWithCalendarAttachment(): void
-    {
-        $eventId = EventId::fromString('Fri May 15');
-
-        $boatOwnerUserId = $this->userRepository->findByEmail('boatowner1@example.com')?->getId() ?? 0;
-        $crewUserId = $this->userRepository->findByEmail('crew1@example.com')?->getId() ?? 0;
-
-        // Create flotilla
-        $flotilla = [
-            'event_id' => 'Fri May 15',
-            'crewed_boats' => [
-                [
-                    'boat' => [
-                        'key' => 'Boat One',
-                        'display_name' => 'Boat One',
-                        'owner_first_name' => 'Owner',
-                        'owner_last_name' => 'One',
-                        'owner_user_id' => $boatOwnerUserId,
-                    ],
-                    'crews' => [
-                        [
-                            'key' => 'Alice Smith',
-                            'display_name' => 'Alice Smith',
-                            'first_name' => 'Alice',
-                            'last_name' => 'Smith',
-                            'user_id' => $crewUserId,
-                            'skill' => 2,
-                        ],
-                    ],
-                ],
-            ],
-            'waitlist_boats' => [],
-            'waitlist_crews' => [],
-        ];
-
-        $this->pdo->exec("
-            INSERT INTO flotillas (event_id, flotilla_data, generated_at)
-            VALUES ('Fri May 15', '" . json_encode($flotilla) . "', CURRENT_TIMESTAMP)
-        ");
-
-        $result = $this->sendNotificationsUseCase->execute($eventId, true);
-
-        $this->assertTrue($result['success']);
-        $this->assertStringContainsString('sent', strtolower($result['message']));
-    }
 }

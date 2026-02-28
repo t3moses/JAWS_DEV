@@ -50,22 +50,32 @@ interface EmailTemplateServiceInterface
     public function renderBoatOwnerRegistrationNotification(User $user, array $profile): string;
 
     /**
-     * Render assignment notification email
+     * Render crew reminder notification email (sent ~24h before event)
      *
-     * @param string $recipientFirstName Recipient's first name
-     * @param string $eventId Event identifier
-     * @param string $boatName Boat name
-     * @param array $crews Array of crew data, each containing:
-     *   - first_name: string
-     *   - last_name: string
-     *   - email: string
-     *   - skill: int
+     * @param string $firstName Crew member's first name
+     * @param string $eventId Event identifier (e.g. "Fri May 29")
+     * @param string $eventDate Event date (YYYY-MM-DD)
+     * @param string $startTime Event start time (HH:MM:SS)
      * @return string HTML email body
      */
-    public function renderAssignmentNotification(
-        string $recipientFirstName,
+    public function renderCrewReminderNotification(
+        string $firstName,
         string $eventId,
-        string $boatName,
-        array $crews
+        string $eventDate,
+        string $startTime
+    ): string;
+
+    /**
+     * Render crew list notification email (sent to admin + boat owners at blackout start)
+     *
+     * @param string $eventId Event identifier (e.g. "Fri May 29")
+     * @param string $eventDate Event date (YYYY-MM-DD)
+     * @param array $crewedBoats Array of crewed boat data from flotilla['crewed_boats']
+     * @return string HTML email body
+     */
+    public function renderCrewListNotification(
+        string $eventId,
+        string $eventDate,
+        array $crewedBoats
     ): string;
 }

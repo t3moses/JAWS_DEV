@@ -69,6 +69,26 @@ interface EmailServiceInterface
     ): bool;
 
     /**
+     * Send an email with CC recipients
+     *
+     * @param string $to Primary recipient email address
+     * @param array<string> $cc Array of CC email addresses
+     * @param string $subject Email subject
+     * @param string $body Email body (HTML or plain text)
+     * @param string|null $fromName Optional sender name
+     * @param string|null $fromEmail Optional sender email
+     * @return bool True if sent successfully
+     */
+    public function sendWithCc(
+        string $to,
+        array $cc,
+        string $subject,
+        string $body,
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool;
+
+    /**
      * Validate an email address
      *
      * @param string $email
