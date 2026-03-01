@@ -145,7 +145,7 @@ class MailjetEmailService implements EmailServiceInterface
 
     private function postMessage(array $message): bool
     {
-        $mj    = new Client($this->apiKey, $this->apiSecret, true, ['version' => 'v3.1']);
+        $mj    = $this->newMailjetClient();
         $delay = self::RETRY_BASE_DELAY;
 
         for ($attempt = 1; $attempt <= self::MAX_RETRIES + 1; $attempt++) {
@@ -155,7 +155,7 @@ class MailjetEmailService implements EmailServiceInterface
                 // Network-level failure (DNS, timeout, connection refused)
                 if ($attempt <= self::MAX_RETRIES) {
                     error_log("Mailjet network error (attempt {$attempt}), retrying in {$delay}s: " . $e->getMessage());
-                    sleep($delay);
+                    $this->doSleep($delay);
                     $delay *= 2;
                     continue;
                 }
@@ -178,7 +178,7 @@ class MailjetEmailService implements EmailServiceInterface
             // 5xx = transient server error — retry
             if ($attempt <= self::MAX_RETRIES) {
                 error_log("Mailjet transient failure (HTTP {$status}, attempt {$attempt}), retrying in {$delay}s");
-                sleep($delay);
+                $this->doSleep($delay);
                 $delay *= 2;
                 continue;
             }
@@ -193,5 +193,15 @@ class MailjetEmailService implements EmailServiceInterface
     public function validateEmail(string $email): bool
     {
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    protected function newMailjetClient(): Client
+    {
+        return new Client($this->apiKey, $this->apiSecret, true, ['version' => 'v3.1']);
+    }
+
+    protected function doSleep(int $seconds): void
+    {
+        sleep($seconds);
     }
 }
