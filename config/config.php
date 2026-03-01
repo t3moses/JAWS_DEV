@@ -40,6 +40,7 @@ return [
     // Application
     'app' => [
         'debug' => getenv('APP_DEBUG') === 'true',
+        'env' => getenv('APP_ENV') ?: 'production',
         'timezone' => getenv('APP_TIMEZONE') ?: 'America/Toronto',
         'url' => getenv('APP_URL') ?: 'http://localhost',
     ],
