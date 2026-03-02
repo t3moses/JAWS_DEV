@@ -221,6 +221,14 @@ $container->set(\App\Application\UseCase\Event\GetEventUseCase::class, function 
     );
 });
 
+$container->set(\App\Application\UseCase\Event\GetStatusUseCase::class, function ($c) {
+    return new \App\Application\UseCase\Event\GetStatusUseCase(
+        $c->get(SeasonRepositoryInterface::class),
+        $c->get(EventRepositoryInterface::class),
+        $c->get(TimeServiceInterface::class)
+    );
+});
+
 // Flotilla Use Cases
 $container->set(\App\Application\UseCase\Flotilla\GetAllFlotillasUseCase::class, function ($c) {
     return new \App\Application\UseCase\Flotilla\GetAllFlotillasUseCase(
@@ -383,7 +391,8 @@ $container->set(\App\Application\UseCase\Auth\RegisterUseCase::class, function (
         $c->get(EmailTemplateServiceInterface::class),
         $c->get(EventRepositoryInterface::class),
         $c->get(CalendarServiceInterface::class),
-        $config
+        $config,
+        $c->get(TransactionServiceInterface::class)
     );
 });
 
@@ -445,9 +454,7 @@ $container->set(\App\Presentation\Controller\EventController::class, function ($
         $c->get(\App\Application\UseCase\Event\GetAllEventsUseCase::class),
         $c->get(\App\Application\UseCase\Event\GetEventUseCase::class),
         $c->get(\App\Application\UseCase\Flotilla\GetAllFlotillasUseCase::class),
-        $c->get(TimeServiceInterface::class),
-        $c->get(SeasonRepositoryInterface::class),
-        $c->get(EventRepositoryInterface::class)
+        $c->get(\App\Application\UseCase\Event\GetStatusUseCase::class)
     );
 });
 
