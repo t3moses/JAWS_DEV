@@ -24,7 +24,6 @@ use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\CrewNotFoundException;
 use App\Application\Exception\EventNotFoundException;
 use App\Application\Exception\ValidationException;
-use App\Domain\ValueObject\EventId;
 use App\Presentation\Response\JsonResponse;
 
 /**
@@ -79,8 +78,7 @@ class AdminController
         }
 
         try {
-            $eventId = EventId::fromString($params['eventId']);
-            $result = $this->getMatchingDataUseCase->execute($eventId);
+            $result = $this->getMatchingDataUseCase->execute($params['eventId']);
 
             return JsonResponse::success($result);
         } catch (EventNotFoundException $e) {
@@ -105,8 +103,7 @@ class AdminController
         }
 
         try {
-            $eventId = EventId::fromString($params['eventId']);
-            $result  = $this->getParticipantEmailsUseCase->execute($eventId);
+            $result  = $this->getParticipantEmailsUseCase->execute($params['eventId']);
 
             return JsonResponse::success($result);
         } catch (EventNotFoundException $e) {
@@ -132,14 +129,13 @@ class AdminController
         }
 
         try {
-            $eventId         = EventId::fromString($params['eventId']);
             $subject         = (string)($body['subject'] ?? '');
             $message         = (string)($body['message'] ?? '');
             $sendToBoatOwners = (bool)($body['send_to_boat_owners'] ?? false);
             $sendToCrew      = (bool)($body['send_to_crew'] ?? false);
 
             $result = $this->sendCustomNotificationUseCase->execute(
-                $eventId,
+                $params['eventId'],
                 $subject,
                 $message,
                 $sendToBoatOwners,

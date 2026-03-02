@@ -33,7 +33,7 @@ class SendCustomNotificationUseCase
     }
 
     /**
-     * @param EventId $eventId
+     * @param string $eventId
      * @param string $subject
      * @param string $message Plain-text message body
      * @param bool $sendToBoatOwners
@@ -43,7 +43,7 @@ class SendCustomNotificationUseCase
      * @throws ValidationException
      */
     public function execute(
-        EventId $eventId,
+        string $eventId,
         string $subject,
         string $message,
         bool $sendToBoatOwners,
@@ -63,6 +63,8 @@ class SendCustomNotificationUseCase
         if (!empty($errors)) {
             throw new ValidationException($errors);
         }
+
+        $eventId = EventId::fromString($eventId);
 
         // Verify event exists
         $eventData = $this->eventRepository->findById($eventId);
