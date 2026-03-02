@@ -69,10 +69,6 @@ class EmailTemplateServiceTest extends IntegrationTestCase
         $this->assertStringContainsString('5 years sailing experience', $html);
         $this->assertStringContainsString('123', $html); // user ID
 
-        // Verify AWS SES command
-        $this->assertStringContainsString('AWS SES Email Verification', $html);
-        $this->assertStringContainsString('aws ses verify-email-identity --email-address john.doe@example.com', $html);
-
         // Verify footer
         $this->assertStringContainsString('automated notification from the JAWS sailing management system', $html);
 
@@ -244,9 +240,6 @@ class EmailTemplateServiceTest extends IntegrationTestCase
         $this->assertStringContainsString('555-9999', $html);
         $this->assertStringContainsString('4-6', $html); // berth capacity
         $this->assertStringContainsString('Yes', $html); // assistance required
-
-        // Verify AWS SES command
-        $this->assertStringContainsString('aws ses verify-email-identity --email-address owner@example.com', $html);
     }
 
     public function testRenderBoatOwnerRegistrationNotificationWithMinimalProfile(): void

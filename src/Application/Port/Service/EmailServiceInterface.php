@@ -8,7 +8,7 @@ namespace App\Application\Port\Service;
  * Email Service Interface
  *
  * Defines the contract for sending emails.
- * Implementations handle SMTP, AWS SES, or other email providers.
+ * Implementations handle SMTP, MailJet API, or other email providers.
  */
 interface EmailServiceInterface
 {

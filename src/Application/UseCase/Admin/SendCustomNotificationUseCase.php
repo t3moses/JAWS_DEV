@@ -17,7 +17,7 @@ use App\Domain\ValueObject\EventId;
  * Send Custom Notification Use Case
  *
  * Sends an admin-composed message to selected participant groups via BCC.
- * Batches emails in chunks of 50 to stay within AWS SES limits.
+ * Batches emails in chunks of 50 to stay within limits of many services.
  */
 class SendCustomNotificationUseCase
 {

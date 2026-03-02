@@ -155,26 +155,24 @@ DB_PATH=database/jaws.db
 JWT_SECRET=your-secret-key-at-least-32-characters-long-change-this-in-production
 JWT_EXPIRATION_MINUTES=60
 
-# SMTP Email Configuration
-# For production: Use AWS SES SMTP endpoint
-# For development: Use MailHog or similar (localhost:1025)
-SMTP_HOST=email-smtp.ca-central-1.amazonaws.com
-SMTP_PORT=587
-SMTP_SECURE=tls
-SMTP_USERNAME=your_smtp_username
-SMTP_PASSWORD=your_smtp_password
-EMAIL_FROM=noreply@nsc-sdc.ca
-EMAIL_FROM_NAME="Nepean Sailing Club - Social Day Cruising"
+# Email - Local Development (APP_ENV=development or local)
+# Emails are captured by MailHog (https://github.com/mailhog/MailHog) instead of being delivered.
+# Start MailHog, then view captured emails at http://localhost:8025
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_SECURE=
+SMTP_USERNAME=
+SMTP_PASSWORD=
 
-# Alternative: MailHog (local SMTP testing, no auth or encryption needed)
-# SMTP_HOST=localhost
-# SMTP_PORT=1025
-# SMTP_SECURE=
-# SMTP_USERNAME=
-# SMTP_PASSWORD=
-# EMAIL_FROM=system@example.com
-# EMAIL_FROM_NAME="JAWS System (local)"
-# APP_ENV=local
+# Email - Production (APP_ENV=production)
+# Mailjet API keys (https://app.mailjet.com → Account Settings → API Key Management)
+MJ_APIKEY_PUBLIC=your_mailjet_public_api_key
+MJ_APIKEY_PRIVATE=your_mailjet_private_api_key
+
+# Email Configuration
+EMAIL_FROM=noreply@example.com
+EMAIL_FROM_NAME="JAWS System"
+ADMIN_NOTIFICATION_EMAIL=admin@example.com
 
 # Application
 APP_DEBUG=true
