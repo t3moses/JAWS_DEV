@@ -358,7 +358,7 @@ JAWS uses PHPUnit for automated testing. Tests are organized into Unit and Integ
 ./vendor/bin/phpunit tests/Integration
 
 # Run specific test file
-./vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 
 # Run with coverage report
 ./vendor/bin/phpunit --coverage-html coverage
@@ -435,7 +435,7 @@ class SelectionServiceTest extends TestCase
 
 **Run this test:**
 ```bash
-./vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 ```
 
 ### Writing Integration Tests

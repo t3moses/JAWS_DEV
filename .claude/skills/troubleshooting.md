@@ -116,7 +116,7 @@ mv database/jaws.new.db database/jaws.db
 **1. Deterministic behavior broken:**
 ```bash
 # Check if selection/assignment algorithms produce consistent results
-./vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 ```
 
 **2. Dependencies not installed:**
@@ -442,7 +442,7 @@ sqlite3 database/jaws.db "PRAGMA index_list(table_name);"
 ./vendor/bin/phpunit tests/Unit
 
 # Specific test
-./vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 ```
 
 **Parallel testing:**

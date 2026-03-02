@@ -255,7 +255,7 @@ vendor/bin/phinx seed:run
 ./vendor/bin/phpunit tests/Integration
 
 # Specific test file
-./vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 
 # With coverage report
 ./vendor/bin/phpunit --coverage-html coverage

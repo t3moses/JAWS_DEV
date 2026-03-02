@@ -34,7 +34,13 @@ vendor/bin/phinx seed:run    # Optional: test data
 ### 3. Configure Environment
 
 ```bash
-cp .env.example .env  # Set JWT_SECRET (min 32 chars, REQUIRED)
+# Mac/Linux
+cp .env.example .env
+
+# Windows (PowerShell)
+Copy-Item .env.example .env
+
+# Set JWT_SECRET (min 32 chars, REQUIRED)
 ```
 
 ### 4. Run Development Server
@@ -48,24 +54,31 @@ curl http://localhost:8000/api/events  # Test
 
 ```bash
 # Unit tests (fast, no DB needed)
-vendor/bin/phpunit tests/Unit         # 346 tests, ~8s
+vendor/bin/phpunit tests/Unit
 
-# Integration tests (require DB)
-vendor/bin/phpunit tests/Integration  # 10 tests
+# Integration tests (DB-backed, uses in-memory SQLite test setup)
+vendor/bin/phpunit tests/Integration
 
 # All tests
 vendor/bin/phpunit                    # Runs all test suites
 
 # Specific test file
-vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 
 # API tests (start server first)
+# Mac/Linux
 php -S localhost:8000 -t public > /dev/null 2>&1 & SERVER_PID=$!; sleep 2
-php tests/Integration/api_test.php -v
+vendor/bin/phpunit --testsuite=API
 kill $SERVER_PID
+
+# Windows (PowerShell)
+$p = Start-Process php -ArgumentList '-S','localhost:8000','-t','public' -PassThru
+Start-Sleep -Seconds 2
+vendor/bin/phpunit --testsuite=API
+Stop-Process -Id $p.Id
 ```
 
-**NEVER** run tests before `phinx migrate` - integration/API tests need the schema.
+Run `vendor/bin/phinx migrate` before local application/API testing. Note: PHPUnit integration tests bootstrap their own in-memory SQLite schema.
 
 ## Project Layout
 
@@ -91,7 +104,7 @@ src/
     └── Router.php       # Route definitions
 
 config/                  # DI container, routes, config
-database/migrations/     # Phinx migration files (do NOT edit archive/)
+database/migrations/     # Phinx migration files (add new files; do not modify historical migration timestamps)
 tests/{Unit,Integration}/  # PHPUnit test suites
 public/                  # Web root (index.php, frontend app/)
 ```
@@ -103,7 +116,7 @@ public/                  # Web root (index.php, frontend app/)
 
 ## CI/CD Pipeline
 
-`.github/workflows/ci.yml` runs 5 parallel jobs: build, setup-database, unit-tests, integration-tests, api-tests. Uses PHP 8.5 (local: 8.1+).
+`.github/workflows/ci.yml` runs `build` and `unit-tests` on push, plus `integration-tests` on pull requests. API/E2E checks run in `.github/workflows/deploy.yml` (`e2e-tests` job). Uses PHP 8.5 in CI.
 
 **Common failures**: Missing DB migrations, server not started. DO NOT modify composer.lock unless using PHP 8.4+.
 
@@ -115,18 +128,21 @@ public/                  # Web root (index.php, frontend app/)
 ## Common Issues & Solutions
 
 **Composer install fails (PHP < 8.4)**: Use `composer install --ignore-platform-reqs` - lock file requires PHP 8.4+  
-**DB permission errors**: `chmod 775 database && chmod 664 database/jaws.db`  
+**DB permission errors (Mac/Linux)**: `chmod 775 database && chmod 664 database/jaws.db`  
+**DB permission errors (Windows)**: ensure your user has write access to `database/` and `database/jaws.db`  
 **JWT 401 errors**: Verify `.env` has JWT_SECRET (min 32 chars)  
 **Migration "already exists"**: Check `vendor/bin/phinx status`, rollback if needed  
-**Port in use**: `lsof -ti:8000 | xargs kill -9` or use different port  
-**Local test failures**: `rm database/jaws.db && vendor/bin/phinx migrate && rm -rf .phpunit.cache`
+**Port in use (Mac/Linux)**: `lsof -ti:8000 | xargs kill -9` or use different port  
+**Port in use (Windows PowerShell)**: `Get-NetTCPConnection -LocalPort 8000 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`  
+**Local test failures (Mac/Linux)**: `rm database/jaws.db && vendor/bin/phinx migrate && rm -rf .phpunit.cache`  
+**Local test failures (Windows PowerShell)**: `Remove-Item database\jaws.db -ErrorAction SilentlyContinue; vendor/bin/phinx migrate; Remove-Item .phpunit.cache -Recurse -Force -ErrorAction SilentlyContinue`
 
 ## Architecture Rules
 
 **Layer boundaries**: Domain (no imports) ← Application ← Infrastructure, Presentation → Application only  
 **Wrong**: Domain importing PDO/repositories. **Right**: Application ports, Infrastructure implements.
 
-**Critical algorithms**: DO NOT modify core logic in Selection/AssignmentService. Add features around them. ALWAYS run `tests/Unit/Domain/SelectionServiceTest.php` after changes. Verify deterministic output.
+**Critical algorithms**: DO NOT modify core logic in Selection/AssignmentService. Add features around them. ALWAYS run `tests/Unit/Domain/Service/SelectionServiceTest.php` after changes. Verify deterministic output.
 
 ## Code Quality
 
@@ -144,7 +160,7 @@ public/                  # Web root (index.php, frontend app/)
 1. `vendor/bin/phpunit` passes
 2. `vendor/bin/phinx status` shows all "up"
 3. API responds locally (`curl http://localhost:8000/api/events`)
-4. GitHub Actions passes (5 jobs)
+4. Relevant GitHub Actions workflow passes for the event type (push: build + unit; pull_request: build + unit + integration)
 5. Code follows PSR-12 (4 spaces, strict types, type hints)
 
 Update docs if needed: `README.md`, `CLAUDE.md`, `docs/{DEVELOPER_GUIDE,API,CONTRIBUTING}.md`
@@ -155,7 +171,13 @@ Update docs if needed: `README.md`, `CLAUDE.md`, `docs/{DEVELOPER_GUIDE,API,CONT
 # Setup from scratch
 composer install --prefer-dist --no-progress --no-interaction
 vendor/bin/phinx migrate
+
+# Mac/Linux
 cp .env.example .env && nano .env  # Set JWT_SECRET
+
+# Windows (PowerShell)
+Copy-Item .env.example .env
+notepad .env
 
 # Development workflow
 php -S localhost:8000 -t public &           # Start server
@@ -169,8 +191,15 @@ vendor/bin/phinx status                     # Check migration status
 sqlite3 database/jaws.db "SELECT * FROM boats LIMIT 5"  # Query DB
 
 # Cleanup
+# Mac/Linux
 rm database/jaws.db && vendor/bin/phinx migrate  # Reset DB
-rm -rf vendor && composer install           # Reinstall deps
+rm -rf vendor && composer install                 # Reinstall deps
+
+# Windows (PowerShell)
+Remove-Item database\jaws.db -ErrorAction SilentlyContinue
+vendor/bin/phinx migrate
+Remove-Item vendor -Recurse -Force
+composer install
 ```
 
 ## Commit Message Format

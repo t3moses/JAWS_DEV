@@ -42,7 +42,7 @@ php -S localhost:8000 -t public &
 ### 5. Specific Test File
 Run a single test file:
 ```bash
-./vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 ```
 
 ### 6. Verbose Output
@@ -78,7 +78,7 @@ Add `--verbose` flag for detailed output:
 
 **Test specific functionality:**
 ```bash
-./vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 ```
 
 ## Notes
