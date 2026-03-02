@@ -28,6 +28,8 @@ Tests that use the database (Infrastructure layer):
 
 ### 4. API Tests
 Full end-to-end API tests (requires dev server):
+
+**Mac/Linux:**
 ```bash
 # Start dev server in background
 php -S localhost:8000 -t public &
@@ -37,6 +39,14 @@ php -S localhost:8000 -t public &
 
 # Or run specific API test file
 ./vendor/bin/phpunit tests/Integration/Api/EventApiTest.php
+```
+
+**Windows PowerShell:**
+```powershell
+$p = Start-Process php -ArgumentList '-S','localhost:8000','-t','public' -PassThru
+Start-Sleep -Seconds 2
+./vendor/bin/phpunit --testsuite=API
+Stop-Process -Id $p.Id
 ```
 
 ### 5. Specific Test File
@@ -63,6 +73,7 @@ Add `--verbose` flag for detailed output:
 
 - **Dependencies installed:** `composer install`
 - **For API tests:** Dev server running on `localhost:8000`
+- **For local app/API verification:** run `vendor/bin/phinx migrate` first
 
 ## Common Commands
 

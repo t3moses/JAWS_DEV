@@ -2,6 +2,8 @@
 
 Step-by-step deployment guide for the JAWS application to AWS Lightsail production environment.
 
+Primary deployment path is the GitHub Actions workflow in `.github/workflows/deploy.yml` (`workflow_dispatch`). Manual SSH/SFTP steps below are fallback procedures.
+
 **Note:** See [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) for complete deployment documentation.
 
 ## Prerequisites
@@ -12,6 +14,15 @@ Step-by-step deployment guide for the JAWS application to AWS Lightsail producti
 - All tests passing locally
 
 ## Deployment Steps
+
+### 0. Preferred: Run Deployment Workflow
+
+Use GitHub Actions `Deploy to AWS Lightsail` workflow with inputs:
+- `environment` (`staging` or `production`)
+- `run_migrations` (as needed)
+- `skip_backup` (normally `false`)
+
+This path includes pre-deployment checks and API test gating.
 
 ### 1. Upload Files via SFTP
 
@@ -138,6 +149,7 @@ echo "✅ Deployment complete!"
 - [ ] Database backup strategy confirmed
 - [ ] No breaking API changes (or clients notified)
 - [ ] Migration tested locally (if database changes)
+- [ ] Prefer workflow run over manual upload when possible
 
 ## Post-Deployment Checklist
 

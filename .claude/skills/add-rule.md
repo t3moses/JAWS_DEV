@@ -30,117 +30,75 @@ The optimizer uses a greedy approach:
 Edit `src/Domain/Enum/AssignmentRule.php`:
 
 ```php
-enum AssignmentRule: string
+enum AssignmentRule: int
 {
-    case ASSIST = 'assist';
-    case WHITELIST = 'whitelist';
-    case HIGH_SKILL = 'high_skill';
-    case LOW_SKILL = 'low_skill';
-    case PARTNER = 'partner';
-    case REPEAT = 'repeat';
-    case YOUR_NEW_RULE = 'your_new_rule';  // Add new rule
+    case ASSIST = 0;
+    case WHITELIST = 1;
+    case HIGH_SKILL = 2;
+    case LOW_SKILL = 3;
+    case PARTNER = 4;
+    case REPEAT = 5;
+    case YOUR_NEW_RULE = 6;  // Add new rule
 }
 ```
 
 ### 2. Implement Loss Calculation
 
-Edit `src/Domain/Service/AssignmentService.php`, add to `crew_loss()` method:
+Edit `src/Domain/Service/AssignmentService.php`, add handling to `crewLoss()`:
 
 ```php
-private function crew_loss(
-    Crew $crew,
-    Boat $boat,
+public function crewLoss(
     AssignmentRule $rule,
-    array $context
-): float {
-    return match ($rule) {
-        // Existing rules...
-        AssignmentRule::ASSIST => $this->assistLoss($crew, $boat),
-        AssignmentRule::WHITELIST => $this->whitelistLoss($crew, $boat),
-        // ... other rules
+    Crew $crew,
+    array $crewedBoat
+): int {
+    if ($rule === AssignmentRule::YOUR_NEW_RULE) {
+        // Example custom loss calculation:
+        return $this->yourNewRuleLoss($crew, $crewedBoat);
+    }
 
-        // NEW: Your new rule
-        AssignmentRule::YOUR_NEW_RULE => $this->yourNewRuleLoss($crew, $boat, $context),
-    };
+    // existing branches...
 }
 
-/**
- * Calculate loss for your new rule
- *
- * @return float Violation severity (0 = no violation, higher = worse)
- */
-private function yourNewRuleLoss(Crew $crew, Boat $boat, array $context): float
+private function yourNewRuleLoss(Crew $crew, array $crewedBoat): int
 {
-    // Implement your loss calculation logic
-    // Return 0 if no violation
-    // Return higher values for worse violations
-
-    // Example: Penalize if crew has been on this boat recently
-    $recentEvents = $context['recent_events'] ?? 2;
-    $timesOnBoat = $this->countRecentAssignments($crew, $boat, $recentEvents);
-
-    return $timesOnBoat * 10.0;  // Loss = 10 per repeat assignment
+    // Return integer severity (0 = no violation, higher = worse)
+    return 0;
 }
 ```
 
 ### 3. Implement Gradient Calculation
 
-Add to `crew_grad()` method in `AssignmentService.php`:
+Add handling to `crewGrad()` in `AssignmentService.php`:
 
 ```php
-private function crew_grad(
-    Crew $crew,
-    Boat $fromBoat,
-    Boat $toBoat,
+private function crewGrad(
     AssignmentRule $rule,
-    array $context
-): float {
-    return match ($rule) {
-        // Existing rules...
-        AssignmentRule::ASSIST => $this->assistGrad($crew, $fromBoat, $toBoat),
-        // ... other rules
+    Crew $crew,
+    array $crewedBoat
+): int {
+    if ($rule === AssignmentRule::YOUR_NEW_RULE) {
+        return $this->yourNewRuleGrad($crew, $crewedBoat);
+    }
 
-        // NEW: Your new rule
-        AssignmentRule::YOUR_NEW_RULE => $this->yourNewRuleGrad(
-            $crew,
-            $fromBoat,
-            $toBoat,
-            $context
-        ),
-    };
+    // existing branches...
 }
 
-/**
- * Calculate gradient (improvement potential) for your new rule
- *
- * @return float Potential reduction in violations (higher = better swap)
- */
-private function yourNewRuleGrad(
-    Crew $crew,
-    Boat $fromBoat,
-    Boat $toBoat,
-    array $context
-): float {
-    // Calculate current loss
-    $currentLoss = $this->yourNewRuleLoss($crew, $fromBoat, $context);
-
-    // Calculate potential loss after swap
-    $potentialLoss = $this->yourNewRuleLoss($crew, $toBoat, $context);
-
-    // Gradient = reduction in loss (positive = improvement)
-    return $currentLoss - $potentialLoss;
+private function yourNewRuleGrad(Crew $crew, array $crewedBoat): int
+{
+    // Return integer mitigation capacity (higher = better swap candidate)
+    return 0;
 }
 ```
 
 ### 4. Add Rule to Priority Order
 
-Edit the `assign()` method in `AssignmentService.php`:
+Update `AssignmentRule::priorityOrder()` in `AssignmentRule.php`:
 
 ```php
-public function assign(Squad $squad, Fleet $fleet, EventId $eventId): void
+public static function priorityOrder(): array
 {
-    // Define rule priority order (higher priority = optimized first)
-    $rules = [
+    return [
         AssignmentRule::ASSIST,      // Highest priority
         AssignmentRule::WHITELIST,
         AssignmentRule::YOUR_NEW_RULE,  // Add your rule in priority order
@@ -149,8 +107,6 @@ public function assign(Squad $squad, Fleet $fleet, EventId $eventId): void
         AssignmentRule::PARTNER,
         AssignmentRule::REPEAT,      // Lowest priority
     ];
-
-    // Optimization loop continues as before...
 }
 ```
 
@@ -180,7 +136,7 @@ private function countRecentAssignments(Crew $crew, Boat $boat, int $recentEvent
 
 ### 6. Write Tests
 
-Create tests in `tests/Unit/Domain/AssignmentServiceTest.php`:
+Create tests in `tests/Unit/Domain/Service/AssignmentServiceTest.php`:
 
 ```php
 public function testYourNewRuleLoss(): void
@@ -193,11 +149,10 @@ public function testYourNewRuleLoss(): void
     $crew->setHistory(['event1' => 'boat1', 'event2' => 'boat1']);
 
     // Calculate loss
-    $loss = $service->crew_loss(
-        $crew,
-        $boat,
+    $loss = $service->crewLoss(
         AssignmentRule::YOUR_NEW_RULE,
-        ['recent_events' => 2]
+        $crew,
+        ['boat' => $boat, 'crews' => [$crew]]
     );
 
     // Verify expected loss
@@ -233,10 +188,10 @@ Update `CLAUDE.md` in the "Assignment Optimization Algorithm" section:
 
 ```php
 // 1. Add enum
-enum AssignmentRule: string
+enum AssignmentRule: int
 {
     // ... existing rules
-    case BALANCED_EXPERIENCE = 'balanced_experience';
+    case BALANCED_EXPERIENCE = 6;
 }
 
 // 2. Implement loss calculation
@@ -271,13 +226,18 @@ private function balancedExperienceGrad(
 }
 
 // 4. Add to priority order
-$rules = [
-    AssignmentRule::ASSIST,
-    AssignmentRule::WHITELIST,
-    AssignmentRule::BALANCED_EXPERIENCE,  // Add after critical rules
-    AssignmentRule::HIGH_SKILL,
-    // ...
-];
+public static function priorityOrder(): array
+{
+    return [
+        AssignmentRule::ASSIST,
+        AssignmentRule::WHITELIST,
+        AssignmentRule::BALANCED_EXPERIENCE,
+        AssignmentRule::HIGH_SKILL,
+        AssignmentRule::LOW_SKILL,
+        AssignmentRule::PARTNER,
+        AssignmentRule::REPEAT,
+    ];
+}
 ```
 
 ## Important Considerations
@@ -302,10 +262,10 @@ Rules earlier in the priority order are optimized first. Place critical rules fi
 
 ### Swap Validation
 
-The `bad_swap()` method checks if a swap is valid. You may need to add validation logic:
+The `badSwap()` method checks if a swap is valid. You may need to add validation logic:
 
 ```php
-private function bad_swap(Crew $crew, Boat $fromBoat, Boat $toBoat): bool
+private function badSwap(AssignmentRule $rule, string $aCrewKey, string $bCrewKey): bool
 {
     // Existing validations...
 
@@ -320,7 +280,7 @@ private function bad_swap(Crew $crew, Boat $fromBoat, Boat $toBoat): bool
 
 ### Context
 
-The `$context` array can pass additional data needed for your calculations:
+The current implementation does not pass a generic `$context` object through `crewLoss()` and `crewGrad()`. If your rule needs additional data, derive it from crew/boat history and flotilla state already available in `AssignmentService`.
 
 ```php
 $context = [
@@ -373,5 +333,5 @@ The Assignment algorithm is a **CRITICAL ALGORITHM** preserved from the legacy s
 
 - **AssignmentService:** `src/Domain/Service/AssignmentService.php` ⚠️ CRITICAL
 - **AssignmentRule Enum:** `src/Domain/Enum/AssignmentRule.php`
-- **Tests:** `tests/Unit/Domain/AssignmentServiceTest.php`
+- **Tests:** `tests/Unit/Domain/Service/AssignmentServiceTest.php`
 - **Documentation:** `CLAUDE.md` - "Assignment Optimization Algorithm"

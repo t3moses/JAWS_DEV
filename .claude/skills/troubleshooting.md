@@ -15,6 +15,17 @@ Common issues and solutions for JAWS development.
 
 **Solutions:**
 
+**Windows PowerShell:**
+```powershell
+# Stop process using local API port (common DB lock source)
+Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue |
+   ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+
+# Then start fresh
+php -S localhost:8000 -t public
+```
+
+**Mac/Linux:**
 ```bash
 # Check for active connections
 lsof database/jaws.db
@@ -159,6 +170,16 @@ vendor/bin/phinx migrate -e development
 **Symptom:** API test suite fails
 
 **Check dev server:**
+```powershell
+# PowerShell
+Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue
+
+# If not running, start it
+$p = Start-Process php -ArgumentList '-S','localhost:8000','-t','public' -PassThru
+Start-Sleep -Seconds 2
+```
+
+Or on Mac/Linux:
 ```bash
 # API tests need dev server on port 8000
 lsof -i :8000
@@ -168,6 +189,15 @@ php -S localhost:8000 -t public &
 ```
 
 **Check JWT_SECRET:**
+```powershell
+# PowerShell
+$env:JWT_SECRET
+
+# If missing, set it
+$env:JWT_SECRET = "your-test-secret-min-32-chars"
+```
+
+Or on Mac/Linux:
 ```bash
 # API tests need valid JWT_SECRET
 echo $JWT_SECRET

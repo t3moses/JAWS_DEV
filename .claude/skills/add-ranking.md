@@ -7,9 +7,9 @@ Guide for adding a new ranking dimension to the boat or crew ranking system in J
 The JAWS system uses multi-dimensional ranking for prioritizing boats and crews:
 
 - **Boats**: `[flexibility, absence]` (2D)
-- **Crews**: `[commitment, flexibility, membership, absence]` (4D)
+- **Crews**: `[commitment, membership, absence]` (3D)
 
-Rankings are compared lexicographically during bubble sort. **Lower rank = higher priority.**
+Rankings are compared lexicographically during bubble sort. **Higher rank = higher priority** in current Selection sorting.
 
 ## Steps to Add New Ranking Criteria
 
@@ -34,10 +34,9 @@ Edit `src/Domain/Enum/CrewRankDimension.php`:
 enum CrewRankDimension: int
 {
     case COMMITMENT = 0;
-    case FLEXIBILITY = 1;
-    case MEMBERSHIP = 2;
-    case ABSENCE = 3;
-    case YOUR_NEW_DIMENSION = 4;  // Add new dimension
+    case MEMBERSHIP = 1;
+    case ABSENCE = 2;
+    case YOUR_NEW_DIMENSION = 3;  // Add new dimension
 }
 ```
 
@@ -64,8 +63,8 @@ public function __construct(
     private CrewKey $key,
     // ... other properties
 ) {
-    // Update rank array size from 4D to 5D
-    $this->rank = new Rank([0, 0, 0, 0, 0]);  // Add 0 for new dimension
+    // Update rank array size from 3D to 4D
+    $this->rank = new Rank([0, 0, 0, 0]);  // Add 0 for new dimension
 }
 ```
 
@@ -114,7 +113,6 @@ public function calculateCrewRank(
 ): Rank {
     // Existing dimensions...
     $commitment = ...;
-    $flexibility = ...;
     $membership = ...;
     $absence = ...;
 
@@ -123,7 +121,6 @@ public function calculateCrewRank(
 
     return new Rank([
         $commitment,
-        $flexibility,
         $membership,
         $absence,
         $yourNewDimension  // Add to rank tensor
@@ -133,7 +130,7 @@ public function calculateCrewRank(
 private function calculateYourNewDimension(Crew $crew): int
 {
     // Implement your calculation logic here
-    // Return an integer where LOWER = HIGHER PRIORITY
+    // Return an integer where HIGHER = HIGHER PRIORITY
 }
 ```
 
@@ -151,6 +148,10 @@ private function is_greater(Rank $a, Rank $b): bool
     // Only modify if you need special comparison logic
 }
 ```
+
+Current implementation note:
+- Selection comparison method is `isLess(...)` in `SelectionService`.
+- Avoid changing comparison logic unless explicitly required.
 
 ### 5. Write Tests
 
@@ -182,7 +183,7 @@ Update `CLAUDE.md` section "Multi-Dimensional Ranking System":
 The system uses rank tensors for prioritization:
 
 - **Boats**: `[flexibility, absence, your_new_dimension]` (3D)
-- **Crews**: `[commitment, flexibility, membership, absence, your_new_dimension]` (5D)
+- **Crews**: `[commitment, membership, absence, your_new_dimension]` (4D)
 
 **Rank Components:**
 - `your_new_dimension` - Description of what this dimension represents
@@ -195,38 +196,35 @@ The system uses rank tensors for prioritization:
 enum CrewRankDimension: int
 {
     case COMMITMENT = 0;
-    case FLEXIBILITY = 1;
-    case MEMBERSHIP = 2;
-    case ABSENCE = 3;
-    case EXPERIENCE = 4;  // New dimension
+    case MEMBERSHIP = 1;
+    case ABSENCE = 2;
+    case EXPERIENCE = 3;  // New dimension
 }
 
 // 2. Update Crew constructor
-$this->rank = new Rank([0, 0, 0, 0, 0]);  // 5D now
+$this->rank = new Rank([0, 0, 0, 0]);  // 4D now
 
 // 3. Implement calculation
 private function calculateExperience(Crew $crew): int
 {
-    // More experience = lower rank (higher priority)
+    // More experience = higher rank (higher priority)
     $years = $crew->getYearsExperience();
 
-    if ($years >= 10) return 0;      // Highly experienced
-    if ($years >= 5) return 1;       // Moderately experienced
-    if ($years >= 2) return 2;       // Some experience
-    return 3;                        // Novice
+    if ($years >= 10) return 3;      // Highly experienced
+    if ($years >= 5) return 2;       // Moderately experienced
+    if ($years >= 2) return 1;       // Some experience
+    return 0;                        // Novice
 }
 
 // 4. Add to rank calculation
 public function calculateCrewRank(...): Rank {
     $commitment = ...;
-    $flexibility = ...;
     $membership = ...;
     $absence = ...;
     $experience = $this->calculateExperience($crew);
 
     return new Rank([
         $commitment,
-        $flexibility,
         $membership,
         $absence,
         $experience
@@ -238,11 +236,11 @@ public function calculateCrewRank(...): Rank {
 
 ### Ranking Priority
 
-Remember: **Lower values = Higher priority**
+Remember: **Higher values = Higher priority**
 
 If you want experienced crews to rank higher:
-- Experienced = 0
-- Novice = 3
+- Experienced = 3
+- Novice = 0
 
 ### Lexicographic Comparison
 

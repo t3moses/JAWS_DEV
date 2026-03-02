@@ -24,16 +24,33 @@ vendor/bin/phinx rollback
 
 Create a timestamped backup:
 
+**Mac/Linux:**
 ```bash
 cp database/jaws.db database/jaws.backup.$(date +%Y%m%d_%H%M%S).db
 ```
 
+**Windows PowerShell:**
+```powershell
+$ts = Get-Date -Format 'yyyyMMdd_HHmmss'
+Copy-Item database\jaws.db "database\jaws.backup.$ts.db"
+```
+
 **List existing backups:**
+```powershell
+Get-ChildItem database\jaws.backup.*.db
+```
+
+Or on Mac/Linux:
 ```bash
 ls -lh database/jaws.backup.*.db
 ```
 
 **Restore from backup:**
+```powershell
+Copy-Item database\jaws.backup.20260216120000.db database\jaws.db -Force
+```
+
+Or on Mac/Linux:
 ```bash
 # Replace current database with backup
 cp database/jaws.backup.20260216120000.db database/jaws.db
@@ -82,6 +99,8 @@ sqlite3 database/jaws.db "PRAGMA index_list(crew_availability);"
 ```
 
 ## Download from Production
+
+Prefer deployment/database operations through repository automation where possible (`.github/workflows/deploy.yml`). Use manual SSH/SFTP only when workflow-based operations are not suitable.
 
 ### Using SFTP
 
@@ -206,6 +225,11 @@ sqlite3 database/jaws.db "PRAGMA integrity_check;"
 
 ### Check Size
 
+```powershell
+Get-Item database\jaws.db | Select-Object Name,Length,LastWriteTime
+```
+
+Or on Mac/Linux:
 ```bash
 ls -lh database/jaws.db
 ```
@@ -246,6 +270,13 @@ sqlite3 /opt/bitnami/jaws/database/jaws.db "SELECT COUNT(*) FROM boats;"
 ### Database Locked
 
 If you see "database is locked":
+```powershell
+# PowerShell: stop process bound to typical local API port
+Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue |
+   ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+```
+
+Or on Mac/Linux:
 ```bash
 # Check for active connections
 lsof database/jaws.db
