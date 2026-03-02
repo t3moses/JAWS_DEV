@@ -19,6 +19,7 @@ use App\Application\Port\Service\EmailServiceInterface;
 use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
 use App\Application\Port\Service\TokenServiceInterface;
+use App\Application\Port\Service\TransactionServiceInterface;
 use App\Domain\Entity\Boat;
 use App\Domain\Entity\Crew;
 use App\Domain\Entity\User;
@@ -27,7 +28,6 @@ use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\CrewKey;
 use App\Domain\ValueObject\EventId;
 use App\Domain\Enum\SkillLevel;
-use App\Infrastructure\Persistence\SQLite\Connection;
 
 /**
  * Register Use Case
@@ -49,6 +49,7 @@ class RegisterUseCase
         private EventRepositoryInterface $eventRepository,
         private CalendarServiceInterface $calendarService,
         private array $config,
+        private TransactionServiceInterface $transactionService,
     ) {
     }
 
@@ -91,7 +92,7 @@ class RegisterUseCase
         );
 
         // Begin transaction to ensure atomic creation of user and profile
-        Connection::beginTransaction();
+        $this->transactionService->begin();
 
         try {
             // Save user
@@ -105,10 +106,10 @@ class RegisterUseCase
             }
 
             // Commit transaction if all successful
-            Connection::commit();
+            $this->transactionService->commit();
         } catch (\Exception $e) {
             // Rollback transaction on any error
-            Connection::rollBack();
+            $this->transactionService->rollBack();
             throw $e;
         }
 
