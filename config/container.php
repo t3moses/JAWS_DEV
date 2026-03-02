@@ -28,6 +28,7 @@ use App\Infrastructure\Persistence\SQLite\CrewRepository;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
+use App\Infrastructure\Service\MailjetEmailService;
 use App\Infrastructure\Service\PhpMailerEmailService;
 use App\Infrastructure\Service\EmailTemplateService;
 use App\Infrastructure\Service\ICalendarService;
@@ -102,8 +103,17 @@ $container->set(UserRepositoryInterface::class, function () {
 });
 
 // Services (External Adapters)
-$container->set(EmailServiceInterface::class, function () {
-    return new PhpMailerEmailService();
+$container->set(EmailServiceInterface::class, function () use ($config) {
+    $env = $config['app']['env'] ?? 'production';
+    if (in_array($env, ['development', 'local'], true)) {
+        // Use PHPMailer → MailHog for local email capture
+        return new PhpMailerEmailService(
+            smtpHost: 'localhost',
+            smtpPort: 1025,
+            smtpSecure: ''
+        );
+    }
+    return new MailjetEmailService();
 });
 
 $container->set(EmailTemplateServiceInterface::class, function () {

@@ -24,6 +24,12 @@ return [
         'password' => getenv('SMTP_PASSWORD') ?: '',
     ],
 
+    // Mailjet Email API
+    'mailjet' => [
+        'api_key'    => getenv('MJ_APIKEY_PUBLIC')  ?: '',
+        'api_secret' => getenv('MJ_APIKEY_PRIVATE') ?: '',
+    ],
+
     // Email Settings
     'email' => [
         'from_address' => getenv('EMAIL_FROM') ?: 'noreply@nsc-sdc.ca',
@@ -34,6 +40,7 @@ return [
     // Application
     'app' => [
         'debug' => getenv('APP_DEBUG') === 'true',
+        'env' => getenv('APP_ENV') ?: 'production',
         'timezone' => getenv('APP_TIMEZONE') ?: 'America/Toronto',
         'url' => getenv('APP_URL') ?: 'http://localhost',
     ],

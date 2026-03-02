@@ -23,7 +23,7 @@ Before deploying to production, verify the following:
 - [ ] Code reviewed and approved via Pull Request
 - [ ] Database migrations tested locally
 - [ ] Production `.env` file prepared with secure credentials
-- [ ] SMTP credentials configured and email sending tested
+- [ ] Mailjet API credentials configured and email sending tested
 - [ ] Backup of current production database created
 - [ ] Deployment window scheduled (avoid event hours 10:00-18:00)
 - [ ] Rollback plan prepared
@@ -424,14 +424,12 @@ DB_PATH=/opt/bitnami/jaws/database/jaws.db
 JWT_SECRET=your-production-secret-key-at-least-32-characters-long-must-be-different-from-dev
 JWT_EXPIRATION_MINUTES=60
 
-# SMTP Email Configuration
-SMTP_HOST=email-smtp.ca-central-1.amazonaws.com
-SMTP_PORT=587
-SMTP_SECURE=tls
-SMTP_USERNAME=your_production_smtp_username
-SMTP_PASSWORD=your_production_smtp_password
+# Mailjet Email API
+MJ_APIKEY_PUBLIC=your_mailjet_public_api_key
+MJ_APIKEY_PRIVATE=your_mailjet_private_api_key
 EMAIL_FROM=noreply@nsc-sdc.ca
 EMAIL_FROM_NAME="Nepean Sailing Club - Social Day Cruising"
+ADMIN_NOTIFICATION_EMAIL=nsc-sdc@nsc.ca
 
 # Application
 APP_DEBUG=false
@@ -1047,30 +1045,28 @@ sudo chmod 775 /opt/bitnami/jaws/database
 
 **Possible Causes:**
 
-- SMTP credentials incorrect
-- SMTP server connection blocked
-- Email address not verified with SMTP provider
+- Mailjet API credentials missing or incorrect
+- Sender domain/address not verified in Mailjet
+- Mailjet account is in sandbox mode (outbound blocked)
 
 **Solution:**
 
-1. Check SMTP credentials in `.env`:
+1. Check Mailjet credentials in `.env`:
    ```bash
-   cat /opt/bitnami/jaws/.env | grep SMTP
+   cat /opt/bitnami/jaws/.env | grep MJ_
    ```
 
-2. Test SMTP connection:
+2. Verify the keys are valid by logging into [app.mailjet.com](https://app.mailjet.com) → Account Settings → API Key Management.
+
+3. Check Apache error log for Mailjet response status codes:
    ```bash
-   telnet email-smtp.ca-central-1.amazonaws.com 587
+   tail -f /opt/bitnami/apache/logs/error_log | grep -i "email send"
    ```
+   A non-2xx status (e.g. 401 = bad credentials, 403 = domain not verified) will be logged.
 
-3. Check PHPMailer debug output in error log:
-   ```bash
-   tail -f /opt/bitnami/apache/logs/error_log | grep -i phpmailer
-   ```
+4. Ensure the sender address (`EMAIL_FROM`) is a verified sender in your Mailjet account under **Sender domains & addresses**.
 
-4. Verify email address is verified with your SMTP provider (e.g., AWS SES)
-
-5. Check Apache error log for SMTP connection errors
+5. Confirm the Mailjet account is not in sandbox/test mode, which blocks real outbound delivery.
 
 #### Issue: Frontend not loading
 
