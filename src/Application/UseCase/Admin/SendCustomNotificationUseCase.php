@@ -61,7 +61,7 @@ class SendCustomNotificationUseCase
             $errors['recipients'] = 'At least one recipient group must be selected';
         }
         if (!empty($errors)) {
-            throw new ValidationException('Validation failed', $errors);
+            throw new ValidationException($errors);
         }
 
         // Verify event exists
