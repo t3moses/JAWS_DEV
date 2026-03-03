@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Application\UseCase\Season;
 
+use App\Application\Exception\LockTimeoutException;
 use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\SeasonRepositoryInterface;
+use App\Application\Port\Service\LockServiceInterface;
 use App\Application\Port\Service\TransactionServiceInterface;
 use App\Domain\Collection\Fleet;
 use App\Domain\Collection\Squad;
@@ -50,15 +52,42 @@ class ProcessSeasonUpdateUseCase
         private AssignmentService $assignmentService,
         private RankingService $rankingService,
         private TransactionServiceInterface $transactionService,
+        private LockServiceInterface $lockService,
     ) {
     }
 
     /**
-     * Execute the season update pipeline
+     * Execute the season update pipeline (with concurrency lock)
+     *
+     * Wraps run() in an application-level lock so that reads, compute,
+     * and writes all happen serially, preventing stale-read races.
      *
      * @return array{success: bool, events_processed: int, flotillas_generated: int}
      */
     public function execute(): array
+    {
+        try {
+            return $this->lockService->executeWithLock(
+                lockName: 'season_update_pipeline',
+                callback: fn() => $this->run(),
+                timeoutSeconds: 60,
+                waitSeconds: 10
+            );
+        } catch (LockTimeoutException $e) {
+            throw new \RuntimeException(
+                'Season update is currently in progress by another user. Please try again in a moment.',
+                409,
+                $e
+            );
+        }
+    }
+
+    /**
+     * Run the season update pipeline (reads + compute + writes)
+     *
+     * @return array{success: bool, events_processed: int, flotillas_generated: int}
+     */
+    private function run(): array
     {
         // Load all entities (reads only — outside the transaction)
         $fleet = $this->loadFleet();

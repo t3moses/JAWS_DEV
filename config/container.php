@@ -22,6 +22,7 @@ use App\Application\Port\Service\CalendarServiceInterface;
 use App\Application\Port\Service\TimeServiceInterface;
 use App\Application\Port\Service\TokenServiceInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
+use App\Application\Port\Service\LockServiceInterface;
 use App\Application\Port\Service\TransactionServiceInterface;
 use App\Infrastructure\Persistence\SQLite\BoatRepository;
 use App\Infrastructure\Persistence\SQLite\CrewRepository;
@@ -36,6 +37,7 @@ use App\Infrastructure\Service\SystemTimeService;
 use App\Infrastructure\Service\JwtTokenService;
 use App\Infrastructure\Service\PhpPasswordService;
 use App\Infrastructure\Service\DatabaseTransactionService;
+use App\Infrastructure\Service\SQLiteLockService;
 use App\Domain\Service\SelectionService;
 use App\Domain\Service\AssignmentService;
 use App\Domain\Service\RankingService;
@@ -143,6 +145,10 @@ $container->set(TransactionServiceInterface::class, function () {
     return new DatabaseTransactionService();
 });
 
+$container->set(LockServiceInterface::class, function () {
+    return new SQLiteLockService();
+});
+
 // =======================
 // Domain Layer
 // =======================
@@ -233,7 +239,8 @@ $container->set(\App\Application\UseCase\Season\ProcessSeasonUpdateUseCase::clas
         $c->get(SelectionService::class),
         $c->get(AssignmentService::class),
         $c->get(RankingService::class),
-        $c->get(TransactionServiceInterface::class)
+        $c->get(TransactionServiceInterface::class),
+        $c->get(LockServiceInterface::class)
     );
 });
 

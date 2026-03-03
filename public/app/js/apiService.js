@@ -5,14 +5,25 @@
 
 import { API_CONFIG, buildApiUrl } from './config.js';
 import { getToken, clearToken } from './tokenService.js';
+import { showInfo } from './toastService.js';
 
 /**
- * Make HTTP request to API
+ * Sleep for specified milliseconds
+ * @param {number} ms - Milliseconds to sleep
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Make HTTP request to API with automatic retry on 409 Conflict
  * @param {string} url - Full API URL
  * @param {Object} options - Fetch options
+ * @param {number} retryCount - Current retry attempt (internal)
  * @returns {Promise<Object>} Response data
  */
-async function makeRequest(url, options = {}) {
+async function makeRequest(url, options = {}, retryCount = 0) {
     try {
         // Get JWT token for authentication
         const token = getToken();
@@ -45,6 +56,32 @@ async function makeRequest(url, options = {}) {
             }
 
             throw new Error('Session expired. Please sign in again.');
+        }
+
+        // Handle 409 Conflict - concurrent update in progress (retry with exponential backoff)
+        if (response.status === 409) {
+            const maxRetries = 3;
+            const baseDelay = 2000; // 2 seconds
+
+            if (retryCount < maxRetries) {
+                const delay = baseDelay * Math.pow(1.5, retryCount); // Exponential backoff: 2s, 3s, 4.5s
+                const attemptNumber = retryCount + 1;
+
+                showInfo(
+                    `Season update in progress. Retrying in ${Math.round(delay / 1000)} seconds... (Attempt ${attemptNumber}/${maxRetries})`,
+                    delay
+                );
+
+                await sleep(delay);
+                return makeRequest(url, options, retryCount + 1);
+            } else {
+                // Max retries exceeded
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(
+                    errorData.message ||
+                    'Server is busy processing updates. Please try again in a moment.'
+                );
+            }
         }
 
         if (!response.ok) {
