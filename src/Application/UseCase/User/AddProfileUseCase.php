@@ -131,7 +131,7 @@ class AddProfileUseCase
             displayName: $displayName,
             firstName: $profile['firstName'],
             lastName: $profile['lastName'],
-            partnerKey: isset($profile['partnerKey']) ? new CrewKey($profile['partnerKey']) : null,
+            partnerKey: isset($profile['partnerKey']) ? CrewKey::fromString($profile['partnerKey']) : null,
             mobile: $profile['mobile'] ?? null,
             socialPreference: $profile['socialPreference'] ?? 'No',
             membershipNumber: $profile['membershipNumber'] ?? null,
