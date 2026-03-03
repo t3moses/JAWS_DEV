@@ -89,13 +89,41 @@ jobs:
       - name: Seed test data
         run: php vendor/bin/phinx seed:run -e development
 
-      - name: Run API tests
+      - name: Start PHP dev server
         run: |
-          php -S localhost:8000 -t public > /dev/null 2>&1 &
-          SERVER_PID=$!
-          sleep 2
+          JWT_SECRET="test-secret-key-minimum-32-characters-ci" \
+          APP_ENV=development \
+          APP_DEBUG=true \
+          php -S localhost:8000 -t public > /tmp/php-server.log 2>&1 &
+          echo $! > /tmp/php-server.pid
+
+          echo "Waiting for server to be ready..."
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:8000/api/status > /dev/null 2>&1; then
+              echo "Server ready after ${i}s"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Server failed to start after 30s"
+              cat /tmp/php-server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Run API tests
+        env:
+          JWT_SECRET: "test-secret-key-minimum-32-characters-ci"
+          APP_ENV: development
+        run: |
           php vendor/bin/phpunit --testsuite=API
-          kill $SERVER_PID
+          PHPUNIT_EXIT=$?
+          kill $(cat /tmp/php-server.pid) 2>/dev/null || true
+          exit $PHPUNIT_EXIT
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/php-server.log || true
 
       # Placeholder: Playwright E2E tests
       # TODO: Replace this step with actual Playwright test execution once implemented
