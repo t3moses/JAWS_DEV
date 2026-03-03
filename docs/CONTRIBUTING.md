@@ -334,7 +334,7 @@ All code contributions must include tests.
 ./vendor/bin/phpunit tests/Integration
 
 # Run specific test file
-./vendor/bin/phpunit tests/Unit/Domain/SelectionServiceTest.php
+./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 
 # Run with coverage
 ./vendor/bin/phpunit --coverage-html coverage

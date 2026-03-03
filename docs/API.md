@@ -985,16 +985,16 @@ async function getAssignments() {
 }
 ```
 
-### API Test Script
+### API Test Suite
 
-JAWS includes a simple PHP test script:
+JAWS includes a PHPUnit API test suite:
 
 ```bash
 # Start development server
 php -S localhost:8000 -t public &
 
 # Run API tests
-php Tests/Integration/api_test.php
+./vendor/bin/phpunit --testsuite=API
 ```
 
 ---

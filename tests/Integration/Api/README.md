@@ -113,12 +113,12 @@ class ExampleApiTest extends TestCase
 
 ## CI/CD Integration
 
-These tests run automatically in GitHub Actions on every push and pull request:
+These tests run automatically in the deployment workflow before deployment:
 
-- Job: `api-tests` in [.github/workflows/ci.yml](../../../.github/workflows/ci.yml)
-- Runs after database setup is complete
+- Job: `e2e-tests` in [.github/workflows/deploy.yml](../../../.github/workflows/deploy.yml)
+- Runs after pre-deployment checks and database setup
 - Starts PHP development server automatically
-- Fails build if any API tests fail
+- Blocks deployment if any API tests fail
 
 ## Test Categories
 

@@ -210,7 +210,7 @@ This command will:
 - Create `database/jaws.db` (SQLite database file)
 - Create the `phinxlog` table to track migrations
 - Apply all pending migrations in order
-- Set up the complete database schema with 10 tables
+- Set up the complete database schema with 12 tables
 
 **Expected Output:**
 ```
