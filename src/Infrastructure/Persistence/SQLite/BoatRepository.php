@@ -198,6 +198,24 @@ class BoatRepository implements BoatRepositoryInterface
         ]);
     }
 
+    public function updateRankAbsence(Boat $boat): void
+    {
+        if ($boat->getId() === null) {
+            return;
+        }
+
+        $rank = $boat->getRank();
+        $stmt = $this->pdo->prepare('
+            UPDATE boats
+            SET rank_absence = :rank_absence
+            WHERE id = :id
+        ');
+        $stmt->execute([
+            'id' => $boat->getId(),
+            'rank_absence' => $rank->getDimension(BoatRankDimension::ABSENCE),
+        ]);
+    }
+
     public function count(): int
     {
         $stmt = $this->pdo->query('SELECT COUNT(*) FROM boats');
