@@ -109,6 +109,14 @@ interface BoatRepositoryInterface
     public function updateRankFlexibility(Boat $boat): void;
 
     /**
+     * Update boat absence rank only (without touching other fields)
+     *
+     * @param Boat $boat Boat with updated absence rank
+     * @return void
+     */
+    public function updateRankAbsence(Boat $boat): void;
+
+    /**
      * Get boat count
      *
      * @return int

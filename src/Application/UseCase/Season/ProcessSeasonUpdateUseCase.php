@@ -18,6 +18,7 @@ use App\Domain\Entity\Crew;
 use App\Domain\Service\SelectionService;
 use App\Domain\Service\AssignmentService;
 use App\Domain\Service\RankingService;
+use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\CrewKey;
 use App\Domain\ValueObject\Rank;
@@ -95,6 +96,9 @@ class ProcessSeasonUpdateUseCase
         $futureEvents = $this->eventRepository->findFutureEvents();
         $nextEventId = $this->eventRepository->findNextEvent();
 
+        // Sync boat participation history from past flotillas and update absence ranks
+        $boatHistoryUpdates = $this->syncBoatHistory($fleet);
+
         $eventsProcessed = 0;
         $flotillasGenerated = 0;
         $modifiedCrews = [];
@@ -167,7 +171,7 @@ class ProcessSeasonUpdateUseCase
             $eventsProcessed++;
         }
 
-        // Persist all writes in a single transaction (one fsync instead of ~44)
+        // Persist all writes in a single transaction
         $this->transactionService->begin();
         try {
             foreach ($serializedFlotillas ?? [] as $eventIdString => $serializedFlotilla) {
@@ -178,6 +182,16 @@ class ProcessSeasonUpdateUseCase
 
             if ($commitmentCrews !== null) {
                 $this->persistCommitmentRanks($commitmentCrews);
+            }
+
+            // Persist boat history entries (upsert — idempotent)
+            foreach ($boatHistoryUpdates as [$boatKey, $eventId, $participated]) {
+                $this->boatRepository->updateHistory($boatKey, $eventId, $participated);
+            }
+
+            // Persist updated absence ranks
+            foreach ($fleet->all() as $boat) {
+                $this->boatRepository->updateRankAbsence($boat);
             }
 
             $this->transactionService->commit();
@@ -519,6 +533,59 @@ class ProcessSeasonUpdateUseCase
 
         $flotilla['waitlist_crews'] = $waitlistCrews;
         return $flotilla;
+    }
+
+    /**
+     * Sync boat participation history from stored flotillas for past events.
+     *
+     * For each past event that has a flotilla:
+     *   - Boats in crewed_boats → 'Y'
+     *   - All other boats       → ''
+     *
+     * Updates absence rank on each boat in-memory so selection uses correct ranks.
+     *
+     * @param Fleet $fleet All boats (mutated in place)
+     * @return array<array{BoatKey, EventId, string}> Pending DB writes
+     */
+    private function syncBoatHistory(Fleet $fleet): array
+    {
+        $pastEventIds = $this->eventRepository->findPastEvents();
+        if (empty($pastEventIds)) {
+            return [];
+        }
+
+        $allBoats = $fleet->all();
+        $updates = [];
+        $eventIdsWithFlotilla = [];
+
+        foreach ($pastEventIds as $eventIdString) {
+            $eventId = EventId::fromString($eventIdString);
+            $flotilla = $this->seasonRepository->getFlotilla($eventId);
+            if ($flotilla === null) {
+                continue; // No flotilla data — skip (don't penalise boats)
+            }
+
+            $eventIdsWithFlotilla[] = $eventIdString;
+
+            // Extract keys of boats that were in the flotilla
+            $participatedKeys = array_map(
+                fn($entry) => $entry['boat']['key'],
+                $flotilla['crewed_boats']
+            );
+
+            foreach ($allBoats as $boat) {
+                $participated = in_array($boat->getKey()->toString(), $participatedKeys, true) ? 'Y' : '';
+                $boat->setHistory($eventId, $participated);
+                $updates[] = [$boat->getKey(), $eventId, $participated];
+            }
+        }
+
+        // Recompute absence ranks (only counts events that had a flotilla)
+        if (!empty($eventIdsWithFlotilla)) {
+            $this->rankingService->updateBoatAbsenceRanks($allBoats, $eventIdsWithFlotilla);
+        }
+
+        return $updates;
     }
 
     /**

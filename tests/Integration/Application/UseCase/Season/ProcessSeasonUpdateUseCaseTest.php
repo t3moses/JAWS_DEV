@@ -765,4 +765,171 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $crewKeys = array_column($flotilla['crewed_boats'][0]['crews'], 'key');
         $this->assertContains('aliceflex', $crewKeys, 'Flex owner (aliceflex) should be assigned to Boat B');
     }
+
+    /**
+     * Helper: Insert a past event (date must be before today's real date so findPastEvents() returns it)
+     */
+    private function createPastEvent(string $eventId, string $date): void
+    {
+        $this->pdo->prepare("
+            INSERT INTO events (event_id, event_date, start_time, finish_time, status)
+            VALUES (?, ?, '12:45:00', '14:00:00', 'past')
+        ")->execute([$eventId, $date]);
+    }
+
+    /**
+     * Test: boat_history rows are written for past events based on stored flotilla data
+     *
+     * Boats present in crewed_boats get 'Y'; absent boats get ''.
+     * rank_absence reflects the count of '' entries.
+     */
+    public function testBoatHistoryWrittenForPastFlotilla(): void
+    {
+        // Arrange: 2 boats, 1 past event, 1 future event
+        $boatAId = $this->createTestBoat('boat-a', 1, 2);
+        $boatBId = $this->createTestBoat('boat-b', 1, 2);
+
+        $this->createPastEvent('Fri Jan 17', '2026-01-17');
+        $this->createTestEvent('Fri May 29', '2026-05-29');
+
+        // Pre-store a flotilla for the past event: boat-a was crewed, boat-b was absent
+        $this->seasonRepository->saveFlotilla(EventId::fromString('Fri Jan 17'), [
+            'event_id' => 'Fri Jan 17',
+            'crewed_boats' => [
+                ['boat' => ['key' => 'boat-a', 'display_name' => 'Boat boat-a'], 'crews' => []],
+            ],
+            'waitlist_boats' => [['key' => 'boat-b', 'display_name' => 'Boat boat-b']],
+            'waitlist_crews' => [],
+        ]);
+
+        // Set availability for the future event so the pipeline has something to process
+        $crewId = $this->createTestCrew('crew1');
+        $this->setBoatAvailability($boatAId, 'Fri May 29', 2);
+        $this->setBoatAvailability($boatBId, 'Fri May 29', 2);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+
+        // Act
+        $this->useCase->execute();
+
+        // Assert: boat_history rows were written
+        $stmt = $this->pdo->prepare('SELECT participated FROM boat_history WHERE boat_id = ? AND event_id = ?');
+
+        $stmt->execute([$boatAId, 'Fri Jan 17']);
+        $this->assertEquals('Y', $stmt->fetchColumn(), 'boat-a was in crewed_boats so participated should be Y');
+
+        $stmt->execute([$boatBId, 'Fri Jan 17']);
+        $this->assertEquals('', $stmt->fetchColumn(), 'boat-b was absent so participated should be empty string');
+
+        // Assert: absence ranks persisted to DB
+        $rankA = (int)$this->pdo->query("SELECT rank_absence FROM boats WHERE id = $boatAId")->fetchColumn();
+        $rankB = (int)$this->pdo->query("SELECT rank_absence FROM boats WHERE id = $boatBId")->fetchColumn();
+
+        $this->assertEquals(0, $rankA, 'boat-a was present; absence should be 0');
+        $this->assertEquals(1, $rankB, 'boat-b was absent once; absence should be 1');
+    }
+
+    /**
+     * Test: Boat with higher absence rank is selected over boat with lower absence rank
+     *
+     * After syncing 1 past event where boat-a participated and boat-b was absent,
+     * boat-b gets rank_absence=1 and boat-a gets rank_absence=0.
+     * With only enough crew for 1 boat, boat-b (higher priority) is selected.
+     */
+    public function testAbsentBoatSelectedOverPresentBoat(): void
+    {
+        // Arrange: 2 boats (same flexibility=1), 1 past event, 1 future event
+        // boat-a: will be present in past flotilla → absence=0
+        // boat-b: will be absent from past flotilla → absence=1 → higher priority
+        $this->pdo->prepare("
+            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name,
+                              min_berths, max_berths, assistance_required,
+                              social_preference, rank_flexibility, rank_absence)
+            VALUES ('boat-a', 'Boat A', 'Alice', 'Smith', 1, 1, 'No', 'No', 1, 0)
+        ")->execute();
+        $boatAId = (int)$this->pdo->lastInsertId();
+
+        $this->pdo->prepare("
+            INSERT INTO boats (key, display_name, owner_first_name, owner_last_name,
+                              min_berths, max_berths, assistance_required,
+                              social_preference, rank_flexibility, rank_absence)
+            VALUES ('boat-b', 'Boat B', 'Bob', 'Jones', 1, 1, 'No', 'No', 1, 0)
+        ")->execute();
+        $boatBId = (int)$this->pdo->lastInsertId();
+
+        $this->createPastEvent('Fri Jan 17', '2026-01-17');
+        $this->createTestEvent('Fri May 29', '2026-05-29');
+
+        // Past flotilla: only boat-a was crewed — boat-b was absent
+        $this->seasonRepository->saveFlotilla(EventId::fromString('Fri Jan 17'), [
+            'event_id' => 'Fri Jan 17',
+            'crewed_boats' => [
+                ['boat' => ['key' => 'boat-a', 'display_name' => 'Boat A'], 'crews' => []],
+            ],
+            'waitlist_boats' => [['key' => 'boat-b', 'display_name' => 'Boat B']],
+            'waitlist_crews' => [],
+        ]);
+
+        // Only 1 crew available for future event — not enough for both boats (each needs min 1)
+        $crewId = $this->createTestCrew('crew1');
+        $this->setBoatAvailability($boatAId, 'Fri May 29', 1);
+        $this->setBoatAvailability($boatBId, 'Fri May 29', 1);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+
+        // Act
+        $this->useCase->execute();
+
+        $flotilla = $this->seasonRepository->getFlotilla(EventId::fromString('Fri May 29'));
+
+        // Assert: 1 boat crewed, 1 boat waitlisted
+        $this->assertCount(1, $flotilla['crewed_boats'], 'Exactly 1 boat should be crewed');
+        $this->assertCount(1, $flotilla['waitlist_boats'], 'Exactly 1 boat should be waitlisted');
+
+        // Assert: boat-b (higher absence rank) was selected, boat-a was waitlisted
+        $selectedBoatKey = $flotilla['crewed_boats'][0]['boat']['key'];
+        $this->assertEquals('boat-b', $selectedBoatKey, 'boat-b (absence=1) should be selected over boat-a (absence=0)');
+    }
+
+    /**
+     * Test: History sync is idempotent — running the pipeline twice produces identical results
+     */
+    public function testBoatHistorySyncIsIdempotent(): void
+    {
+        // Arrange
+        $boatId = $this->createTestBoat('boat-a', 1, 2);
+
+        $this->createPastEvent('Fri Jan 17', '2026-01-17');
+        $this->createTestEvent('Fri May 29', '2026-05-29');
+
+        $this->seasonRepository->saveFlotilla(EventId::fromString('Fri Jan 17'), [
+            'event_id' => 'Fri Jan 17',
+            'crewed_boats' => [
+                ['boat' => ['key' => 'boat-a', 'display_name' => 'Boat boat-a'], 'crews' => []],
+            ],
+            'waitlist_boats' => [],
+            'waitlist_crews' => [],
+        ]);
+
+        $crewId = $this->createTestCrew('crew1');
+        $this->setBoatAvailability($boatId, 'Fri May 29', 2);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+
+        // Act: run pipeline twice
+        $this->useCase->execute();
+        $rankAfterFirst = (int)$this->pdo->query("SELECT rank_absence FROM boats WHERE id = $boatId")->fetchColumn();
+        $histAfterFirst = $this->pdo->prepare('SELECT participated FROM boat_history WHERE boat_id = ? AND event_id = ?');
+        $histAfterFirst->execute([$boatId, 'Fri Jan 17']);
+        $participatedAfterFirst = $histAfterFirst->fetchColumn();
+
+        $this->useCase->execute();
+        $rankAfterSecond = (int)$this->pdo->query("SELECT rank_absence FROM boats WHERE id = $boatId")->fetchColumn();
+        $histAfterSecond = $this->pdo->prepare('SELECT participated FROM boat_history WHERE boat_id = ? AND event_id = ?');
+        $histAfterSecond->execute([$boatId, 'Fri Jan 17']);
+        $participatedAfterSecond = $histAfterSecond->fetchColumn();
+
+        // Assert: same results both times
+        $this->assertEquals($rankAfterFirst, $rankAfterSecond, 'rank_absence should be identical after both runs');
+        $this->assertEquals($participatedAfterFirst, $participatedAfterSecond, 'boat_history should be identical after both runs');
+        $this->assertEquals('Y', $participatedAfterFirst, 'boat-a was in crewed_boats so participated should be Y');
+        $this->assertEquals(0, $rankAfterFirst, 'boat-a was present in past flotilla so absence should be 0');
+    }
 }
