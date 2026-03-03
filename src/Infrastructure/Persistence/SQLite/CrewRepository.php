@@ -251,6 +251,24 @@ class CrewRepository implements CrewRepositoryInterface
         ]);
     }
 
+    public function updateRankAbsence(Crew $crew): void
+    {
+        if ($crew->getId() === null) {
+            return;
+        }
+
+        $rank = $crew->getRank();
+        $stmt = $this->pdo->prepare('
+            UPDATE crews
+            SET rank_absence = :rank_absence
+            WHERE id = :id
+        ');
+        $stmt->execute([
+            'id'           => $crew->getId(),
+            'rank_absence' => $rank->getDimension(CrewRankDimension::ABSENCE),
+        ]);
+    }
+
     public function count(): int
     {
         $stmt = $this->pdo->query('SELECT COUNT(*) FROM crews');
