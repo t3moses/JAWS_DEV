@@ -12,7 +12,6 @@ use PHPMailer\PHPMailer\Exception as PHPMailerException;
  * PHPMailer Email Service
  *
  * Implements email sending via SMTP using PHPMailer.
- * Supports AWS SES SMTP endpoints and other SMTP servers.
  */
 class PhpMailerEmailService implements EmailServiceInterface
 {

@@ -93,14 +93,6 @@ class EmailTemplateService implements EmailTemplateServiceInterface
                     <span class="value">{$timestamp}</span>
                 </div>
             </div>
-            <div class="section">
-                <h3>AWS SES Email Verification</h3>
-                <p>To enable this user to receive system emails, verify their email address in AWS SES by running the following command:</p>
-                <div class="command-block">
-                    aws ses verify-email-identity --email-address {$user->getEmail()}
-                </div>
-                <p style="font-size: 0.9em; color: #666;">Copy and paste this command in your AWS CLI terminal.</p>
-            </div>
             <div class="footer">
                 <p>This is an automated notification from the JAWS sailing management system.</p>
             </div>
@@ -182,14 +174,6 @@ HTML;
                     <span class="label">Registration Date:</span>
                     <span class="value">{$timestamp}</span>
                 </div>
-            </div>
-            <div class="section">
-                <h3>AWS SES Email Verification</h3>
-                <p>To enable this user to receive system emails, verify their email address in AWS SES by running the following command:</p>
-                <div class="command-block">
-                    aws ses verify-email-identity --email-address {$user->getEmail()}
-                </div>
-                <p style="font-size: 0.9em; color: #666;">Copy and paste this command in your AWS CLI terminal.</p>
             </div>
             <div class="footer">
                 <p>This is an automated notification from the JAWS sailing management system.</p>
