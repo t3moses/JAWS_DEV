@@ -107,7 +107,7 @@ class EventUseCaseTest extends IntegrationTestCase
     public function testGetEventReturnsEventById(): void
     {
         $eventId = EventId::fromString('Fri May 15');
-        $result = $this->getEventUseCase->execute($eventId);
+        $result = $this->getEventUseCase->execute($eventId->toString());
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('event', $result);
@@ -120,7 +120,7 @@ class EventUseCaseTest extends IntegrationTestCase
         $this->expectException(EventNotFoundException::class);
         
         $eventId = EventId::fromString('Non Existent Event');
-        $this->getEventUseCase->execute($eventId);
+        $this->getEventUseCase->execute($eventId->toString());
     }
 
     public function testGetEventWithDeletedEventThrowsException(): void
@@ -130,7 +130,7 @@ class EventUseCaseTest extends IntegrationTestCase
         $this->expectException(EventNotFoundException::class);
         
         $eventId = EventId::fromString('Fri May 15');
-        $this->getEventUseCase->execute($eventId);
+        $this->getEventUseCase->execute($eventId->toString());
     }
 
     public function testGetAllEventsIncludesEventTimestamps(): void
