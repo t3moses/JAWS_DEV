@@ -18,6 +18,7 @@ use App\Application\UseCase\Admin\AddToCrewWhitelistUseCase;
 use App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase;
 use App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase;
 use App\Application\UseCase\Season\UpdateConfigUseCase;
+use App\Application\UseCase\Season\ProcessSeasonUpdateUseCase;
 use App\Application\DTO\Request\UpdateConfigRequest;
 use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\CrewNotFoundException;
@@ -39,6 +40,7 @@ class AdminController
         private SendCustomNotificationUseCase $sendCustomNotificationUseCase,
         private GetConfigUseCase $getConfigUseCase,
         private UpdateConfigUseCase $updateConfigUseCase,
+        private ProcessSeasonUpdateUseCase $processSeasonUpdateUseCase,
         private GetAllUsersUseCase $getAllUsersUseCase,
         private SetUserAdminUseCase $setUserAdminUseCase,
         private GetUserDetailUseCase $getUserDetailUseCase,
@@ -203,7 +205,14 @@ class AdminController
 
             $result = $this->updateConfigUseCase->execute($request);
 
-            return JsonResponse::success($result);
+            $recalculation = [];
+            try {
+                $recalculation = $this->processSeasonUpdateUseCase->execute();
+            } catch (\Exception $e) {
+                $recalculation = ['error' => $e->getMessage()];
+            }
+
+            return JsonResponse::success(array_merge($result, ['recalculation' => $recalculation]));
         } catch (ValidationException $e) {
             return JsonResponse::error($e->getMessage(), 400, $e->getErrors());
         } catch (\Exception $e) {
