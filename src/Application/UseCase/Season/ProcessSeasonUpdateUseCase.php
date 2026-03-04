@@ -98,6 +98,7 @@ class ProcessSeasonUpdateUseCase
 
         // Sync boat participation history from past flotillas and update absence ranks
         $boatHistoryUpdates = $this->syncBoatHistory($fleet);
+        $crewHistoryUpdates = $this->syncCrewHistory($squad);
 
         $eventsProcessed = 0;
         $flotillasGenerated = 0;
@@ -189,9 +190,19 @@ class ProcessSeasonUpdateUseCase
                 $this->boatRepository->updateHistory($boatKey, $eventId, $participated);
             }
 
-            // Persist updated absence ranks
+            // Persist updated boat absence ranks
             foreach ($fleet->all() as $boat) {
                 $this->boatRepository->updateRankAbsence($boat);
+            }
+
+            // Persist crew history entries (upsert — idempotent)
+            foreach ($crewHistoryUpdates as [$crewKey, $eventId, $boatKey]) {
+                $this->crewRepository->updateHistory($crewKey, $eventId, $boatKey);
+            }
+
+            // Persist updated crew absence ranks
+            foreach ($squad->all() as $crew) {
+                $this->crewRepository->updateRankAbsence($crew);
             }
 
             $this->transactionService->commit();
@@ -583,6 +594,72 @@ class ProcessSeasonUpdateUseCase
         // Recompute absence ranks (only counts events that had a flotilla)
         if (!empty($eventIdsWithFlotilla)) {
             $this->rankingService->updateBoatAbsenceRanks($allBoats, $eventIdsWithFlotilla);
+        }
+
+        return $updates;
+    }
+
+    /**
+     * Sync crew assignment history from stored flotillas for past events.
+     *
+     * For each past event that has a flotilla:
+     *   - Crews in crewed_boats  → assigned boat key
+     *   - Crews in waitlist_crews → '' (registered but not assigned)
+     *   - Unregistered crews      → no entry written
+     *
+     * Updates absence rank on each crew in-memory so selection uses correct ranks.
+     *
+     * @param Squad $squad All crews (mutated in place)
+     * @return array<array{CrewKey, EventId, string}> Pending DB writes
+     */
+    private function syncCrewHistory(Squad $squad): array
+    {
+        $pastEventIds = $this->eventRepository->findPastEvents();
+        if (empty($pastEventIds)) {
+            return [];
+        }
+
+        $allCrews = $squad->all();
+        $updates = [];
+        $eventIdsWithFlotilla = [];
+
+        foreach ($pastEventIds as $eventIdString) {
+            $eventId = EventId::fromString($eventIdString);
+            $flotilla = $this->seasonRepository->getFlotilla($eventId);
+            if ($flotilla === null) {
+                continue; // No flotilla data — skip (don't penalise crews)
+            }
+
+            $eventIdsWithFlotilla[] = $eventIdString;
+
+            // Build map: crew_key => boat_key from flotilla
+            $crewBoatMap = [];
+            foreach ($flotilla['crewed_boats'] as $crewedBoat) {
+                $boatKey = $crewedBoat['boat']['key'];
+                foreach ($crewedBoat['crews'] as $crewData) {
+                    $crewBoatMap[$crewData['key']] = $boatKey;
+                }
+            }
+            // Waitlisted crews → '' (registered, not assigned)
+            foreach ($flotilla['waitlist_crews'] as $crewData) {
+                $crewBoatMap[$crewData['key']] ??= '';
+            }
+
+            // Update in-memory history for real DB crews only
+            foreach ($allCrews as $crew) {
+                $crewKeyStr = $crew->getKey()->toString();
+                if (array_key_exists($crewKeyStr, $crewBoatMap)) {
+                    $boatKey = $crewBoatMap[$crewKeyStr];
+                    $crew->setHistory($eventId, $boatKey);
+                    $updates[] = [$crew->getKey(), $eventId, $boatKey];
+                }
+                // No entry for crews not present in the flotilla (unregistered)
+            }
+        }
+
+        // Recompute absence ranks (only counts events that had a flotilla)
+        if (!empty($eventIdsWithFlotilla)) {
+            $this->rankingService->updateCrewAbsenceRanks($allCrews, $eventIdsWithFlotilla);
         }
 
         return $updates;
