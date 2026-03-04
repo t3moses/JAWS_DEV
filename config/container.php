@@ -471,6 +471,7 @@ $container->set(\App\Presentation\Controller\AdminController::class, function ($
         $c->get(\App\Application\UseCase\Admin\SendCustomNotificationUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetConfigUseCase::class),
         $c->get(\App\Application\UseCase\Season\UpdateConfigUseCase::class),
+        $c->get(\App\Application\UseCase\Season\ProcessSeasonUpdateUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetAllUsersUseCase::class),
         $c->get(\App\Application\UseCase\Admin\SetUserAdminUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetUserDetailUseCase::class),

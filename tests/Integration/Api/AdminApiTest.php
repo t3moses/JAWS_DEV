@@ -71,6 +71,32 @@ class AdminApiTest extends TestCase
         $this->cleanupTestUser($testData['userId']);
     }
 
+    public function testUpdateConfigResponseIncludesRecalculation(): void
+    {
+        $testData = $this->createTestAdmin($this->baseUrl);
+
+        $response = $this->makeRequest('PATCH', "{$this->baseUrl}/admin/config", [
+            'start_time' => '10:00:00',
+            'finish_time' => '18:00:00',
+        ], [
+            "Authorization: Bearer {$testData['token']}",
+        ]);
+
+        $this->assertEquals(200, $response['status']);
+        $this->assertTrue($response['body']['success']);
+        $this->assertArrayHasKey('recalculation', $response['body']['data']);
+
+        $recalculation = $response['body']['data']['recalculation'];
+        $this->assertArrayHasKey('success', $recalculation);
+        $this->assertArrayHasKey('events_processed', $recalculation);
+        $this->assertArrayHasKey('flotillas_generated', $recalculation);
+        $this->assertIsInt($recalculation['events_processed']);
+        $this->assertIsInt($recalculation['flotillas_generated']);
+
+        // Cleanup
+        $this->cleanupTestUser($testData['userId']);
+    }
+
     public function testUpdateConfigValidation(): void
     {
         $testData = $this->createTestAdmin($this->baseUrl);
