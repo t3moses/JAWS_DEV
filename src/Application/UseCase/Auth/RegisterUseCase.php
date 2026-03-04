@@ -109,6 +109,7 @@ class RegisterUseCase
 
         // Send admin notification email (don't fail registration if email fails)
         $this->sendAdminNotification($user, $request);
+        $this->sendWelcomeEmail($user);
 
         // Generate JWT token
         $token = $this->tokenService->generate(
@@ -361,6 +362,28 @@ class RegisterUseCase
         } catch (\Exception $e) {
             // Log error but don't fail registration
             error_log("Failed to send admin notification for registration: user_id={$user->getId()}, type={$request->accountType} - {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Send welcome email to newly registered user
+     *
+     * @param User $user User entity
+     * @return void
+     */
+    private function sendWelcomeEmail(User $user): void
+    {
+        try {
+            $subject = 'Welcome to the Nepean Sailing Club Social Day Cruising program';
+            $body = $this->emailTemplateService->renderWelcomeNotification();
+            $result = $this->emailService->send($user->getEmail(), $subject, $body);
+            if ($result) {
+                error_log("Welcome email sent: user_id={$user->getId()}");
+            } else {
+                error_log("Failed to send welcome email: user_id={$user->getId()}");
+            }
+        } catch (\Exception $e) {
+            error_log("Failed to send welcome email: user_id={$user->getId()} - {$e->getMessage()}");
         }
     }
 

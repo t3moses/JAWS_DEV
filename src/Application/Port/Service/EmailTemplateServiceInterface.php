@@ -78,4 +78,11 @@ interface EmailTemplateServiceInterface
         string $eventDate,
         array $crewedBoats
     ): string;
+
+    /**
+     * Render welcome email for newly registered user
+     *
+     * @return string HTML email body
+     */
+    public function renderWelcomeNotification(): string;
 }

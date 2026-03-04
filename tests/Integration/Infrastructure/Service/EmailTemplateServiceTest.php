@@ -412,6 +412,21 @@ class EmailTemplateServiceTest extends IntegrationTestCase
         }
     }
 
+    // ========================================
+    // Welcome Notification Tests
+    // ========================================
+
+    public function testRenderWelcomeNotification(): void
+    {
+        $html = $this->service->renderWelcomeNotification();
+
+        $this->assertStringContainsString('Welcome to the Nepean Sailing Club', $html);
+        $this->assertStringContainsString('nsc-sdc.ca', $html);
+        $this->assertStringContainsString('10:00 AM', $html);
+        $this->assertStringContainsString('12:45 PM', $html);
+        $this->assertStringContainsString('<!DOCTYPE html>', $html);
+    }
+
     public function testTimestampIsIncludedInRegistrationNotifications(): void
     {
         $user = new User(
