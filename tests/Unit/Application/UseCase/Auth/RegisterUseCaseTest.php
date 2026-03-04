@@ -78,7 +78,6 @@ class RegisterUseCaseTest extends TestCase
             // Set user ID after save
             $reflection = new \ReflectionClass($user);
             $property = $reflection->getProperty('id');
-            $property->setAccessible(true);
             $property->setValue($user, 1);
         });
 
@@ -765,7 +764,8 @@ class RegisterUseCaseTest extends TestCase
             $this->emailTemplateService,
             $this->eventRepository,
             $this->calendarService,
-            $this->config
+            $this->config,
+            $this->transactionService
         );
 
         $request = new RegisterRequest(
