@@ -49,7 +49,7 @@ class PhpMailerEmailService implements EmailServiceInterface
         $this->defaultFromEmail = $defaultFromEmail
             ?? getenv('EMAIL_FROM') ?: 'noreply@example.com';
         $this->defaultFromName = $defaultFromName
-            ?? getenv('EMAIL_FROM_NAME') ?: 'JAWS System';
+            ?? getenv('EMAIL_FROM_NAME') ?: 'Social Day Cruising';
         $this->debug = $debug
             ?? (getenv('APP_DEBUG') === 'true');
     }

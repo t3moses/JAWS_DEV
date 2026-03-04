@@ -32,7 +32,7 @@ class MailjetEmailService implements EmailServiceInterface
         $this->apiKey          = $apiKey          ?? getenv('MJ_APIKEY_PUBLIC')  ?: '';
         $this->apiSecret       = $apiSecret       ?? getenv('MJ_APIKEY_PRIVATE') ?: '';
         $this->defaultFromEmail = $defaultFromEmail ?? getenv('EMAIL_FROM')       ?: 'noreply@example.com';
-        $this->defaultFromName  = $defaultFromName  ?? getenv('EMAIL_FROM_NAME')  ?: 'JAWS System';
+        $this->defaultFromName  = $defaultFromName  ?? getenv('EMAIL_FROM_NAME')  ?: 'Social Day Cruising';
     }
 
     public function send(

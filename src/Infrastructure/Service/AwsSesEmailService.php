@@ -31,7 +31,7 @@ class AwsSesEmailService implements EmailServiceInterface
         $accessKeyId = $accessKeyId ?? getenv('SES_SMTP_USERNAME') ?: getenv('AWS_ACCESS_KEY_ID') ?: 'test';
         $secretAccessKey = $secretAccessKey ?? getenv('SES_SMTP_PASSWORD') ?: getenv('AWS_SECRET_ACCESS_KEY') ?: 'test';
         $this->defaultFromEmail = $defaultFromEmail ?? getenv('EMAIL_FROM') ?: 'noreply@example.com';
-        $this->defaultFromName = $defaultFromName ?? getenv('EMAIL_FROM_NAME') ?: 'JAWS System';
+        $this->defaultFromName = $defaultFromName ?? getenv('EMAIL_FROM_NAME') ?: 'Social Day Cruising';
 
         // Configure SES client
         $config = [

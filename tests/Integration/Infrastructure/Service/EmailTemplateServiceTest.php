@@ -70,7 +70,7 @@ class EmailTemplateServiceTest extends IntegrationTestCase
         $this->assertStringContainsString('123', $html); // user ID
 
         // Verify footer
-        $this->assertStringContainsString('automated notification from the JAWS sailing management system', $html);
+        $this->assertStringContainsString('automated notification from the Social Day Cruising sailing management system', $html);
 
         // Verify CSS styles are included
         $this->assertStringContainsString('<style>', $html);

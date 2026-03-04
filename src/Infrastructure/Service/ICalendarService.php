@@ -68,7 +68,7 @@ class ICalendarService implements CalendarServiceInterface
 
         $event = new Event();
         $event
-            ->setSummary('JAWS Sailing - ' . $eventId->toString())
+            ->setSummary('Social Day Cruising - ' . $eventId->toString())
             ->setDescription($description)
             ->setOccurrence(new TimeSpan(new DateTime($start, false), new DateTime($end, false)))
             ->setLocation(new Location($location));
@@ -94,7 +94,7 @@ class ICalendarService implements CalendarServiceInterface
 
             $event = new Event();
             $event
-                ->setSummary('JAWS Sailing - ' . $eventData['event_id'])
+                ->setSummary('Social Day Cruising - ' . $eventData['event_id'])
                 ->setDescription($eventData['description'] ?? 'Social Day Cruising Event')
                 ->setOccurrence(new TimeSpan(new DateTime($start, false), new DateTime($end, false)))
                 ->setLocation(new Location($eventData['location'] ?? 'Nepean Sailing Club'));
@@ -125,7 +125,7 @@ class ICalendarService implements CalendarServiceInterface
 
             $event = new Event();
             $event
-                ->setSummary("JAWS Sailing - {$boatName}")
+                ->setSummary("Social Day Cruising - {$boatName}")
                 ->setDescription("You are assigned to {$boatName} for this event.\n\nCrew: {$crewName}")
                 ->setOccurrence(new TimeSpan(new DateTime($start, false), new DateTime($end, false)))
                 ->setLocation(new Location($assignment['location'] ?? 'Nepean Sailing Club'));

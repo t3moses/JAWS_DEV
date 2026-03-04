@@ -94,7 +94,7 @@ class EmailTemplateService implements EmailTemplateServiceInterface
                 </div>
             </div>
             <div class="footer">
-                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
             </div>
         </div>
     </div>
@@ -176,7 +176,7 @@ HTML;
                 </div>
             </div>
             <div class="footer">
-                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
             </div>
         </div>
     </div>
@@ -239,7 +239,7 @@ HTML;
             <p>Please ensure you are ready at the dock by start time. If your plans have changed, update your availability as soon as possible.</p>
 
             <div class="footer">
-                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
                 <p>If you have any questions, please contact the sailing coordinator.</p>
             </div>
         </div>
@@ -327,7 +327,7 @@ SECTION;
             {$boatSections}
 
             <div class="footer">
-                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
             </div>
         </div>
     </div>
