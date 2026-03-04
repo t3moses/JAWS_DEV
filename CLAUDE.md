@@ -40,12 +40,15 @@ JAWS is a PHP REST API for Nepean Sailing Club's Social Day Cruising program. Ma
 ## Development Commands
 
 ```bash
-composer install                          # Install dependencies
+composer install                          # Install PHP dependencies
+npm install                               # Install JS dependencies (ESLint)
 vendor/bin/phinx migrate                  # Run migrations
 php -S localhost:8000 -t public           # Dev server
 ./vendor/bin/phpunit                      # All tests
 ./vendor/bin/phpunit tests/Unit           # Unit tests only
 ./vendor/bin/phpunit --testsuite=API      # API tests (needs server)
+npm run lint                              # Lint frontend JS
+npm run lint:fix                          # Auto-fix lint errors
 ```
 
 **Commit format:** `<type>: <description>` (types: feat, fix, docs, test, refactor, ci)

@@ -3,7 +3,7 @@
  * Entry point for admin functions
  */
 
-import { requireAuth, isSignedIn, getCurrentUser, signOut } from '../authService.js';
+import { requireAuth, getCurrentUser, signOut } from '../authService.js';
 import { updateAuthenticatedNavigation, addAdminLink } from '../navigationService.js';
 import { initHamburgerMenu } from '../hamburger.js';
 

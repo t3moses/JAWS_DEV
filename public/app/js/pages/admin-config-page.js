@@ -239,7 +239,7 @@ async function saveConfig() {
         }
 
         // Save configuration
-        const result = await adminService.updateSeasonConfig(configData);
+        await adminService.updateSeasonConfig(configData);
 
         showToast('Configuration saved successfully', 'success');
 

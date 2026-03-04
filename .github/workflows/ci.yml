@@ -4,8 +4,8 @@
 # that automatically runs tasks like tests, builds, and deployments
 #
 # Test Strategy:
-# - On push: Run fast unit tests only (no database required)
-# - On pull request: Run unit and integration tests
+# - On push: Run fast unit tests and JS lint only (no database required)
+# - On pull request: Run unit, integration tests, and JS lint
 # - On deployment (deploy.yml): Run API tests and Playwright E2E tests as a pre-deployment gate
 
 name: CI Pipeline
@@ -159,6 +159,33 @@ jobs:
       # Run integration tests (excludes API tests via phpunit.xml)
       - name: Run integration tests
         run: php vendor/bin/phpunit --testsuite=Integration
+
+  # ============================================================================
+  # Job 3: Lint JavaScript
+  # Runs ESLint on the frontend JS files in public/app/js/
+  # Independent of PHP build — no needs dependency, runs in parallel
+  # Runs on both push and pull requests for fast feedback
+  # ============================================================================
+  lint-js:
+    name: Lint JavaScript
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
 
   # ============================================================================
   # Job 5: Deploy to AWS Lightsail

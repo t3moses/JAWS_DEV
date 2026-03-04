@@ -4,13 +4,12 @@
  */
 
 import { requireAuth, getCurrentUser, signOut } from '../authService.js';
-import { updateAuthenticatedNavigation } from '../navigationService.js';
+import { updateAuthenticatedNavigation, addAdminLink } from '../navigationService.js';
 import { getAllEvents, isDeadlinePassed } from '../eventService.js';
 import { updateBatchAvailability } from '../userService.js';
 import { get } from '../apiService.js';
 import { API_CONFIG } from '../config.js';
 import { showSuccess, showError, showInfo } from '../toastService.js';
-import { addAdminLink } from '../navigationService.js';
 
 // Make signOut available globally for onclick handlers
 window.signOut = signOut;

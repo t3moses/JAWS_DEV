@@ -32,7 +32,7 @@ export function initHamburgerMenu() {
 
     // Close menu when clicking nav links
     document.querySelectorAll('nav a').forEach(link => {
-        link.addEventListener('click', (e) => {
+        link.addEventListener('click', (_e) => {
             // Only close menu if it's open
             if (nav.classList.contains('active')) {
                 toggleMenu();

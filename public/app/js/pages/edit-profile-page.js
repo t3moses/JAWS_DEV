@@ -3,13 +3,11 @@
  * Handles profile editing form and password changes
  */
 
-import { requireAuth, getCurrentUser, signOut } from '../authService.js';
-import { updateAuthenticatedNavigation } from '../navigationService.js';
+import { requireAuth, getCurrentUser, signOut, hashPassword } from '../authService.js';
+import { updateAuthenticatedNavigation, addAdminLink } from '../navigationService.js';
 import { updateUser } from '../userService.js';
-import { hashPassword } from '../authService.js';
 import { validatePassword, getPasswordRequirementsHTML } from '../passwordValidator.js';
 import { showSuccess, showError } from '../toastService.js';
-import { addAdminLink } from '../navigationService.js';
 
 // Make signOut available globally for onclick handlers
 window.signOut = signOut;
