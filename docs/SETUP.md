@@ -171,7 +171,7 @@ MJ_APIKEY_PRIVATE=your_mailjet_private_api_key
 
 # Email Configuration
 EMAIL_FROM=noreply@example.com
-EMAIL_FROM_NAME="JAWS System"
+EMAIL_FROM_NAME="Social Day Cruising"
 ADMIN_NOTIFICATION_EMAIL=admin@example.com
 
 # Application

@@ -70,7 +70,7 @@ class EmailTemplateServiceTest extends IntegrationTestCase
         $this->assertStringContainsString('123', $html); // user ID
 
         // Verify footer
-        $this->assertStringContainsString('automated notification from the JAWS sailing management system', $html);
+        $this->assertStringContainsString('automated notification from the Social Day Cruising sailing management system', $html);
 
         // Verify CSS styles are included
         $this->assertStringContainsString('<style>', $html);
@@ -410,6 +410,21 @@ class EmailTemplateServiceTest extends IntegrationTestCase
             $this->assertStringContainsString($element, $crewHtml);
             $this->assertStringContainsString($element, $boatHtml);
         }
+    }
+
+    // ========================================
+    // Welcome Notification Tests
+    // ========================================
+
+    public function testRenderWelcomeNotification(): void
+    {
+        $html = $this->service->renderWelcomeNotification();
+
+        $this->assertStringContainsString('Welcome to the Nepean Sailing Club', $html);
+        $this->assertStringContainsString('nsc-sdc.ca', $html);
+        $this->assertStringContainsString('10:00 AM', $html);
+        $this->assertStringContainsString('12:45 PM', $html);
+        $this->assertStringContainsString('<!DOCTYPE html>', $html);
     }
 
     public function testTimestampIsIncludedInRegistrationNotifications(): void

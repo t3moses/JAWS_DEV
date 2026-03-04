@@ -7,7 +7,9 @@ namespace Tests\Unit\Application\UseCase\Auth;
 use App\Application\DTO\Request\RegisterRequest;
 use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
+use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\UserRepositoryInterface;
+use App\Application\Port\Service\CalendarServiceInterface;
 use App\Application\Port\Service\EmailServiceInterface;
 use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
@@ -30,6 +32,8 @@ class RegisterUseCaseTest extends TestCase
     private RankingService $rankingService;
     private EmailServiceInterface $emailService;
     private EmailTemplateServiceInterface $emailTemplateService;
+    private EventRepositoryInterface $eventRepository;
+    private CalendarServiceInterface $calendarService;
     private array $config;
     private RegisterUseCase $useCase;
 
@@ -46,6 +50,8 @@ class RegisterUseCaseTest extends TestCase
         $this->rankingService = $this->createMock(RankingService::class);
         $this->emailService = $this->createMock(EmailServiceInterface::class);
         $this->emailTemplateService = $this->createMock(EmailTemplateServiceInterface::class);
+        $this->eventRepository = $this->createMock(EventRepositoryInterface::class);
+        $this->calendarService = $this->createMock(CalendarServiceInterface::class);
 
         // Mock config array
         $this->config = [
@@ -70,7 +76,6 @@ class RegisterUseCaseTest extends TestCase
             // Set user ID after save
             $reflection = new \ReflectionClass($user);
             $property = $reflection->getProperty('id');
-            $property->setAccessible(true);
             $property->setValue($user, 1);
         });
 
@@ -81,6 +86,11 @@ class RegisterUseCaseTest extends TestCase
         $this->rankingService->method('calculateBoatRank')->willReturn(
             Rank::forBoat(flexibility: 1, absence: 0)
         );
+
+        // Default: no future events (falls back to plain send)
+        $this->eventRepository->method('findFutureEvents')->willReturn([]);
+        $this->calendarService->method('generateSeasonCalendar')->willReturn('BEGIN:VCALENDAR...');
+        $this->emailService->method('sendWithAttachment')->willReturn(true);
 
         // Default: Email service returns true (success)
         $this->emailService->method('send')->willReturn(true);
@@ -125,6 +135,8 @@ class RegisterUseCaseTest extends TestCase
             $this->rankingService,
             $this->emailService,
             $this->emailTemplateService,
+            $this->eventRepository,
+            $this->calendarService,
             $this->config
         );
     }
@@ -446,14 +458,12 @@ class RegisterUseCaseTest extends TestCase
         // Arrange
         $this->crewRepository->method('findByKey')->willReturn(null);
 
-        $this->emailService->expects($this->once())
-            ->method('send')
-            ->with(
-                $this->equalTo('test-admin@example.com'),
-                $this->stringContains('New Crew Registration'),
-                $this->stringContains('Crew Member Registration')
-            )
-            ->willReturn(true);
+        $capturedEmails = [];
+        $this->emailService->method('send')
+            ->willReturnCallback(function ($to, $subject, $body) use (&$capturedEmails) {
+                $capturedEmails[] = ['to' => $to, 'subject' => $subject, 'body' => $body];
+                return true;
+            });
 
         $request = new RegisterRequest(
             email: 'john.doe@example.com',
@@ -470,9 +480,16 @@ class RegisterUseCaseTest extends TestCase
         // Act
         $response = $this->useCase->execute($request);
 
-        // Assert
+        // Assert response
         $this->assertNotNull($response);
         $this->assertEquals('mock.jwt.token', $response->token);
+
+        // Assert admin notification was sent
+        $adminEmails = array_filter($capturedEmails, fn($e) => $e['to'] === 'test-admin@example.com');
+        $this->assertNotEmpty($adminEmails);
+        $adminEmail = array_values($adminEmails)[0];
+        $this->assertStringContainsString('New Crew Registration', $adminEmail['subject']);
+        $this->assertStringContainsString('Crew member registration', $adminEmail['body']);
     }
 
     public function testSendsAdminNotificationForBoatOwnerRegistration(): void
@@ -480,14 +497,12 @@ class RegisterUseCaseTest extends TestCase
         // Arrange
         $this->boatRepository->method('findByKey')->willReturn(null);
 
-        $this->emailService->expects($this->once())
-            ->method('send')
-            ->with(
-                $this->equalTo('test-admin@example.com'),
-                $this->stringContains('New Boat Owner Registration'),
-                $this->stringContains('Boat Owner Registration')
-            )
-            ->willReturn(true);
+        $capturedEmails = [];
+        $this->emailService->method('send')
+            ->willReturnCallback(function ($to, $subject, $body) use (&$capturedEmails) {
+                $capturedEmails[] = ['to' => $to, 'subject' => $subject, 'body' => $body];
+                return true;
+            });
 
         $request = new RegisterRequest(
             email: 'captain@example.com',
@@ -505,9 +520,16 @@ class RegisterUseCaseTest extends TestCase
         // Act
         $response = $this->useCase->execute($request);
 
-        // Assert
+        // Assert response
         $this->assertNotNull($response);
         $this->assertEquals('mock.jwt.token', $response->token);
+
+        // Assert admin notification was sent
+        $adminEmails = array_filter($capturedEmails, fn($e) => $e['to'] === 'test-admin@example.com');
+        $this->assertNotEmpty($adminEmails);
+        $adminEmail = array_values($adminEmails)[0];
+        $this->assertStringContainsString('New Boat Owner Registration', $adminEmail['subject']);
+        $this->assertStringContainsString('Boat Owner Registration', $adminEmail['body']);
     }
 
     public function testRegistrationSucceedsWhenEmailFails(): void
@@ -516,7 +538,7 @@ class RegisterUseCaseTest extends TestCase
         $this->crewRepository->method('findByKey')->willReturn(null);
 
         // Email service returns false (failure)
-        $this->emailService->expects($this->once())
+        $this->emailService->expects($this->any())
             ->method('send')
             ->willReturn(false);
 
@@ -544,7 +566,7 @@ class RegisterUseCaseTest extends TestCase
         $this->crewRepository->method('findByKey')->willReturn(null);
 
         // Email service throws exception
-        $this->emailService->expects($this->once())
+        $this->emailService->expects($this->any())
             ->method('send')
             ->willThrowException(new \Exception('Email service unavailable'));
 
@@ -571,18 +593,12 @@ class RegisterUseCaseTest extends TestCase
         // Arrange
         $this->crewRepository->method('findByKey')->willReturn(null);
 
-        $capturedEmailBody = null;
-        $this->emailService->expects($this->once())
-            ->method('send')
-            ->with(
-                $this->anything(),
-                $this->anything(),
-                $this->callback(function (string $body) use (&$capturedEmailBody) {
-                    $capturedEmailBody = $body;
-                    return true;
-                })
-            )
-            ->willReturn(true);
+        $capturedEmails = [];
+        $this->emailService->method('send')
+            ->willReturnCallback(function ($to, $subject, $body) use (&$capturedEmails) {
+                $capturedEmails[] = ['to' => $to, 'subject' => $subject, 'body' => $body];
+                return true;
+            });
 
         $request = new RegisterRequest(
             email: 'detailed@example.com',
@@ -601,8 +617,10 @@ class RegisterUseCaseTest extends TestCase
         // Act
         $this->useCase->execute($request);
 
-        // Assert - Verify email contains key crew details
-        $this->assertNotNull($capturedEmailBody);
+        // Assert - Verify admin email contains key crew details
+        $adminEmails = array_filter($capturedEmails, fn($e) => $e['to'] === 'test-admin@example.com');
+        $this->assertNotEmpty($adminEmails);
+        $capturedEmailBody = array_values($adminEmails)[0]['body'];
         $this->assertStringContainsString('Detailed', $capturedEmailBody);
         $this->assertStringContainsString('Tester', $capturedEmailBody);
         $this->assertStringContainsString('D.Tester', $capturedEmailBody);
@@ -638,6 +656,8 @@ class RegisterUseCaseTest extends TestCase
             $this->rankingService,
             $this->emailService,
             $this->emailTemplateService,
+            $this->eventRepository,
+            $this->calendarService,
             $this->config
         );
 
@@ -686,6 +706,8 @@ class RegisterUseCaseTest extends TestCase
             $this->rankingService,
             $this->emailService,
             $this->emailTemplateService,
+            $this->eventRepository,
+            $this->calendarService,
             $this->config
         );
 
@@ -710,23 +732,74 @@ class RegisterUseCaseTest extends TestCase
         $this->assertEquals('johnd2', $capturedBoat->getKey()->toString());
     }
 
+    public function testWelcomeEmailIncludesICalAttachmentWhenFutureEventsExist(): void
+    {
+        // Recreate mocks that need non-default behaviour
+        $this->eventRepository = $this->createMock(EventRepositoryInterface::class);
+        $this->eventRepository->method('findFutureEvents')->willReturn(['fri-may-30']);
+        $this->eventRepository->method('findById')->willReturn([
+            'event_id'    => 'fri-may-30',
+            'event_date'  => '2026-05-30',
+            'start_time'  => '12:45:00',
+            'finish_time' => '17:00:00',
+        ]);
+
+        $this->calendarService = $this->createMock(CalendarServiceInterface::class);
+        $this->calendarService->expects($this->once())
+            ->method('generateSeasonCalendar')
+            ->willReturn('BEGIN:VCALENDAR...');
+
+        $capturedArgs = null;
+        $this->emailService = $this->createMock(EmailServiceInterface::class);
+        $this->emailService->method('send')->willReturn(true);
+        $this->emailService->method('sendWithAttachment')
+            ->willReturnCallback(function (...$args) use (&$capturedArgs) {
+                $capturedArgs = $args;
+                return true;
+            });
+
+        $this->crewRepository->method('findByKey')->willReturn(null);
+
+        $this->useCase = new RegisterUseCase(
+            $this->userRepository,
+            $this->crewRepository,
+            $this->boatRepository,
+            $this->passwordService,
+            $this->tokenService,
+            $this->rankingService,
+            $this->emailService,
+            $this->emailTemplateService,
+            $this->eventRepository,
+            $this->calendarService,
+            $this->config
+        );
+
+        $request = new RegisterRequest(
+            email: 'new@example.com',
+            password: 'SecurePass123!',
+            accountType: 'crew',
+            profile: ['firstName' => 'New', 'lastName' => 'User']
+        );
+
+        $this->useCase->execute($request);
+
+        $this->assertNotNull($capturedArgs);
+        $this->assertEquals('new@example.com', $capturedArgs[0]);
+        $this->assertEquals('social-day-cruising.ics', $capturedArgs[4]);
+        $this->assertEquals('text/calendar', $capturedArgs[5]);
+    }
+
     public function testEmailContainsBoatDetailsForBoatOwnerRegistration(): void
     {
         // Arrange
         $this->boatRepository->method('findByKey')->willReturn(null);
 
-        $capturedEmailBody = null;
-        $this->emailService->expects($this->once())
-            ->method('send')
-            ->with(
-                $this->anything(),
-                $this->anything(),
-                $this->callback(function (string $body) use (&$capturedEmailBody) {
-                    $capturedEmailBody = $body;
-                    return true;
-                })
-            )
-            ->willReturn(true);
+        $capturedEmails = [];
+        $this->emailService->method('send')
+            ->willReturnCallback(function ($to, $subject, $body) use (&$capturedEmails) {
+                $capturedEmails[] = ['to' => $to, 'subject' => $subject, 'body' => $body];
+                return true;
+            });
 
         $request = new RegisterRequest(
             email: 'boat@example.com',
@@ -747,8 +820,10 @@ class RegisterUseCaseTest extends TestCase
         // Act
         $this->useCase->execute($request);
 
-        // Assert - Verify email contains key boat details
-        $this->assertNotNull($capturedEmailBody);
+        // Assert - Verify admin email contains key boat details
+        $adminEmails = array_filter($capturedEmails, fn($e) => $e['to'] === 'test-admin@example.com');
+        $this->assertNotEmpty($adminEmails);
+        $capturedEmailBody = array_values($adminEmails)[0]['body'];
         $this->assertStringContainsString('Boat', $capturedEmailBody);
         $this->assertStringContainsString('Owner', $capturedEmailBody);
         $this->assertStringContainsString('SS Minnow', $capturedEmailBody);

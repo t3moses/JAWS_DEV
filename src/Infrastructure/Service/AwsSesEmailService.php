@@ -31,7 +31,7 @@ class AwsSesEmailService implements EmailServiceInterface
         $accessKeyId = $accessKeyId ?? getenv('SES_SMTP_USERNAME') ?: getenv('AWS_ACCESS_KEY_ID') ?: 'test';
         $secretAccessKey = $secretAccessKey ?? getenv('SES_SMTP_PASSWORD') ?: getenv('AWS_SECRET_ACCESS_KEY') ?: 'test';
         $this->defaultFromEmail = $defaultFromEmail ?? getenv('EMAIL_FROM') ?: 'noreply@example.com';
-        $this->defaultFromName = $defaultFromName ?? getenv('EMAIL_FROM_NAME') ?: 'JAWS System';
+        $this->defaultFromName = $defaultFromName ?? getenv('EMAIL_FROM_NAME') ?: 'Social Day Cruising';
 
         // Configure SES client
         $config = [
@@ -124,6 +124,21 @@ class AwsSesEmailService implements EmailServiceInterface
         // AWS SES SDK does not support CC via this wrapper; delegate to send()
         // CC recipients will not receive this email when using AwsSesEmailService
         error_log("AwsSesEmailService::sendWithCc() - CC recipients ignored; sending to primary recipient only");
+        return $this->send($to, $subject, $body, $fromName, $fromEmail);
+    }
+
+    public function sendWithAttachment(
+        string $to,
+        string $subject,
+        string $body,
+        string $attachmentContent,
+        string $attachmentFilename,
+        string $attachmentMimeType = 'application/octet-stream',
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool {
+        // AWS SES SDK raw email attachment support not implemented; sending without attachment
+        error_log("AwsSesEmailService::sendWithAttachment() - attachment ignored; sending without attachment");
         return $this->send($to, $subject, $body, $fromName, $fromEmail);
     }
 

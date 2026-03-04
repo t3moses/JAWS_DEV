@@ -94,7 +94,7 @@ class EmailTemplateService implements EmailTemplateServiceInterface
                 </div>
             </div>
             <div class="footer">
-                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
             </div>
         </div>
     </div>
@@ -176,7 +176,7 @@ HTML;
                 </div>
             </div>
             <div class="footer">
-                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
             </div>
         </div>
     </div>
@@ -239,7 +239,7 @@ HTML;
             <p>Please ensure you are ready at the dock by start time. If your plans have changed, update your availability as soon as possible.</p>
 
             <div class="footer">
-                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
                 <p>If you have any questions, please contact the sailing coordinator.</p>
             </div>
         </div>
@@ -327,8 +327,55 @@ SECTION;
             {$boatSections}
 
             <div class="footer">
-                <p>This is an automated notification from the JAWS sailing management system.</p>
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
             </div>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
+    /**
+     * Render welcome email for newly registered user
+     *
+     * @return string HTML email body
+     */
+    public function renderWelcomeNotification(): string
+    {
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        {$this->getSharedStyles()}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Welcome to the Nepean Sailing Club Social Day Cruising program</h2>
+        </div>
+        <div class="content">
+            <p>You can check the calendar of events and manage your availability through the program
+            website (<a href="https://nsc-sdc.ca/">https://nsc-sdc.ca/</a>). Specific boat/crew
+            assignments may change multiple times in the days leading up to an event, but will be
+            frozen at 10:00 AM on the day.</p>
+
+            <p>If you find you are unable to participate in an event for which you are registered,
+            please remember to cancel before the <strong>10:00 AM deadline</strong>. You will not be
+            able to update your availability after 10:00 AM, and if you do not show up for the event
+            you will be counted a no-show. This will affect your standing for future events.</p>
+
+            <p>The event start time is <strong>12:45 PM</strong>. If you are not present at that time,
+            your place may be reassigned to a standby member.</p>
+
+            <p>If you have questions or concerns, please consult the FAQ on the program website
+            (<a href="https://nsc-sdc.ca/faq.html">https://nsc-sdc.ca/faq.html</a>).
+            And, if you don't find the answer there, you can contact the program organizer by email at
+            <a href="mailto:nsc-sdc@nsc.ca">nsc-sdc@nsc.ca</a>.</p>
+
+            <p>We hope you find the Social Day Cruising program to be of value in your sailing journey.</p>
         </div>
     </div>
 </body>

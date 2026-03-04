@@ -283,6 +283,26 @@ class MailjetEmailServiceTest extends TestCase
         $this->assertSame([1, 2], $state->sleeps);
     }
 
+    // ── Group 6b: sendWithAttachment() ───────────────────────────────────────
+
+    public function testSendWithAttachmentIncludesBase64EncodedPayload(): void
+    {
+        [$service, $state] = $this->makeService();
+
+        $result = $service->sendWithAttachment(
+            'to@example.com', 'Subject', '<p>Body</p>',
+            'ICAL_CONTENT', 'events.ics', 'text/calendar'
+        );
+
+        $this->assertTrue($result);
+        $this->assertCount(1, $state->messages);
+        $msg = $state->messages[0];
+        $this->assertArrayHasKey('Attachments', $msg);
+        $this->assertEquals('text/calendar', $msg['Attachments'][0]['ContentType']);
+        $this->assertEquals('events.ics', $msg['Attachments'][0]['Filename']);
+        $this->assertEquals(base64_encode('ICAL_CONTENT'), $msg['Attachments'][0]['Base64Content']);
+    }
+
     // ── Group 7: Custom from name / email ─────────────────────────────────────
 
     public function testSendWithExplicitFromUsesProvidedValues(): void

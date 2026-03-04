@@ -32,7 +32,7 @@ class MailjetEmailService implements EmailServiceInterface
         $this->apiKey          = $apiKey          ?? getenv('MJ_APIKEY_PUBLIC')  ?: '';
         $this->apiSecret       = $apiSecret       ?? getenv('MJ_APIKEY_PRIVATE') ?: '';
         $this->defaultFromEmail = $defaultFromEmail ?? getenv('EMAIL_FROM')       ?: 'noreply@example.com';
-        $this->defaultFromName  = $defaultFromName  ?? getenv('EMAIL_FROM_NAME')  ?: 'JAWS System';
+        $this->defaultFromName  = $defaultFromName  ?? getenv('EMAIL_FROM_NAME')  ?: 'Social Day Cruising';
     }
 
     public function send(
@@ -140,6 +140,42 @@ class MailjetEmailService implements EmailServiceInterface
         }
 
         error_log("CC email send failed to: {$to}");
+        return false;
+    }
+
+    public function sendWithAttachment(
+        string $to,
+        string $subject,
+        string $body,
+        string $attachmentContent,
+        string $attachmentFilename,
+        string $attachmentMimeType = 'application/octet-stream',
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool {
+        $message = [
+            'From' => [
+                'Email' => $fromEmail ?? $this->defaultFromEmail,
+                'Name'  => $fromName  ?? $this->defaultFromName,
+            ],
+            'To' => [
+                ['Email' => $to],
+            ],
+            'Subject'  => $subject,
+            'HTMLPart' => $body,
+            'Attachments' => [[
+                'ContentType'   => $attachmentMimeType,
+                'Filename'      => $attachmentFilename,
+                'Base64Content' => base64_encode($attachmentContent),
+            ]],
+        ];
+
+        if ($this->postMessage($message)) {
+            error_log("Email with attachment sent successfully to: {$to}");
+            return true;
+        }
+
+        error_log("Email with attachment send failed to: {$to}");
         return false;
     }
 

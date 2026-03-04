@@ -49,7 +49,7 @@ class PhpMailerEmailService implements EmailServiceInterface
         $this->defaultFromEmail = $defaultFromEmail
             ?? getenv('EMAIL_FROM') ?: 'noreply@example.com';
         $this->defaultFromName = $defaultFromName
-            ?? getenv('EMAIL_FROM_NAME') ?: 'JAWS System';
+            ?? getenv('EMAIL_FROM_NAME') ?: 'Social Day Cruising';
         $this->debug = $debug
             ?? (getenv('APP_DEBUG') === 'true');
     }
@@ -202,6 +202,56 @@ class PhpMailerEmailService implements EmailServiceInterface
             return false;
         } catch (\Exception $e) {
             error_log("Email (with CC) send failed to: {$to} - General Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sendWithAttachment(
+        string $to,
+        string $subject,
+        string $body,
+        string $attachmentContent,
+        string $attachmentFilename,
+        string $attachmentMimeType = 'application/octet-stream',
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool {
+        try {
+            $mail = $this->createMailer();
+
+            $mail->setFrom(
+                $fromEmail ?? $this->defaultFromEmail,
+                $fromName ?? $this->defaultFromName
+            );
+
+            $mail->addAddress($to);
+
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            $mail->isHTML(true);
+
+            $mail->addStringAttachment(
+                $attachmentContent,
+                $attachmentFilename,
+                PHPMailer::ENCODING_BASE64,
+                $attachmentMimeType
+            );
+
+            $result = $mail->send();
+
+            if ($result) {
+                error_log("Email with attachment sent successfully to: {$to}");
+                return true;
+            }
+
+            error_log("Email with attachment send failed to: {$to} - No result returned");
+            return false;
+
+        } catch (PHPMailerException $e) {
+            error_log("Email with attachment send failed to: {$to} - PHPMailer Error: " . $e->getMessage());
+            return false;
+        } catch (\Exception $e) {
+            error_log("Email with attachment send failed to: {$to} - General Error: " . $e->getMessage());
             return false;
         }
     }

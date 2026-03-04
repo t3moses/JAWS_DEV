@@ -9,10 +9,12 @@ use App\Application\DTO\Request\RegisterRequest;
 use App\Application\Exception\UserAlreadyExistsException;
 use App\Application\Exception\ValidationException;
 use App\Application\Exception\WeakPasswordException;
+use App\Application\Port\Service\CalendarServiceInterface;
 use App\Application\Port\Service\EmailServiceInterface;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
 use App\Infrastructure\Persistence\SQLite\CrewRepository;
 use App\Infrastructure\Persistence\SQLite\BoatRepository;
+use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Infrastructure\Service\PhpPasswordService;
 use App\Infrastructure\Service\JwtTokenService;
 use App\Domain\Entity\User;
@@ -64,6 +66,12 @@ class RegisterUseCaseTest extends IntegrationTestCase
             ],
         ];
 
+        $eventRepository = new EventRepository();
+        $calendarService = $this->createMock(CalendarServiceInterface::class);
+        $calendarService->method('generateSeasonCalendar')->willReturn('BEGIN:VCALENDAR...END:VCALENDAR');
+
+        $this->emailService->method('sendWithAttachment')->willReturn(true);
+
         $this->useCase = new RegisterUseCase(
             $this->userRepository,
             $this->crewRepository,
@@ -73,6 +81,8 @@ class RegisterUseCaseTest extends IntegrationTestCase
             $rankingService,
             $this->emailService,
             $emailTemplateService,
+            $eventRepository,
+            $calendarService,
             $config
         );
     }

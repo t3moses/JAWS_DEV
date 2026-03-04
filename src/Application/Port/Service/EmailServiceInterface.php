@@ -89,6 +89,24 @@ interface EmailServiceInterface
     ): bool;
 
     /**
+     * Send an email with an inline string attachment
+     *
+     * @param string $attachmentContent Raw attachment content
+     * @param string $attachmentFilename Filename shown to recipient
+     * @param string $attachmentMimeType MIME type (default: application/octet-stream)
+     */
+    public function sendWithAttachment(
+        string $to,
+        string $subject,
+        string $body,
+        string $attachmentContent,
+        string $attachmentFilename,
+        string $attachmentMimeType = 'application/octet-stream',
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool;
+
+    /**
      * Validate an email address
      *
      * @param string $email
