@@ -206,6 +206,56 @@ class PhpMailerEmailService implements EmailServiceInterface
         }
     }
 
+    public function sendWithAttachment(
+        string $to,
+        string $subject,
+        string $body,
+        string $attachmentContent,
+        string $attachmentFilename,
+        string $attachmentMimeType = 'application/octet-stream',
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool {
+        try {
+            $mail = $this->createMailer();
+
+            $mail->setFrom(
+                $fromEmail ?? $this->defaultFromEmail,
+                $fromName ?? $this->defaultFromName
+            );
+
+            $mail->addAddress($to);
+
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            $mail->isHTML(true);
+
+            $mail->addStringAttachment(
+                $attachmentContent,
+                $attachmentFilename,
+                PHPMailer::ENCODING_BASE64,
+                $attachmentMimeType
+            );
+
+            $result = $mail->send();
+
+            if ($result) {
+                error_log("Email with attachment sent successfully to: {$to}");
+                return true;
+            }
+
+            error_log("Email with attachment send failed to: {$to} - No result returned");
+            return false;
+
+        } catch (PHPMailerException $e) {
+            error_log("Email with attachment send failed to: {$to} - PHPMailer Error: " . $e->getMessage());
+            return false;
+        } catch (\Exception $e) {
+            error_log("Email with attachment send failed to: {$to} - General Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function validateEmail(string $email): bool
     {
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;

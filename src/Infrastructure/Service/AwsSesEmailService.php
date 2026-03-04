@@ -127,6 +127,21 @@ class AwsSesEmailService implements EmailServiceInterface
         return $this->send($to, $subject, $body, $fromName, $fromEmail);
     }
 
+    public function sendWithAttachment(
+        string $to,
+        string $subject,
+        string $body,
+        string $attachmentContent,
+        string $attachmentFilename,
+        string $attachmentMimeType = 'application/octet-stream',
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool {
+        // AWS SES SDK raw email attachment support not implemented; sending without attachment
+        error_log("AwsSesEmailService::sendWithAttachment() - attachment ignored; sending without attachment");
+        return $this->send($to, $subject, $body, $fromName, $fromEmail);
+    }
+
     public function validateEmail(string $email): bool
     {
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;

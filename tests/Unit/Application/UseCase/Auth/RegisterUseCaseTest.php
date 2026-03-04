@@ -7,7 +7,9 @@ namespace Tests\Unit\Application\UseCase\Auth;
 use App\Application\DTO\Request\RegisterRequest;
 use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
+use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\UserRepositoryInterface;
+use App\Application\Port\Service\CalendarServiceInterface;
 use App\Application\Port\Service\EmailServiceInterface;
 use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
@@ -30,6 +32,8 @@ class RegisterUseCaseTest extends TestCase
     private RankingService $rankingService;
     private EmailServiceInterface $emailService;
     private EmailTemplateServiceInterface $emailTemplateService;
+    private EventRepositoryInterface $eventRepository;
+    private CalendarServiceInterface $calendarService;
     private array $config;
     private RegisterUseCase $useCase;
 
@@ -46,6 +50,8 @@ class RegisterUseCaseTest extends TestCase
         $this->rankingService = $this->createMock(RankingService::class);
         $this->emailService = $this->createMock(EmailServiceInterface::class);
         $this->emailTemplateService = $this->createMock(EmailTemplateServiceInterface::class);
+        $this->eventRepository = $this->createMock(EventRepositoryInterface::class);
+        $this->calendarService = $this->createMock(CalendarServiceInterface::class);
 
         // Mock config array
         $this->config = [
@@ -80,6 +86,11 @@ class RegisterUseCaseTest extends TestCase
         $this->rankingService->method('calculateBoatRank')->willReturn(
             Rank::forBoat(flexibility: 1, absence: 0)
         );
+
+        // Default: no future events (falls back to plain send)
+        $this->eventRepository->method('findFutureEvents')->willReturn([]);
+        $this->calendarService->method('generateSeasonCalendar')->willReturn('BEGIN:VCALENDAR...');
+        $this->emailService->method('sendWithAttachment')->willReturn(true);
 
         // Default: Email service returns true (success)
         $this->emailService->method('send')->willReturn(true);
@@ -124,6 +135,8 @@ class RegisterUseCaseTest extends TestCase
             $this->rankingService,
             $this->emailService,
             $this->emailTemplateService,
+            $this->eventRepository,
+            $this->calendarService,
             $this->config
         );
     }
@@ -643,6 +656,8 @@ class RegisterUseCaseTest extends TestCase
             $this->rankingService,
             $this->emailService,
             $this->emailTemplateService,
+            $this->eventRepository,
+            $this->calendarService,
             $this->config
         );
 
@@ -691,6 +706,8 @@ class RegisterUseCaseTest extends TestCase
             $this->rankingService,
             $this->emailService,
             $this->emailTemplateService,
+            $this->eventRepository,
+            $this->calendarService,
             $this->config
         );
 
@@ -713,6 +730,63 @@ class RegisterUseCaseTest extends TestCase
         $this->assertNotNull($capturedBoat);
         $this->assertEquals('JohnD2', $capturedBoat->getDisplayName());
         $this->assertEquals('johnd2', $capturedBoat->getKey()->toString());
+    }
+
+    public function testWelcomeEmailIncludesICalAttachmentWhenFutureEventsExist(): void
+    {
+        // Recreate mocks that need non-default behaviour
+        $this->eventRepository = $this->createMock(EventRepositoryInterface::class);
+        $this->eventRepository->method('findFutureEvents')->willReturn(['fri-may-30']);
+        $this->eventRepository->method('findById')->willReturn([
+            'event_id'    => 'fri-may-30',
+            'event_date'  => '2026-05-30',
+            'start_time'  => '12:45:00',
+            'finish_time' => '17:00:00',
+        ]);
+
+        $this->calendarService = $this->createMock(CalendarServiceInterface::class);
+        $this->calendarService->expects($this->once())
+            ->method('generateSeasonCalendar')
+            ->willReturn('BEGIN:VCALENDAR...');
+
+        $capturedArgs = null;
+        $this->emailService = $this->createMock(EmailServiceInterface::class);
+        $this->emailService->method('send')->willReturn(true);
+        $this->emailService->method('sendWithAttachment')
+            ->willReturnCallback(function (...$args) use (&$capturedArgs) {
+                $capturedArgs = $args;
+                return true;
+            });
+
+        $this->crewRepository->method('findByKey')->willReturn(null);
+
+        $this->useCase = new RegisterUseCase(
+            $this->userRepository,
+            $this->crewRepository,
+            $this->boatRepository,
+            $this->passwordService,
+            $this->tokenService,
+            $this->rankingService,
+            $this->emailService,
+            $this->emailTemplateService,
+            $this->eventRepository,
+            $this->calendarService,
+            $this->config
+        );
+
+        $request = new RegisterRequest(
+            email: 'new@example.com',
+            password: 'SecurePass123!',
+            accountType: 'crew',
+            profile: ['firstName' => 'New', 'lastName' => 'User']
+        );
+
+        $this->useCase->execute($request);
+
+        $this->assertNotNull($capturedArgs);
+        $this->assertEquals('new@example.com', $capturedArgs[0]);
+        $this->assertEquals('social-day-cruising.ics', $capturedArgs[4]);
+        $this->assertEquals('text/calendar', $capturedArgs[5]);
     }
 
     public function testEmailContainsBoatDetailsForBoatOwnerRegistration(): void

@@ -12,7 +12,9 @@ use App\Application\Exception\ValidationException;
 use App\Application\Exception\WeakPasswordException;
 use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
+use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\UserRepositoryInterface;
+use App\Application\Port\Service\CalendarServiceInterface;
 use App\Application\Port\Service\EmailServiceInterface;
 use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
@@ -23,6 +25,7 @@ use App\Domain\Entity\User;
 use App\Domain\Service\RankingService;
 use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\CrewKey;
+use App\Domain\ValueObject\EventId;
 use App\Domain\Enum\SkillLevel;
 use App\Infrastructure\Persistence\SQLite\Connection;
 
@@ -43,6 +46,8 @@ class RegisterUseCase
         private RankingService $rankingService,
         private EmailServiceInterface $emailService,
         private EmailTemplateServiceInterface $emailTemplateService,
+        private EventRepositoryInterface $eventRepository,
+        private CalendarServiceInterface $calendarService,
         private array $config,
     ) {
     }
@@ -376,7 +381,34 @@ class RegisterUseCase
         try {
             $subject = 'Welcome to the Nepean Sailing Club Social Day Cruising program';
             $body = $this->emailTemplateService->renderWelcomeNotification();
-            $result = $this->emailService->send($user->getEmail(), $subject, $body);
+
+            $futureEventIds = $this->eventRepository->findFutureEvents();
+            $events = [];
+            foreach ($futureEventIds as $eventId) {
+                $eventData = $this->eventRepository->findById(EventId::fromString($eventId));
+                if ($eventData === null) {
+                    continue;
+                }
+                $events[] = [
+                    'event_id'    => $eventData['event_id'],
+                    'date'        => new \DateTimeImmutable($eventData['event_date']),
+                    'start_time'  => $eventData['start_time'],
+                    'finish_time' => $eventData['finish_time'],
+                    'description' => 'Social Day Cruising Event - https://nsc-sdc.ca/events.html',
+                    'location'    => 'Nepean Sailing Club',
+                ];
+            }
+
+            if (!empty($events)) {
+                $icsContent = $this->calendarService->generateSeasonCalendar($events);
+                $result = $this->emailService->sendWithAttachment(
+                    $user->getEmail(), $subject, $body,
+                    $icsContent, 'social-day-cruising.ics', 'text/calendar'
+                );
+            } else {
+                $result = $this->emailService->send($user->getEmail(), $subject, $body);
+            }
+
             if ($result) {
                 error_log("Welcome email sent: user_id={$user->getId()}");
             } else {

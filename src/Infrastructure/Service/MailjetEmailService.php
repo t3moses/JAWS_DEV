@@ -143,6 +143,42 @@ class MailjetEmailService implements EmailServiceInterface
         return false;
     }
 
+    public function sendWithAttachment(
+        string $to,
+        string $subject,
+        string $body,
+        string $attachmentContent,
+        string $attachmentFilename,
+        string $attachmentMimeType = 'application/octet-stream',
+        ?string $fromName = null,
+        ?string $fromEmail = null
+    ): bool {
+        $message = [
+            'From' => [
+                'Email' => $fromEmail ?? $this->defaultFromEmail,
+                'Name'  => $fromName  ?? $this->defaultFromName,
+            ],
+            'To' => [
+                ['Email' => $to],
+            ],
+            'Subject'  => $subject,
+            'HTMLPart' => $body,
+            'Attachments' => [[
+                'ContentType'   => $attachmentMimeType,
+                'Filename'      => $attachmentFilename,
+                'Base64Content' => base64_encode($attachmentContent),
+            ]],
+        ];
+
+        if ($this->postMessage($message)) {
+            error_log("Email with attachment sent successfully to: {$to}");
+            return true;
+        }
+
+        error_log("Email with attachment send failed to: {$to}");
+        return false;
+    }
+
     private function postMessage(array $message): bool
     {
         $mj    = $this->newMailjetClient();

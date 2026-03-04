@@ -381,6 +381,8 @@ $container->set(\App\Application\UseCase\Auth\RegisterUseCase::class, function (
         $c->get(RankingService::class),
         $c->get(EmailServiceInterface::class),
         $c->get(EmailTemplateServiceInterface::class),
+        $c->get(EventRepositoryInterface::class),
+        $c->get(CalendarServiceInterface::class),
         $config
     );
 });
