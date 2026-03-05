@@ -28,12 +28,14 @@ class GetParticipantEmailsUseCase
     }
 
     /**
-     * @param EventId $eventId
+     * @param string $eventId
      * @return array{event_id: string, boat_owners: array{count: int, emails: array<string>}, crew_members: array{count: int, emails: array<string>}}
      * @throws EventNotFoundException
      */
-    public function execute(EventId $eventId): array
+    public function execute(string $eventId): array
     {
+        $eventId = EventId::fromString($eventId);
+
         $eventData = $this->eventRepository->findById($eventId);
         if ($eventData === null) {
             throw new EventNotFoundException($eventId);

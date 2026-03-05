@@ -14,12 +14,12 @@ use App\Application\Port\Service\EmailServiceInterface;
 use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
 use App\Application\Port\Service\TokenServiceInterface;
+use App\Application\Port\Service\TransactionServiceInterface;
 use App\Application\UseCase\Auth\RegisterUseCase;
 use App\Domain\Entity\Boat;
 use App\Domain\Entity\Crew;
 use App\Domain\Service\RankingService;
 use App\Domain\ValueObject\Rank;
-use App\Infrastructure\Persistence\SQLite\Connection;
 use PHPUnit\Framework\TestCase;
 
 class RegisterUseCaseTest extends TestCase
@@ -34,6 +34,7 @@ class RegisterUseCaseTest extends TestCase
     private EmailTemplateServiceInterface $emailTemplateService;
     private EventRepositoryInterface $eventRepository;
     private CalendarServiceInterface $calendarService;
+    private TransactionServiceInterface $transactionService;
     private array $config;
     private RegisterUseCase $useCase;
 
@@ -52,6 +53,7 @@ class RegisterUseCaseTest extends TestCase
         $this->emailTemplateService = $this->createMock(EmailTemplateServiceInterface::class);
         $this->eventRepository = $this->createMock(EventRepositoryInterface::class);
         $this->calendarService = $this->createMock(CalendarServiceInterface::class);
+        $this->transactionService = $this->createMock(TransactionServiceInterface::class);
 
         // Mock config array
         $this->config = [
@@ -137,20 +139,9 @@ class RegisterUseCaseTest extends TestCase
             $this->emailTemplateService,
             $this->eventRepository,
             $this->calendarService,
-            $this->config
+            $this->config,
+            $this->transactionService
         );
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-
-        // Rollback any active transactions to clean up for next test
-        try {
-            Connection::rollBack();
-        } catch (\Exception $e) {
-            // Ignore if no transaction is active
-        }
     }
 
     public function testCrewDisplayNameGeneratedWhenNull(): void
@@ -658,7 +649,8 @@ class RegisterUseCaseTest extends TestCase
             $this->emailTemplateService,
             $this->eventRepository,
             $this->calendarService,
-            $this->config
+            $this->config,
+            $this->transactionService
         );
 
         $request = new RegisterRequest(
@@ -708,7 +700,8 @@ class RegisterUseCaseTest extends TestCase
             $this->emailTemplateService,
             $this->eventRepository,
             $this->calendarService,
-            $this->config
+            $this->config,
+            $this->transactionService
         );
 
         $request = new RegisterRequest(
@@ -771,7 +764,8 @@ class RegisterUseCaseTest extends TestCase
             $this->emailTemplateService,
             $this->eventRepository,
             $this->calendarService,
-            $this->config
+            $this->config,
+            $this->transactionService
         );
 
         $request = new RegisterRequest(

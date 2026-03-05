@@ -170,7 +170,7 @@ class AdminUseCaseTest extends IntegrationTestCase
     public function testGetMatchingDataReturnsAvailableBoats(): void
     {
         $eventId = EventId::fromString('Fri May 15');
-        $result = $this->getMatchingDataUseCase->execute($eventId);
+        $result = $this->getMatchingDataUseCase->execute($eventId->toString());
 
         $this->assertArrayHasKey('available_boats', $result);
         $this->assertCount(2, $result['available_boats']);
@@ -181,7 +181,7 @@ class AdminUseCaseTest extends IntegrationTestCase
     public function testGetMatchingDataReturnsAvailableCrews(): void
     {
         $eventId = EventId::fromString('Fri May 15');
-        $result = $this->getMatchingDataUseCase->execute($eventId);
+        $result = $this->getMatchingDataUseCase->execute($eventId->toString());
 
         $this->assertArrayHasKey('available_crews', $result);
         $this->assertCount(3, $result['available_crews']);
@@ -191,7 +191,7 @@ class AdminUseCaseTest extends IntegrationTestCase
     public function testGetMatchingDataCalculatesCapacity(): void
     {
         $eventId = EventId::fromString('Fri May 15');
-        $result = $this->getMatchingDataUseCase->execute($eventId);
+        $result = $this->getMatchingDataUseCase->execute($eventId->toString());
 
         $this->assertArrayHasKey('capacity', $result);
         $this->assertEquals(9, $result['capacity']['total_berths']); // 4 + 5
@@ -202,7 +202,7 @@ class AdminUseCaseTest extends IntegrationTestCase
     public function testGetMatchingDataDeterminesTooFewCrewsScenario(): void
     {
         $eventId = EventId::fromString('Fri May 15');
-        $result = $this->getMatchingDataUseCase->execute($eventId);
+        $result = $this->getMatchingDataUseCase->execute($eventId->toString());
 
         $this->assertEquals('too_few_crews', $result['capacity']['scenario']);
     }
@@ -234,7 +234,7 @@ class AdminUseCaseTest extends IntegrationTestCase
             $this->crewRepository->save($crew);
         }
 
-        $result = $this->getMatchingDataUseCase->execute($eventId);
+        $result = $this->getMatchingDataUseCase->execute($eventId->toString());
 
         $this->assertEquals('too_many_crews', $result['capacity']['scenario']);
         $this->assertEquals(13, $result['capacity']['total_crews']);
@@ -254,7 +254,7 @@ class AdminUseCaseTest extends IntegrationTestCase
         $boat2->setBerths($eventId, 1);
         $this->boatRepository->save($boat2);
 
-        $result = $this->getMatchingDataUseCase->execute($eventId);
+        $result = $this->getMatchingDataUseCase->execute($eventId->toString());
 
         $this->assertEquals('perfect_fit', $result['capacity']['scenario']);
         $this->assertEquals(3, $result['capacity']['total_berths']);
@@ -266,7 +266,7 @@ class AdminUseCaseTest extends IntegrationTestCase
         $this->expectException(EventNotFoundException::class);
 
         $eventId = EventId::fromString('Non Existent Event');
-        $this->getMatchingDataUseCase->execute($eventId);
+        $this->getMatchingDataUseCase->execute($eventId->toString());
     }
 
     public function testGetMatchingDataReturnsEmptyWhenNoAvailableBoats(): void
@@ -282,7 +282,7 @@ class AdminUseCaseTest extends IntegrationTestCase
         $this->boatRepository->save($boat1);
         $this->boatRepository->save($boat2);
 
-        $result = $this->getMatchingDataUseCase->execute($eventId);
+        $result = $this->getMatchingDataUseCase->execute($eventId->toString());
 
         $this->assertEmpty($result['available_boats']);
         $this->assertEquals(0, $result['capacity']['total_berths']);
@@ -304,7 +304,7 @@ class AdminUseCaseTest extends IntegrationTestCase
         $this->crewRepository->save($crew2);
         $this->crewRepository->save($crew3);
 
-        $result = $this->getMatchingDataUseCase->execute($eventId);
+        $result = $this->getMatchingDataUseCase->execute($eventId->toString());
 
         $this->assertEmpty($result['available_crews']);
         $this->assertEquals(0, $result['capacity']['total_crews']);

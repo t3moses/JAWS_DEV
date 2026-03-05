@@ -28,12 +28,14 @@ class GetMatchingDataUseCase
     /**
      * Execute the use case
      *
-     * @param EventId $eventId
+     * @param string $eventId
      * @return array{available_boats: array, available_crews: array, capacity: array}
      * @throws EventNotFoundException
      */
-    public function execute(EventId $eventId): array
+    public function execute(string $eventId): array
     {
+        $eventId = EventId::fromString($eventId);
+
         // Verify event exists
         $eventData = $this->eventRepository->findById($eventId);
         if ($eventData === null) {

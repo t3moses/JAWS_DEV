@@ -6,12 +6,9 @@ namespace App\Presentation\Controller;
 
 use App\Application\UseCase\Event\GetAllEventsUseCase;
 use App\Application\UseCase\Event\GetEventUseCase;
+use App\Application\UseCase\Event\GetStatusUseCase;
 use App\Application\UseCase\Flotilla\GetAllFlotillasUseCase;
 use App\Application\Exception\EventNotFoundException;
-use App\Application\Port\Repository\EventRepositoryInterface;
-use App\Application\Port\Repository\SeasonRepositoryInterface;
-use App\Application\Port\Service\TimeServiceInterface;
-use App\Domain\ValueObject\EventId;
 use App\Presentation\Response\JsonResponse;
 
 /**
@@ -25,9 +22,7 @@ class EventController
         private GetAllEventsUseCase $getAllEventsUseCase,
         private GetEventUseCase $getEventUseCase,
         private GetAllFlotillasUseCase $getAllFlotillasUseCase,
-        private TimeServiceInterface $timeService,
-        private SeasonRepositoryInterface $seasonRepository,
-        private EventRepositoryInterface $eventRepository,
+        private GetStatusUseCase $getStatusUseCase,
     ) {
     }
 
@@ -59,8 +54,7 @@ class EventController
     public function getOne(array $params): JsonResponse
     {
         try {
-            $eventId = EventId::fromString($params['id']);
-            $result = $this->getEventUseCase->execute($eventId);
+            $result = $this->getEventUseCase->execute($params['id']);
 
             $response = [
                 'event' => $result['event']->toArray(),
@@ -86,19 +80,7 @@ class EventController
     public function getStatus(): JsonResponse
     {
         try {
-            $config = $this->seasonRepository->getConfig();
-            $now = $this->timeService->now();
-            $hasEventToday = $this->eventRepository->hasEventOnDate($this->timeService->today());
-            $isBlackout = $hasEventToday && $this->timeService->isInBlackoutWindow(
-                $config['blackout_from'],
-                $config['blackout_to']
-            );
-            return JsonResponse::success([
-                'isBlackout' => $isBlackout,
-                'currentDate' => $now->format('Y-m-d'),
-                'currentTime' => $now->format('H:i:s'),
-                'timeSource'  => $config['source'],
-            ]);
+            return JsonResponse::success($this->getStatusUseCase->execute());
         } catch (\Exception $e) {
             return JsonResponse::serverError($e->getMessage());
         }

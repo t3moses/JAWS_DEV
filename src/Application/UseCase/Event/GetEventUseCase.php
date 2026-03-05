@@ -27,12 +27,14 @@ class GetEventUseCase
     /**
      * Execute the use case
      *
-     * @param EventId $eventId
+     * @param string $eventId
      * @return array{event: EventResponse, flotilla: FlotillaResponse|null}
      * @throws EventNotFoundException
      */
-    public function execute(EventId $eventId): array
+    public function execute(string $eventId): array
     {
+        $eventId = EventId::fromString($eventId);
+
         // Get event data
         $eventData = $this->eventRepository->findById($eventId);
         if ($eventData === null) {
