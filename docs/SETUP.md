@@ -49,7 +49,17 @@ php -m | grep sqlite
 
 You should see both `pdo_sqlite` and `sqlite3` in the output.
 
-**4. Git** (for version control)
+**4. Node.js 18 or higher** (for JavaScript linting)
+
+Check your version:
+```bash
+node -v
+npm -v
+```
+
+Download from: https://nodejs.org/
+
+**5. Git** (for version control)
 
 Check your version:
 ```bash
@@ -103,6 +113,12 @@ Install PHP dependencies using Composer:
 
 ```bash
 composer install
+```
+
+Install JavaScript dependencies using npm (required for linting):
+
+```bash
+npm install
 ```
 
 This will install:

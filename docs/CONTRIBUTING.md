@@ -266,6 +266,24 @@ class Boat
 // Only Boat class in this file
 ```
 
+### JavaScript Code Style
+
+Frontend JS (`public/app/js/`) is linted with ESLint 9 (flat config). Key rules:
+
+- `no-var` / `prefer-const` — use `const`/`let`
+- `eqeqeq` — use `===` not `==`
+- `no-unused-vars` — remove unused variables
+- `no-console` — avoid `console.*` (warning)
+- `no-duplicate-imports` — one import per module
+
+Run and auto-fix:
+```bash
+npm run lint       # Check
+npm run lint:fix   # Fix automatically
+```
+
+---
+
 ### Code Organization
 
 **Layer Boundaries:**
@@ -474,7 +492,8 @@ Update documentation when making significant changes:
 ### Before Creating a Pull Request
 
 - [ ] All tests pass locally: `./vendor/bin/phpunit`
-- [ ] Code follows PSR-12 style guide
+- [ ] JavaScript linting passes: `npm run lint`
+- [ ] Code follows PSR-12 style guide (PHP) and ESLint rules (JS)
 - [ ] New code has tests with adequate coverage
 - [ ] Documentation updated (if applicable)
 - [ ] Commit messages follow Conventional Commits format
