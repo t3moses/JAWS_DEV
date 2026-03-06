@@ -208,7 +208,7 @@ jobs:
           path: vendor
 
       - name: Run PHPCS
-        run: vendor/bin/phpcs --report=checkstyle | cs2pr
+        run: php vendor/bin/phpcs --report=checkstyle | cs2pr
 
   # ============================================================================
   # Job 6: Integration Tests
