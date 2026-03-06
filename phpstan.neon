@@ -1,0 +1,13 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - src
+    excludePaths:
+        # AWS SES adapter — AWS SDK not installed in composer.json
+        - src/Infrastructure/Service/AwsSesEmailService.php
+    # PHPStan needs more memory on Windows with this codebase size
+    parallel:
+        maximumNumberOfProcesses: 1

@@ -27,7 +27,8 @@ class SystemTimeService implements TimeServiceInterface
         // Load time source from repository if available
         if ($this->seasonRepo !== null) {
             $this->timeSource = $this->seasonRepo->getTimeSource();
-            $this->simulatedDate = $this->seasonRepo->getSimulatedDate();
+            $rawDate = $this->seasonRepo->getSimulatedDate();
+            $this->simulatedDate = $rawDate !== null ? \DateTimeImmutable::createFromInterface($rawDate) : null;
         }
     }
 

@@ -25,8 +25,8 @@ on:
 
 # Define the jobs to run
 # By separating build and tests, we can:
-# 1. Run unit tests immediately after dependencies are installed (no database needed)
-# 2. Run integration tests after dependencies are ready (integration tests use in-memory SQLite)
+# 1. Run unit tests and JS lint immediately after dependencies are installed (no database needed)
+# 2. Run integration tests and static analysis after dependencies are ready
 # 3. Maximize parallelism to reduce overall pipeline time
 jobs:
   # ============================================================================
@@ -120,7 +120,65 @@ jobs:
         run: php vendor/bin/phpunit --testsuite=Unit
 
   # ============================================================================
-  # Job 4: Integration Tests
+  # Job 3: Lint JavaScript
+  # Runs ESLint on the frontend JS files in public/app/js/
+  # Independent of PHP build — no needs dependency, runs in parallel
+  # Runs on both push and pull requests for fast feedback
+  # ============================================================================
+  lint-js:
+    name: Lint JavaScript
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # ============================================================================
+  # Job 4: Static Analysis (PHPStan)
+  # Runs on both push and pull requests for fast feedback
+  # ============================================================================
+  static-analysis:
+    name: Static Analysis
+
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo, pdo_sqlite, sqlite3, curl, mbstring, openssl
+          coverage: none
+
+      - name: Download vendor artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vendor-artifacts
+          path: vendor
+
+      - name: Run PHPStan
+        run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
+
+  # ============================================================================
+  # Job 5: Integration Tests
   # This job runs tests that check how different parts work together
   # Integration tests use in-memory SQLite - no external database setup needed
   # Only runs on pull requests
@@ -161,34 +219,7 @@ jobs:
         run: php vendor/bin/phpunit --testsuite=Integration
 
   # ============================================================================
-  # Job 3: Lint JavaScript
-  # Runs ESLint on the frontend JS files in public/app/js/
-  # Independent of PHP build — no needs dependency, runs in parallel
-  # Runs on both push and pull requests for fast feedback
-  # ============================================================================
-  lint-js:
-    name: Lint JavaScript
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
-
-  # ============================================================================
-  # Job 5: Deploy to AWS Lightsail
+  # Job 6: Deploy to AWS Lightsail
   # ============================================================================
 #   See deploy.yml for deployment steps - this is just the CI pipeline for testing.
 #   API tests and Playwright E2E tests run in deploy.yml as a pre-deployment gate.

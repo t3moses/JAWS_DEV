@@ -225,7 +225,7 @@ class RegisterUseCase
             displayName: $displayName,
             firstName: $profile['firstName'],
             lastName: $profile['lastName'],
-            partnerKey: isset($profile['partnerKey']) ? new CrewKey($profile['partnerKey']) : null,
+            partnerKey: isset($profile['partnerKey']) ? CrewKey::fromString($profile['partnerKey']) : null,
             mobile: $profile['mobile'] ?? null,
             socialPreference: $this->parseYesNo($profile['socialPreference'] ?? null),
             membershipNumber: $profile['membershipNumber'] ?? null,

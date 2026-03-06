@@ -246,19 +246,24 @@ JAWS/
    ./vendor/bin/phpunit
    ```
 
-5. **Test API Manually**
+5. **Run Static Analysis**
+   ```bash
+   vendor/bin/phpstan analyse
+   ```
+
+6. **Test API Manually**
    ```bash
    php -S localhost:8000 -t public
    # Test with Postman or curl
    ```
 
-6. **Commit Changes**
+7. **Commit Changes**
    ```bash
    git add .
    git commit -m "feat: add notes field to crew"
    ```
 
-7. **Push and Create PR**
+8. **Push and Create PR**
    ```bash
    git push origin feature/add-crew-notes
    # Create Pull Request on GitHub
@@ -1001,6 +1006,16 @@ class Boat
 - **Properties**: camelCase (`$boatKey`, `$displayName`)
 - **Constants**: SCREAMING_SNAKE_CASE (`ASSIST`, `WHITELIST`)
 - **Files**: Match class name (`BoatRepository.php`)
+
+### Static Analysis
+
+JAWS uses [PHPStan](https://phpstan.org/) at **level 5** for static analysis. Run it before committing:
+
+```bash
+vendor/bin/phpstan analyse
+```
+
+Configuration is in `phpstan.neon`. Known pre-existing warnings are suppressed via `phpstan-baseline.neon`—do not add new baseline entries for code you write. PHPStan also runs automatically in CI alongside unit tests.
 
 ---
 
