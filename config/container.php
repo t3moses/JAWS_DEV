@@ -345,8 +345,7 @@ $container->set(\App\Application\UseCase\Admin\AddToCrewWhitelistUseCase::class,
 
 $container->set(\App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase(
-        $c->get(CrewRepositoryInterface::class),
-        $c->get(BoatRepositoryInterface::class)
+        $c->get(CrewRepositoryInterface::class)
     );
 });
 

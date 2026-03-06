@@ -156,6 +156,13 @@ class UserTestHelper
         $stmt = $pdo->prepare('DELETE FROM crews WHERE user_id = :user_id');
         $stmt->execute(['user_id' => $userId]);
 
+        // Clean up crew_whitelist entries referencing this user's boats
+        $stmt = $pdo->prepare('
+            DELETE FROM crew_whitelist
+            WHERE boat_key IN (SELECT key FROM boats WHERE owner_user_id = :user_id)
+        ');
+        $stmt->execute(['user_id' => $userId]);
+
         // Delete boat profile if exists
         $stmt = $pdo->prepare('DELETE FROM boats WHERE owner_user_id = :user_id');
         $stmt->execute(['user_id' => $userId]);
