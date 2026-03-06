@@ -92,6 +92,39 @@ Add `--verbose` flag for detailed output:
 ./vendor/bin/phpunit tests/Unit/Domain/Service/SelectionServiceTest.php
 ```
 
+## Static Analysis (PHPStan)
+
+Runs level 5 static analysis on `src/`:
+
+```bash
+vendor/bin/phpstan analyse
+```
+
+Pre-existing warnings are suppressed in `phpstan-baseline.neon`. Do not add new baseline entries for code you write — fix the issue instead.
+
+PHPStan runs automatically in CI in parallel with unit tests.
+
+## JavaScript Linting (ESLint)
+
+Lints the frontend JS in `public/app/js/`:
+
+```bash
+npm run lint        # Check for errors
+npm run lint:fix    # Auto-fix errors
+```
+
+ESLint runs automatically in CI on every push.
+
+## Full Pre-PR Validation
+
+Run all checks before opening a pull request:
+
+```bash
+./vendor/bin/phpunit          # All PHP tests
+vendor/bin/phpstan analyse    # Static analysis
+npm run lint                  # JS linting
+```
+
 ## Notes
 
 - Unit tests are fastest (no database setup required)
