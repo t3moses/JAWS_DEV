@@ -134,7 +134,7 @@ async function generateReport(eventId) {
         // Render report sections
         renderEventHeader(eventData.event);
         renderAssignmentsTable(eventData.flotilla?.crewedBoats || []);
-        renderWaitlist(eventData.flotilla?.waitlistedBoats || [], eventData.flotilla?.waitlistedCrews || []);
+        renderWaitlist(eventData.flotilla?.waitlistBoats || [], eventData.flotilla?.waitlistCrews || []);
         renderSummary(eventData.flotilla || {});
 
         // Enable print button
@@ -261,8 +261,8 @@ function renderSummary(flotilla) {
     const totalBoats = flotilla.crewedBoats?.length || 0;
     const totalCrews = flotilla.crewedBoats?.reduce((sum, boat) =>
         sum + (boat.crews?.length || 0), 0) || 0;
-    const waitlistCount = (flotilla.waitlistedBoats?.length || 0) +
-                         (flotilla.waitlistedCrews?.length || 0);
+    const waitlistCount = (flotilla.waitlistBoats?.length || 0) +
+                         (flotilla.waitlistCrews?.length || 0);
 
     document.getElementById('total-boats').textContent = totalBoats;
     document.getElementById('total-crews').textContent = totalCrews;
