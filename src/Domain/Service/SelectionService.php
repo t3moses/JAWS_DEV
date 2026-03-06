@@ -298,6 +298,9 @@ private function isLess(Rank $rank1, Rank $rank2): bool
             // by executing case 2 and cutting crew.
             $this->case2($boats, $crews);
         }
+
+        // Preserve boats cut above — case3/case2 reset waitlistBoats to []
+        $this->waitlistBoats = array_merge($this->waitlistBoats, $waitlistBoats);
     }
 
     /**
