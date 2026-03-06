@@ -60,7 +60,6 @@ class SelectionService
 
         // Cut boats or crews to fit, then distribute
         $this->cut($sortedBoats, $sortedCrews);
-
     }
 
     /**
@@ -164,7 +163,7 @@ class SelectionService
      * @return bool
      */
 
-private function isLess(Rank $rank1, Rank $rank2): bool
+    private function isLess(Rank $rank1, Rank $rank2): bool
     {
         $values1 = $rank1->toArray();
         $values2 = $rank2->toArray();
@@ -329,7 +328,7 @@ private function isLess(Rank $rank1, Rank $rank2): bool
         $this->selectedCrews = $crews;
         $this->waitlistBoats = [];
         $this->waitlistCrews = $waitlistCrews;
-        }
+    }
 
     /**
      * Case 3: Perfect fit

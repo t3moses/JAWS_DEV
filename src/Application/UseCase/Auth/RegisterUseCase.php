@@ -403,8 +403,12 @@ class RegisterUseCase
             if (!empty($events)) {
                 $icsContent = $this->calendarService->generateSeasonCalendar($events);
                 $result = $this->emailService->sendWithAttachment(
-                    $user->getEmail(), $subject, $body,
-                    $icsContent, 'social-day-cruising.ics', 'text/calendar'
+                    $user->getEmail(),
+                    $subject,
+                    $body,
+                    $icsContent,
+                    'social-day-cruising.ics',
+                    'text/calendar'
                 );
             } else {
                 $result = $this->emailService->send($user->getEmail(), $subject, $body);
@@ -419,5 +423,4 @@ class RegisterUseCase
             error_log("Failed to send welcome email: user_id={$user->getId()} - {$e->getMessage()}");
         }
     }
-
 }

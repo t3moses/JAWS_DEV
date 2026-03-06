@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# PHP files always use LF (PSR-12 / PHPCS requirement, matches Linux deployment)
+*.php text eol=lf

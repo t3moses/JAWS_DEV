@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<ruleset name="JAWS">
+    <description>JAWS coding standard — PSR-12</description>
+
+    <file>src</file>
+
+    <exclude-pattern>vendor/*</exclude-pattern>
+
+    <rule ref="PSR12">
+        <!-- Line length is a soft guideline; long lines exist in this codebase -->
+        <exclude name="Generic.Files.LineLength"/>
+    </rule>
+
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <arg name="extensions" value="php"/>
+</ruleset>

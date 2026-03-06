@@ -178,7 +178,40 @@ jobs:
         run: php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
 
   # ============================================================================
-  # Job 5: Integration Tests
+  # Job 5: Lint PHP (PHPCS)
+  # Enforces PSR-12 coding style on src/
+  # Runs on both push and pull requests for fast feedback
+  # ============================================================================
+  lint-php:
+    name: Lint PHP (PHPCS)
+
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: cs2pr
+          extensions: pdo, pdo_sqlite, sqlite3, curl, mbstring, openssl
+          coverage: none
+
+      - name: Download vendor artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: vendor-artifacts
+          path: vendor
+
+      - name: Run PHPCS
+        run: vendor/bin/phpcs --report=checkstyle | cs2pr
+
+  # ============================================================================
+  # Job 6: Integration Tests
   # This job runs tests that check how different parts work together
   # Integration tests use in-memory SQLite - no external database setup needed
   # Only runs on pull requests
@@ -219,7 +252,7 @@ jobs:
         run: php vendor/bin/phpunit --testsuite=Integration
 
   # ============================================================================
-  # Job 6: Deploy to AWS Lightsail
+  # Job 7: Deploy to AWS Lightsail
   # ============================================================================
 #   See deploy.yml for deployment steps - this is just the CI pipeline for testing.
 #   API tests and Playwright E2E tests run in deploy.yml as a pre-deployment gate.

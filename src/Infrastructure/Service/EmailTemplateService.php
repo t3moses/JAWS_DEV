@@ -412,7 +412,7 @@ CSS;
      */
     private function getSkillLevelLabel(int $skillLevel): string
     {
-        return match($skillLevel) {
+        return match ($skillLevel) {
             0 => 'Novice',
             1 => 'Intermediate',
             2 => 'Advanced',

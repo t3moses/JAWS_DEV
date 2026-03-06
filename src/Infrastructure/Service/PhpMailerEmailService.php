@@ -88,7 +88,6 @@ class PhpMailerEmailService implements EmailServiceInterface
 
             error_log("Email send failed to: {$to} - No result returned");
             return false;
-
         } catch (PHPMailerException $e) {
             error_log("Email send failed to: {$to} - PHPMailer Error: " . $e->getMessage());
             return false;
@@ -149,7 +148,6 @@ class PhpMailerEmailService implements EmailServiceInterface
 
             error_log("BCC email send failed - No result returned");
             return false;
-
         } catch (PHPMailerException $e) {
             error_log("BCC email send failed - PHPMailer Error: " . $e->getMessage());
             return false;
@@ -196,7 +194,6 @@ class PhpMailerEmailService implements EmailServiceInterface
 
             error_log("Email (with CC) send failed to: {$to} - No result returned");
             return false;
-
         } catch (PHPMailerException $e) {
             error_log("Email (with CC) send failed to: {$to} - PHPMailer Error: " . $e->getMessage());
             return false;
@@ -246,7 +243,6 @@ class PhpMailerEmailService implements EmailServiceInterface
 
             error_log("Email with attachment send failed to: {$to} - No result returned");
             return false;
-
         } catch (PHPMailerException $e) {
             error_log("Email with attachment send failed to: {$to} - PHPMailer Error: " . $e->getMessage());
             return false;
@@ -286,7 +282,7 @@ class PhpMailerEmailService implements EmailServiceInterface
         // Debug mode (only in development)
         if ($this->debug) {
             $mail->SMTPDebug = 2;  // Enable verbose debug output
-            $mail->Debugoutput = function($str, $level) {
+            $mail->Debugoutput = function ($str, $level) {
                 error_log("PHPMailer Debug: {$str}");
             };
         } else {
