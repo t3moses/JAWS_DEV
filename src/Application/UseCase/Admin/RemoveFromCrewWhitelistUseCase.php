@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\UseCase\Admin;
 
-use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\CrewNotFoundException;
-use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\CrewKey;
@@ -20,7 +18,6 @@ class RemoveFromCrewWhitelistUseCase
 {
     public function __construct(
         private CrewRepositoryInterface $crewRepository,
-        private BoatRepositoryInterface $boatRepository,
     ) {
     }
 
@@ -31,7 +28,6 @@ class RemoveFromCrewWhitelistUseCase
      * @param string $boatKey Boat key to remove
      * @return array Updated crew summary
      * @throws CrewNotFoundException If crew not found
-     * @throws BoatNotFoundException If boat not found
      */
     public function execute(string $crewKey, string $boatKey): array
     {
@@ -41,11 +37,6 @@ class RemoveFromCrewWhitelistUseCase
         $crew = $this->crewRepository->findByKey($crewKeyVO);
         if ($crew === null) {
             throw new CrewNotFoundException("Crew member not found: {$crewKey}");
-        }
-
-        $boat = $this->boatRepository->findByKey($boatKeyVO);
-        if ($boat === null) {
-            throw new BoatNotFoundException($boatKeyVO);
         }
 
         $this->crewRepository->removeFromWhitelist($crewKeyVO, $boatKeyVO);
