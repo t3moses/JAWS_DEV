@@ -507,6 +507,17 @@ vendor/bin/paratest
 - Check if dev server starts correctly
 - Verify seeds run successfully
 
+**PHPStan job fails on PR:**
+- Run locally: `vendor/bin/phpstan analyse`
+- Fix type errors or missing return types
+- Do NOT suppress with baseline — fix the underlying issue
+- If the error is in a third-party or legacy file, check if it's already excluded in `phpstan.neon`
+
+**ESLint job fails:**
+- Run locally: `npm run lint`
+- Auto-fix where possible: `npm run lint:fix`
+- Fix remaining errors manually (usually undefined variables or unused imports)
+
 ---
 
 ## Production Issues

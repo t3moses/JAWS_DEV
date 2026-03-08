@@ -944,6 +944,17 @@ JAWS has three critical algorithms that have been preserved from the legacy syst
 
 ## Code Style
 
+### Linting (PHPCS)
+
+JAWS enforces PSR-12 with [PHP_CodeSniffer](https://github.com/squizlabs/PHP_CodeSniffer). Run it before committing:
+
+```bash
+composer lint        # check src/ for violations
+composer lint:fix    # auto-fix what it can (phpcbf)
+```
+
+The CI pipeline runs PHPCS on every push and pull request.
+
 ### PSR-12 Standards
 
 JAWS follows [PSR-12](https://www.php-fig.org/psr/psr-12/) coding standards:

@@ -39,10 +39,12 @@ class ErrorHandlerMiddleware
         }
 
         // Not found errors (404 Not Found)
-        if ($e instanceof BoatNotFoundException ||
+        if (
+            $e instanceof BoatNotFoundException ||
             $e instanceof CrewNotFoundException ||
             $e instanceof EventNotFoundException ||
-            $e instanceof FlotillaNotFoundException) {
+            $e instanceof FlotillaNotFoundException
+        ) {
             return JsonResponse::notFound($e->getMessage());
         }
 
@@ -52,8 +54,10 @@ class ErrorHandlerMiddleware
         }
 
         // Authentication errors (401 Unauthorized)
-        if ($e instanceof InvalidCredentialsException ||
-            $e instanceof InvalidTokenException) {
+        if (
+            $e instanceof InvalidCredentialsException ||
+            $e instanceof InvalidTokenException
+        ) {
             return JsonResponse::error($e->getMessage(), 401);
         }
 

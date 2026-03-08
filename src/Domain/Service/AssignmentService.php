@@ -115,13 +115,19 @@ class AssignmentService
                 arsort($this->losses);
                 arsort($this->grads);
 
-                if (array_values($this->losses)[0] === 0) break; // Move to the next rule
-                if (array_values($this->grads)[0] === 0) break; // Move to the next rule
+                if (array_values($this->losses)[0] === 0) {
+                    break; // Move to the next rule
+                }
+                if (array_values($this->grads)[0] === 0) {
+                    break; // Move to the next rule
+                }
 
                 $topLossCrew = $this->crewFromKey(array_keys($this->losses)[0]);
                 $topGradCrew = $this->bestSwap($this->losses, $this->grads, $rule);
 
-                if ($topGradCrew === null) break; // Valid swap not found, move to next rule
+                if ($topGradCrew === null) {
+                    break; // Valid swap not found, move to next rule
+                }
 
                 // Find the crew and boat indices and objects corresponding to the top loss and grad crews
                 $topLossBoatIndex = null;
@@ -231,8 +237,10 @@ class AssignmentService
             // Check if partner is on the same boat (violation)
             for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
                 $cbCrew = $crewedBoat['crews'][$i];
-                if ($crew->getPartnerKey() !== null &&
-                    $cbCrew->getKey()->equals($crew->getPartnerKey())) {
+                if (
+                    $crew->getPartnerKey() !== null &&
+                    $cbCrew->getKey()->equals($crew->getPartnerKey())
+                ) {
                     return 1;
                 }
             }

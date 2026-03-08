@@ -87,7 +87,6 @@ class AwsSesEmailService implements EmailServiceInterface
             }
 
             return false;
-
         } catch (AwsException $e) {
             error_log("Email send failed: " . $e->getMessage());
             return false;

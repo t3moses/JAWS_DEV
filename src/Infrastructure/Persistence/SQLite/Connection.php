@@ -55,7 +55,6 @@ class Connection
 
                 // Set busy timeout as defense-in-depth for DB operations not covered by the lock
                 self::$instance->exec('PRAGMA busy_timeout = 5000');
-
             } catch (PDOException $e) {
                 throw new PDOException(
                     "Failed to connect to SQLite database at {$dbPath}: " . $e->getMessage(),
