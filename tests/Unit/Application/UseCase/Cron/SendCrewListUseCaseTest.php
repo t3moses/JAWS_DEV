@@ -13,6 +13,7 @@ use App\Application\UseCase\Cron\SendCrewListUseCase;
 use App\Domain\Entity\User;
 use App\Domain\ValueObject\EventId;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 class SendCrewListUseCaseTest extends TestCase
 {
@@ -37,7 +38,8 @@ class SendCrewListUseCaseTest extends TestCase
             $this->userRepository,
             $this->emailService,
             $this->emailTemplateService,
-            'admin@nsc.ca'
+            'admin@nsc.ca',
+            new NullLogger()
         );
     }
 

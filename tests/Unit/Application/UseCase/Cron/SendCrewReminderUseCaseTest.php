@@ -16,6 +16,7 @@ use App\Domain\Enum\SkillLevel;
 use App\Domain\ValueObject\CrewKey;
 use App\Domain\ValueObject\EventId;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 class SendCrewReminderUseCaseTest extends TestCase
 {
@@ -39,7 +40,8 @@ class SendCrewReminderUseCaseTest extends TestCase
             $this->crewRepository,
             $this->userRepository,
             $this->emailService,
-            $this->emailTemplateService
+            $this->emailTemplateService,
+            new NullLogger()
         );
     }
 

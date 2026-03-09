@@ -16,6 +16,7 @@ use App\Domain\Service\RankingService;
 use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\CrewKey;
 use App\Domain\Enum\SkillLevel;
+use Psr\Log\LoggerInterface;
 
 /**
  * Add Profile Use Case
@@ -31,6 +32,7 @@ class AddProfileUseCase
         private BoatRepositoryInterface $boatRepository,
         private RankingService $rankingService,
         private GetUserProfileUseCase $getUserProfileUseCase,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -62,6 +64,11 @@ class AddProfileUseCase
         } elseif ($request->profileType === 'boat') {
             $this->addBoatProfile($user->getId(), $request->boatProfile);
         }
+
+        $this->logger->info('user.profile_added', [
+            'user_id'      => $userId,
+            'profile_type' => $request->profileType,
+        ]);
 
         // Return updated profile
         return $this->getUserProfileUseCase->execute($userId);

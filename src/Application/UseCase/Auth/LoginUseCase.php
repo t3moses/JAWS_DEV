@@ -12,6 +12,7 @@ use App\Application\Exception\ValidationException;
 use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
 use App\Application\Port\Service\TokenServiceInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Login Use Case
@@ -25,6 +26,7 @@ class LoginUseCase
         private UserRepositoryInterface $userRepository,
         private PasswordServiceInterface $passwordService,
         private TokenServiceInterface $tokenService,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -66,6 +68,13 @@ class LoginUseCase
             $user->getAccountType(),
             $user->isAdmin()
         );
+
+        $this->logger->info('auth.login', [
+            'user_id'      => $user->getId(),
+            'email'        => $user->getEmail(),
+            'account_type' => $user->getAccountType(),
+            'is_admin'     => $user->isAdmin(),
+        ]);
 
         // Create response
         return new AuthResponse(

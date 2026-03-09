@@ -6,6 +6,7 @@ namespace App\Application\UseCase\Auth;
 
 use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Exception\UserNotFoundException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Logout Use Case
@@ -28,6 +29,7 @@ class LogoutUseCase
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -53,5 +55,7 @@ class LogoutUseCase
 
         // Persist to database
         $this->userRepository->save($user);
+
+        $this->logger->info('auth.logout', ['user_id' => $userId]);
     }
 }

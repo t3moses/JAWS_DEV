@@ -12,6 +12,7 @@ use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Update User Profile Use Case
@@ -26,6 +27,7 @@ class UpdateUserProfileUseCase
         private BoatRepositoryInterface $boatRepository,
         private PasswordServiceInterface $passwordService,
         private GetUserProfileUseCase $getUserProfileUseCase,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -88,6 +90,17 @@ class UpdateUserProfileUseCase
         if ($request->boatProfile !== null && !empty($request->boatProfile)) {
             $this->updateBoatProfile($userId, $request->boatProfile);
         }
+
+        $updatedSections = array_values(array_filter([
+            ($request->email !== null && !empty($request->email)) ? 'email' : null,
+            ($request->password !== null && !empty($request->password)) ? 'password' : null,
+            ($request->crewProfile !== null && !empty($request->crewProfile)) ? 'crew' : null,
+            ($request->boatProfile !== null && !empty($request->boatProfile)) ? 'boat' : null,
+        ]));
+        $this->logger->info('user.profile_updated', [
+            'user_id'          => $userId,
+            'updated_sections' => $updatedSections,
+        ]);
 
         // Return updated profile
         return $this->getUserProfileUseCase->execute($userId);

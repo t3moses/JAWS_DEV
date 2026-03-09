@@ -12,6 +12,7 @@ use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Service\EmailServiceInterface;
 use App\Domain\ValueObject\EventId;
+use Psr\Log\LoggerInterface;
 
 /**
  * Send Custom Notification Use Case
@@ -29,6 +30,7 @@ class SendCustomNotificationUseCase
         private EventRepositoryInterface $eventRepository,
         private UserRepositoryInterface $userRepository,
         private EmailServiceInterface $emailService,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -99,8 +101,9 @@ class SendCustomNotificationUseCase
         foreach ($batches as $batch) {
             if ($this->emailService->sendWithBcc($fromEmail, $batch, $subject, $htmlBody, $fromName, $fromEmail)) {
                 $totalSent += count($batch);
+                $this->logger->info('email.sent', ['event_id' => $eventId, 'type' => 'custom', 'batch_size' => count($batch), 'emails_sent' => $totalSent]);
             } else {
-                error_log("SendCustomNotificationUseCase: BCC batch of " . count($batch) . " failed");
+                $this->logger->warning('email.failed', ['event_id' => $eventId, 'type' => 'custom', 'batch_size' => count($batch)]);
             }
         }
 

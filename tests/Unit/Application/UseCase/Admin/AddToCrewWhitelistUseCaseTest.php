@@ -15,6 +15,7 @@ use App\Domain\Enum\SkillLevel;
 use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\CrewKey;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class AddToCrewWhitelistUseCaseTest extends TestCase
 {
@@ -59,7 +60,7 @@ class AddToCrewWhitelistUseCaseTest extends TestCase
         $boatRepo = $this->createMock(BoatRepositoryInterface::class);
         $boatRepo->expects($this->never())->method('findByKey');
 
-        $useCase = new AddToCrewWhitelistUseCase($crewRepo, $boatRepo);
+        $useCase = new AddToCrewWhitelistUseCase($crewRepo, $boatRepo, $this->createMock(LoggerInterface::class));
 
         $this->expectException(CrewNotFoundException::class);
         $useCase->execute('nonexistent-crew', 'some-boat');
@@ -76,7 +77,7 @@ class AddToCrewWhitelistUseCaseTest extends TestCase
         $boatRepo = $this->createMock(BoatRepositoryInterface::class);
         $boatRepo->method('findByKey')->willReturn(null);
 
-        $useCase = new AddToCrewWhitelistUseCase($crewRepo, $boatRepo);
+        $useCase = new AddToCrewWhitelistUseCase($crewRepo, $boatRepo, $this->createMock(LoggerInterface::class));
 
         $this->expectException(BoatNotFoundException::class);
         $useCase->execute('test-crew', 'nonexistent-boat');
@@ -105,7 +106,7 @@ class AddToCrewWhitelistUseCaseTest extends TestCase
         $boatRepo = $this->createMock(BoatRepositoryInterface::class);
         $boatRepo->method('findByKey')->willReturn($boat);
 
-        $useCase = new AddToCrewWhitelistUseCase($crewRepo, $boatRepo);
+        $useCase = new AddToCrewWhitelistUseCase($crewRepo, $boatRepo, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute('test-crew', 'my-boat');
 
@@ -124,7 +125,7 @@ class AddToCrewWhitelistUseCaseTest extends TestCase
         $boatRepo = $this->createMock(BoatRepositoryInterface::class);
         $boatRepo->method('findByKey')->willReturn($boat);
 
-        $useCase = new AddToCrewWhitelistUseCase($crewRepo, $boatRepo);
+        $useCase = new AddToCrewWhitelistUseCase($crewRepo, $boatRepo, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute('test-crew', 'my-boat');
 

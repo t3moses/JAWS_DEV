@@ -16,6 +16,7 @@ use App\Infrastructure\Persistence\SQLite\CrewRepository;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
 use App\Infrastructure\Persistence\SQLite\Connection;
 use Tests\Integration\IntegrationTestCase;
+use Psr\Log\NullLogger;
 
 /**
  * Integration tests for UpdateUserProfileUseCase
@@ -60,7 +61,8 @@ class UpdateUserProfileUseCaseTest extends IntegrationTestCase
             $this->crewRepository,
             $this->boatRepository,
             $this->passwordService,
-            $this->getUserProfileUseCase
+            $this->getUserProfileUseCase,
+            new NullLogger()
         );
     }
 
@@ -552,7 +554,8 @@ class UpdateUserProfileUseCaseTest extends IntegrationTestCase
             $this->crewRepository,
             $this->boatRepository,
             $this->passwordService,
-            $this->getUserProfileUseCase
+            $this->getUserProfileUseCase,
+            new NullLogger()
         );
 
         $request = new UpdateProfileRequest(

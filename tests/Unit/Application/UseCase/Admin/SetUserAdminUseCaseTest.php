@@ -9,6 +9,7 @@ use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\UseCase\Admin\SetUserAdminUseCase;
 use App\Domain\Entity\User;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class SetUserAdminUseCaseTest extends TestCase
 {
@@ -31,7 +32,7 @@ class SetUserAdminUseCaseTest extends TestCase
         $userRepository->expects($this->never())->method('findById');
         $userRepository->expects($this->never())->method('save');
 
-        $useCase = new SetUserAdminUseCase($userRepository);
+        $useCase = new SetUserAdminUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         $this->expectException(ValidationException::class);
 
@@ -48,7 +49,7 @@ class SetUserAdminUseCaseTest extends TestCase
 
         $userRepository->expects($this->never())->method('save');
 
-        $useCase = new SetUserAdminUseCase($userRepository);
+        $useCase = new SetUserAdminUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         $this->expectException(\RuntimeException::class);
 
@@ -69,7 +70,7 @@ class SetUserAdminUseCaseTest extends TestCase
             ->method('save')
             ->with($this->callback(fn($u) => $u->isAdmin() === true));
 
-        $useCase = new SetUserAdminUseCase($userRepository);
+        $useCase = new SetUserAdminUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute(targetUserId: 5, isAdmin: true, requestingUserId: 1);
 
@@ -91,7 +92,7 @@ class SetUserAdminUseCaseTest extends TestCase
             ->method('save')
             ->with($this->callback(fn($u) => $u->isAdmin() === false));
 
-        $useCase = new SetUserAdminUseCase($userRepository);
+        $useCase = new SetUserAdminUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute(targetUserId: 5, isAdmin: false, requestingUserId: 1);
 
@@ -107,7 +108,7 @@ class SetUserAdminUseCaseTest extends TestCase
         $userRepository->method('findById')->willReturn($targetUser);
         $userRepository->method('save');
 
-        $useCase = new SetUserAdminUseCase($userRepository);
+        $useCase = new SetUserAdminUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute(targetUserId: 7, isAdmin: true, requestingUserId: 1);
 

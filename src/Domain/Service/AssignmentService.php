@@ -37,9 +37,6 @@ class AssignmentService
     /** @var array<string, mixed> Flotilla structure */
     private array $flotilla = [];
 
-    /** @var resource|null Debug file handle */
-    private $debugFile = null;
-
     /**
      * Main assignment optimization algorithm
      *
@@ -50,10 +47,6 @@ class AssignmentService
     {
         $this->flotilla = $flotilla;
 
-        // Open debug file
-        $debugPath = __DIR__ . '/../../../database/assignment_debug.txt';
-        $this->debugFile = fopen($debugPath, 'w');
-
         // Build the unlocked_crews array listing the keys of all crew objects in the flotilla
         $unlockedCrews = [];
         for ($i = 0; $i < count($this->flotilla['crewed_boats']); $i++) {
@@ -63,10 +56,6 @@ class AssignmentService
                 $unlockedCrews[] = $crew->getKey()->toString();
             }
         }
-
-        $this->debugWrite("Available crews: " . implode(",", $unlockedCrews) . "\n");
-        $this->debugWrite("Initial Assignment:\n\n");
-        $this->prettyPrint($this->flotilla);
 
         // Lock high-skill crew on boats requiring assistance
         for ($i = 0; $i < count($this->flotilla['crewed_boats']); $i++) {
@@ -87,15 +76,9 @@ class AssignmentService
             }
         }
 
-        $this->debugWrite("Available crews: " . implode(",", $unlockedCrews) . "\n");
-        $this->debugWrite("After initialization:\n\n");
-        $this->prettyPrint($this->flotilla);
-
         // Process each rule in priority order
         foreach (AssignmentRule::priorityOrder() as $rule) {
             while (count($unlockedCrews) > 1) {
-                $this->debugWrite("Rule: " . $rule->getName() . "\n\n");
-
                 $this->losses = []; // reset the losses and grads arrays
                 $this->grads = [];
 
@@ -158,25 +141,11 @@ class AssignmentService
                     }
                 }
 
-                $this->debugWrite("Available crews: " . implode(",", $unlockedCrews) . "\n");
-
                 // Perform the swap
                 $this->flotilla['crewed_boats'][$topLossBoatIndex]['crews'][$topLossCrewIndex] = $topGradCrewCopy;
                 $this->flotilla['crewed_boats'][$topGradBoatIndex]['crews'][$topGradCrewIndex] = $topLossCrewCopy;
                 array_splice($unlockedCrews, array_search($topGradCrewCopy->getKey()->toString(), $unlockedCrews), 1);
-
-                $this->debugWrite("Swap: " . $topLossBoat->getKey()->toString() . " " .
-                    $topLossCrewCopy->getKey()->toString() . " " .
-                    $topGradBoat->getKey()->toString() . " " .
-                    $topGradCrewCopy->getKey()->toString() . "\n\n");
-
-                $this->prettyPrint($this->flotilla);
             }
-        }
-
-        if ($this->debugFile !== null) {
-            fclose($this->debugFile);
-            $this->debugFile = null;
         }
 
         return $this->flotilla;
@@ -351,7 +320,6 @@ class AssignmentService
         }
 
 
-        $this->debugWrite("No valid swap found\n\n");
         return null; // No valid swap found
     }
 
@@ -502,38 +470,5 @@ class AssignmentService
 
         // $aCrew is not onboard $crewedBoat
         throw new \RuntimeException("Can't find crew to replace");
-    }
-
-    /**
-     * Pretty print flotilla for debugging
-     *
-     * @param array<string, mixed> $flotilla
-     */
-    public function prettyPrint(array $flotilla): void
-    {
-        foreach ($flotilla['crewed_boats'] as $crewedBoat) {
-            $boat = $crewedBoat['boat'];
-
-            $this->debugWrite("Boat: " . $boat->getKey()->toString() . " " .
-                ($boat->requiresAssistance() ? 'Yes' : 'No') . "\n");
-
-            foreach ($crewedBoat['crews'] as $cbCrew) {
-                $this->debugWrite("  Crew: " . $cbCrew->getKey()->toString() . " " .
-                    $cbCrew->getSkill()->value . "\n");
-            }
-            $this->debugWrite("\n");
-        }
-    }
-
-    /**
-     * Write to debug file
-     *
-     * @param string $message
-     */
-    private function debugWrite(string $message): void
-    {
-        if ($this->debugFile !== null) {
-            fwrite($this->debugFile, $message);
-        }
     }
 }

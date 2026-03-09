@@ -9,6 +9,7 @@ use App\Application\Exception\UserNotFoundException;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
 use App\Domain\Entity\User;
 use Tests\Integration\IntegrationTestCase;
+use Psr\Log\NullLogger;
 
 /**
  * Integration tests for LogoutUseCase
@@ -27,7 +28,7 @@ class LogoutUseCaseTest extends IntegrationTestCase
         parent::setUp();
         
         $this->userRepository = new UserRepository();
-        $this->useCase = new LogoutUseCase($this->userRepository);
+        $this->useCase = new LogoutUseCase($this->userRepository, new NullLogger());
     }
 
     public function testLogoutUpdatesLastLogoutTimestamp(): void

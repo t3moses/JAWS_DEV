@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Application\UseCase\Admin;
 
+use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\CrewNotFoundException;
+use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\CrewKey;
+use Psr\Log\LoggerInterface;
 
 /**
  * Remove From Crew Whitelist Use Case
@@ -18,6 +21,8 @@ class RemoveFromCrewWhitelistUseCase
 {
     public function __construct(
         private CrewRepositoryInterface $crewRepository,
+        private BoatRepositoryInterface $boatRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -39,7 +44,17 @@ class RemoveFromCrewWhitelistUseCase
             throw new CrewNotFoundException("Crew member not found: {$crewKey}");
         }
 
+        $boat = $this->boatRepository->findByKey($boatKeyVO);
+        if ($boat === null) {
+            throw new BoatNotFoundException($boatKeyVO);
+        }
+
         $this->crewRepository->removeFromWhitelist($crewKeyVO, $boatKeyVO);
+
+        $this->logger->info('admin.whitelist_removed', [
+            'crew_key' => $crewKey,
+            'boat_key' => $boatKey,
+        ]);
 
         // Reload to get updated whitelist
         $crew = $this->crewRepository->findByKey($crewKeyVO);

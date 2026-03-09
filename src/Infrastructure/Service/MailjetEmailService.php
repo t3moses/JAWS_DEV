@@ -7,6 +7,8 @@ namespace App\Infrastructure\Service;
 use App\Application\Port\Service\EmailServiceInterface;
 use Mailjet\Client;
 use Mailjet\Resources;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Mailjet Email Service
@@ -22,17 +24,20 @@ class MailjetEmailService implements EmailServiceInterface
     private string $apiSecret;
     private string $defaultFromEmail;
     private string $defaultFromName;
+    private LoggerInterface $logger;
 
     public function __construct(
         ?string $apiKey = null,
         ?string $apiSecret = null,
         ?string $defaultFromEmail = null,
-        ?string $defaultFromName = null
+        ?string $defaultFromName = null,
+        ?LoggerInterface $logger = null
     ) {
-        $this->apiKey          = $apiKey          ?? getenv('MJ_APIKEY_PUBLIC')  ?: '';
-        $this->apiSecret       = $apiSecret       ?? getenv('MJ_APIKEY_PRIVATE') ?: '';
-        $this->defaultFromEmail = $defaultFromEmail ?? getenv('EMAIL_FROM')       ?: 'noreply@example.com';
-        $this->defaultFromName  = $defaultFromName  ?? getenv('EMAIL_FROM_NAME')  ?: 'Social Day Cruising';
+        $this->apiKey           = $apiKey           ?? getenv('MJ_APIKEY_PUBLIC')  ?: '';
+        $this->apiSecret        = $apiSecret        ?? getenv('MJ_APIKEY_PRIVATE') ?: '';
+        $this->defaultFromEmail = $defaultFromEmail ?? getenv('EMAIL_FROM')        ?: 'noreply@example.com';
+        $this->defaultFromName  = $defaultFromName  ?? getenv('EMAIL_FROM_NAME')   ?: 'Social Day Cruising';
+        $this->logger           = $logger           ?? new NullLogger();
     }
 
     public function send(
@@ -54,13 +59,7 @@ class MailjetEmailService implements EmailServiceInterface
             'HTMLPart' => $body,
         ];
 
-        if ($this->postMessage($message)) {
-            error_log("Email sent successfully to: {$to}");
-            return true;
-        }
-
-        error_log("Email send failed to: {$to}");
-        return false;
+        return $this->postMessage($message);
     }
 
     public function sendBulk(
@@ -102,13 +101,7 @@ class MailjetEmailService implements EmailServiceInterface
             'HTMLPart' => $body,
         ];
 
-        if ($this->postMessage($message)) {
-            error_log("BCC email sent to " . count($bcc) . " recipients via: {$to}");
-            return true;
-        }
-
-        error_log("BCC email send failed to: {$to}");
-        return false;
+        return $this->postMessage($message);
     }
 
     public function sendWithCc(
@@ -134,13 +127,7 @@ class MailjetEmailService implements EmailServiceInterface
             'HTMLPart' => $body,
         ];
 
-        if ($this->postMessage($message)) {
-            error_log("CC email sent to " . count($cc) . " recipients via: {$to}");
-            return true;
-        }
-
-        error_log("CC email send failed to: {$to}");
-        return false;
+        return $this->postMessage($message);
     }
 
     public function sendWithAttachment(
@@ -170,13 +157,7 @@ class MailjetEmailService implements EmailServiceInterface
             ]],
         ];
 
-        if ($this->postMessage($message)) {
-            error_log("Email with attachment sent successfully to: {$to}");
-            return true;
-        }
-
-        error_log("Email with attachment send failed to: {$to}");
-        return false;
+        return $this->postMessage($message);
     }
 
     private function postMessage(array $message): bool
@@ -190,12 +171,12 @@ class MailjetEmailService implements EmailServiceInterface
             } catch (\Exception $e) {
                 // Network-level failure (DNS, timeout, connection refused)
                 if ($attempt <= self::MAX_RETRIES) {
-                    error_log("Mailjet network error (attempt {$attempt}), retrying in {$delay}s: " . $e->getMessage());
+                    $this->logger->warning('email.retry', ['attempt' => $attempt, 'delay' => $delay, 'error' => $e->getMessage()]);
                     $this->doSleep($delay);
                     $delay *= 2;
                     continue;
                 }
-                error_log("Mailjet network error after " . (self::MAX_RETRIES + 1) . " attempts: " . $e->getMessage());
+                $this->logger->error('email.network_exhausted', ['attempts' => self::MAX_RETRIES + 1, 'error' => $e->getMessage()]);
                 return false;
             }
 
@@ -207,19 +188,19 @@ class MailjetEmailService implements EmailServiceInterface
 
             // 4xx = permanent failure (bad credentials, malformed request) — don't retry
             if ($status >= 400 && $status < 500) {
-                error_log("Mailjet permanent failure (HTTP {$status}) — not retrying");
+                $this->logger->error('email.permanent_failure', ['http_status' => $status]);
                 return false;
             }
 
             // 5xx = transient server error — retry
             if ($attempt <= self::MAX_RETRIES) {
-                error_log("Mailjet transient failure (HTTP {$status}, attempt {$attempt}), retrying in {$delay}s");
+                $this->logger->warning('email.transient_retry', ['http_status' => $status, 'attempt' => $attempt, 'delay' => $delay]);
                 $this->doSleep($delay);
                 $delay *= 2;
                 continue;
             }
 
-            error_log("Mailjet transient failure (HTTP {$status}) after " . (self::MAX_RETRIES + 1) . " attempts");
+            $this->logger->error('email.transient_exhausted', ['http_status' => $status, 'attempts' => self::MAX_RETRIES + 1]);
             return false;
         }
 

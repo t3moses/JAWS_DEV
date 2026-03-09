@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Application\UseCase\Admin;
 
+use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\CrewNotFoundException;
+use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase;
+use App\Domain\Entity\Boat;
 use App\Domain\Entity\Crew;
 use App\Domain\Enum\SkillLevel;
 use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\CrewKey;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class RemoveFromCrewWhitelistUseCaseTest extends TestCase
 {
@@ -36,21 +40,57 @@ class RemoveFromCrewWhitelistUseCaseTest extends TestCase
         return $crew;
     }
 
+    private function createBoat(string $key): Boat
+    {
+        return new Boat(
+            key: BoatKey::fromString($key),
+            displayName: 'Test Boat',
+            ownerFirstName: 'Owner',
+            ownerLastName: 'Name',
+            ownerMobile: null,
+            minBerths: 2,
+            maxBerths: 4,
+            assistanceRequired: false,
+            socialPreference: false,
+        );
+    }
+
     public function testThrowsCrewNotFoundWhenCrewMissing(): void
     {
         $crewRepo = $this->createMock(CrewRepositoryInterface::class);
         $crewRepo->method('findByKey')->willReturn(null);
 
-        $useCase = new RemoveFromCrewWhitelistUseCase($crewRepo);
+        $boatRepo = $this->createMock(BoatRepositoryInterface::class);
+        $boatRepo->expects($this->never())->method('findByKey');
+
+        $useCase = new RemoveFromCrewWhitelistUseCase($crewRepo, $boatRepo, $this->createMock(LoggerInterface::class));
 
         $this->expectException(CrewNotFoundException::class);
         $useCase->execute('nonexistent-crew', 'some-boat');
+    }
+
+    public function testThrowsBoatNotFoundWhenBoatMissing(): void
+    {
+        $crew = $this->createCrew('test-crew', ['some-boat']);
+
+        $crewRepo = $this->createMock(CrewRepositoryInterface::class);
+        $crewRepo->method('findByKey')->willReturn($crew);
+        $crewRepo->expects($this->never())->method('removeFromWhitelist');
+
+        $boatRepo = $this->createMock(BoatRepositoryInterface::class);
+        $boatRepo->method('findByKey')->willReturn(null);
+
+        $useCase = new RemoveFromCrewWhitelistUseCase($crewRepo, $boatRepo, $this->createMock(LoggerInterface::class));
+
+        $this->expectException(BoatNotFoundException::class);
+        $useCase->execute('test-crew', 'nonexistent-boat');
     }
 
     public function testCallsRemoveFromWhitelistAndReloads(): void
     {
         $crew = $this->createCrew('test-crew', ['my-boat']);
         $crewAfterRemoval = $this->createCrew('test-crew'); // no whitelist
+        $boat = $this->createBoat('my-boat');
 
         $crewRepo = $this->createMock(CrewRepositoryInterface::class);
         $crewRepo->expects($this->exactly(2))
@@ -64,7 +104,10 @@ class RemoveFromCrewWhitelistUseCaseTest extends TestCase
                 $this->callback(fn($k) => $k->toString() === 'my-boat')
             );
 
-        $useCase = new RemoveFromCrewWhitelistUseCase($crewRepo);
+        $boatRepo = $this->createMock(BoatRepositoryInterface::class);
+        $boatRepo->method('findByKey')->willReturn($boat);
+
+        $useCase = new RemoveFromCrewWhitelistUseCase($crewRepo, $boatRepo, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute('test-crew', 'my-boat');
 
@@ -74,12 +117,16 @@ class RemoveFromCrewWhitelistUseCaseTest extends TestCase
     public function testReturnedSummaryContainsExpectedFields(): void
     {
         $crew = $this->createCrew('test-crew', ['my-boat']);
+        $boat = $this->createBoat('my-boat');
 
         $crewRepo = $this->createMock(CrewRepositoryInterface::class);
         $crewRepo->method('findByKey')->willReturn($crew);
         $crewRepo->method('removeFromWhitelist');
 
-        $useCase = new RemoveFromCrewWhitelistUseCase($crewRepo);
+        $boatRepo = $this->createMock(BoatRepositoryInterface::class);
+        $boatRepo->method('findByKey')->willReturn($boat);
+
+        $useCase = new RemoveFromCrewWhitelistUseCase($crewRepo, $boatRepo, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute('test-crew', 'my-boat');
 

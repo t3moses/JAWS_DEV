@@ -12,6 +12,7 @@ use App\Domain\Entity\Crew;
 use App\Domain\Enum\SkillLevel;
 use App\Domain\ValueObject\CrewKey;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class UpdateCrewProfileUseCaseTest extends TestCase
 {
@@ -41,7 +42,7 @@ class UpdateCrewProfileUseCaseTest extends TestCase
             ->willReturn(null);
         $repo->expects($this->never())->method('save');
 
-        $useCase = new UpdateCrewProfileUseCase($repo);
+        $useCase = new UpdateCrewProfileUseCase($repo, $this->createMock(LoggerInterface::class));
 
         $this->expectException(CrewNotFoundException::class);
         $useCase->execute('nonexistent', null, null);
@@ -55,7 +56,7 @@ class UpdateCrewProfileUseCaseTest extends TestCase
         $repo->method('findByKey')->willReturn($crew);
         $repo->expects($this->never())->method('save');
 
-        $useCase = new UpdateCrewProfileUseCase($repo);
+        $useCase = new UpdateCrewProfileUseCase($repo, $this->createMock(LoggerInterface::class));
 
         $this->expectException(ValidationException::class);
         $useCase->execute('test-crew', 99, null);
@@ -71,7 +72,7 @@ class UpdateCrewProfileUseCaseTest extends TestCase
             ->method('save')
             ->with($this->callback(fn($c) => $c->getSkill() === SkillLevel::ADVANCED));
 
-        $useCase = new UpdateCrewProfileUseCase($repo);
+        $useCase = new UpdateCrewProfileUseCase($repo, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute('test-crew', 2, null);
 
@@ -93,7 +94,7 @@ class UpdateCrewProfileUseCaseTest extends TestCase
             });
         $repo->expects($this->never())->method('save');
 
-        $useCase = new UpdateCrewProfileUseCase($repo);
+        $useCase = new UpdateCrewProfileUseCase($repo, $this->createMock(LoggerInterface::class));
 
         $this->expectException(ValidationException::class);
         $useCase->execute('test-crew', null, 'nonexistent-partner');
@@ -115,7 +116,7 @@ class UpdateCrewProfileUseCaseTest extends TestCase
             });
         $repo->expects($this->once())->method('save');
 
-        $useCase = new UpdateCrewProfileUseCase($repo);
+        $useCase = new UpdateCrewProfileUseCase($repo, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute('test-crew', null, 'partner-crew');
 
@@ -132,7 +133,7 @@ class UpdateCrewProfileUseCaseTest extends TestCase
             ->method('save')
             ->with($this->callback(fn($c) => $c->getPartnerKey() === null));
 
-        $useCase = new UpdateCrewProfileUseCase($repo);
+        $useCase = new UpdateCrewProfileUseCase($repo, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute('test-crew', null, null, clearPartner: true);
 
@@ -147,7 +148,7 @@ class UpdateCrewProfileUseCaseTest extends TestCase
         $repo->method('findByKey')->willReturn($crew);
         $repo->method('save');
 
-        $useCase = new UpdateCrewProfileUseCase($repo);
+        $useCase = new UpdateCrewProfileUseCase($repo, $this->createMock(LoggerInterface::class));
 
         $result = $useCase->execute('test-crew', 1, null);
 

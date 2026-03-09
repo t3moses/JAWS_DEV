@@ -9,6 +9,7 @@ use App\Application\Exception\ValidationException;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Domain\Enum\SkillLevel;
 use App\Domain\ValueObject\CrewKey;
+use Psr\Log\LoggerInterface;
 
 /**
  * Update Crew Profile Use Case
@@ -19,6 +20,7 @@ class UpdateCrewProfileUseCase
 {
     public function __construct(
         private CrewRepositoryInterface $crewRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -60,6 +62,12 @@ class UpdateCrewProfileUseCase
         }
 
         $this->crewRepository->save($crew);
+
+        $this->logger->info('admin.crew_profile_updated', [
+            'crew_key'    => $crewKey,
+            'skill'       => $crew->getSkill()->value,
+            'partner_key' => $crew->getPartnerKey()?->toString(),
+        ]);
 
         return [
             'key'         => $crew->getKey()->toString(),

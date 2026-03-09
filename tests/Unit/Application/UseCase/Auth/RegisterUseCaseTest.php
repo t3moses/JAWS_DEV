@@ -21,6 +21,7 @@ use App\Domain\Entity\Crew;
 use App\Domain\Service\RankingService;
 use App\Domain\ValueObject\Rank;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\NullLogger;
 
 class RegisterUseCaseTest extends TestCase
 {
@@ -140,7 +141,8 @@ class RegisterUseCaseTest extends TestCase
             $this->eventRepository,
             $this->calendarService,
             $this->config,
-            $this->transactionService
+            $this->transactionService,
+            new NullLogger()
         );
     }
 
@@ -650,7 +652,8 @@ class RegisterUseCaseTest extends TestCase
             $this->eventRepository,
             $this->calendarService,
             $this->config,
-            $this->transactionService
+            $this->transactionService,
+            new NullLogger()
         );
 
         $request = new RegisterRequest(
@@ -701,7 +704,8 @@ class RegisterUseCaseTest extends TestCase
             $this->eventRepository,
             $this->calendarService,
             $this->config,
-            $this->transactionService
+            $this->transactionService,
+            new NullLogger()
         );
 
         $request = new RegisterRequest(
@@ -765,7 +769,8 @@ class RegisterUseCaseTest extends TestCase
             $this->eventRepository,
             $this->calendarService,
             $this->config,
-            $this->transactionService
+            $this->transactionService,
+            new NullLogger()
         );
 
         $request = new RegisterRequest(

@@ -10,6 +10,7 @@ use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Service\EmailServiceInterface;
 use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Domain\ValueObject\EventId;
+use Psr\Log\LoggerInterface;
 
 /**
  * Send Crew Reminder Use Case
@@ -28,6 +29,7 @@ class SendCrewReminderUseCase
         private UserRepositoryInterface $userRepository,
         private EmailServiceInterface $emailService,
         private EmailTemplateServiceInterface $emailTemplateService,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -64,7 +66,6 @@ class SendCrewReminderUseCase
             $userId = $crew->getUserId();
 
             if ($userId === null) {
-                error_log("SendCrewReminderUseCase: crew {$crew->getKey()->toString()} has no user_id — skipping");
                 $details[] = "Skipped crew {$crew->getFirstName()} {$crew->getLastName()} (no linked user account)";
                 $skipped++;
                 continue;
@@ -73,7 +74,6 @@ class SendCrewReminderUseCase
             $user = $this->userRepository->findById($userId);
 
             if ($user === null) {
-                error_log("SendCrewReminderUseCase: user {$userId} not found for crew {$crew->getKey()->toString()} — skipping");
                 $details[] = "Skipped crew {$crew->getFirstName()} {$crew->getLastName()} (user account not found)";
                 $skipped++;
                 continue;
@@ -89,10 +89,11 @@ class SendCrewReminderUseCase
             if ($this->emailService->send($user->getEmail(), $subject, $body)) {
                 $sent++;
                 $details[] = "Sent reminder to {$crew->getFirstName()} {$crew->getLastName()} ({$user->getEmail()})";
+                $this->logger->info('email.sent', ['event_id' => $eventId->toString(), 'crew_key' => $crew->getKey()->toString(), 'to' => $user->getEmail()]);
             } else {
-                error_log("SendCrewReminderUseCase: failed to send email to {$user->getEmail()}");
                 $details[] = "Failed to send reminder to {$crew->getFirstName()} {$crew->getLastName()} ({$user->getEmail()})";
                 $skipped++;
+                $this->logger->warning('email.failed', ['event_id' => $eventId->toString(), 'crew_key' => $crew->getKey()->toString(), 'to' => $user->getEmail()]);
             }
         }
 

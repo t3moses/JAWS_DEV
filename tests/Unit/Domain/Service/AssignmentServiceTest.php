@@ -563,25 +563,6 @@ class AssignmentServiceTest extends TestCase
         $this->assertIsArray($this->service->grads);
     }
 
-    // Tests that prettyPrint debug method executes without throwing exceptions
-    public function testPrettyPrintDoesNotThrowException(): void
-    {
-        // Arrange
-        $boat = $this->createBoat('sailaway', true);
-        $crew = $this->createCrew('alice', SkillLevel::ADVANCED);
-
-        $flotilla = $this->createFlotilla([
-            ['boat' => $boat, 'crews' => [$crew]]
-        ]);
-
-        // Act & Assert
-        // Should not throw exception
-        $this->service->prettyPrint($flotilla);
-
-        // Assert
-        $this->assertTrue(true);
-    }
-
     // Tests that high skill crew remains on assistance-required boats during optimization
     public function testAssignLocksHighSkillCrewOnAssistanceBoats(): void
     {
