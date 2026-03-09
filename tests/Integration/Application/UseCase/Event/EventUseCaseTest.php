@@ -9,6 +9,7 @@ use App\Application\UseCase\Event\GetEventUseCase;
 use App\Application\Exception\EventNotFoundException;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Infrastructure\Persistence\SQLite\SeasonRepository;
+use App\Infrastructure\Service\SystemTimeService;
 use App\Domain\ValueObject\EventId;
 use Tests\Integration\IntegrationTestCase;
 
@@ -28,8 +29,8 @@ class EventUseCaseTest extends IntegrationTestCase
     {
         parent::setUp();
 
-        $this->eventRepository = new EventRepository();
         $this->seasonRepository = new SeasonRepository();
+        $this->eventRepository = new EventRepository(new SystemTimeService($this->seasonRepository));
         
         $this->getAllEventsUseCase = new GetAllEventsUseCase($this->eventRepository);
         $this->getEventUseCase = new GetEventUseCase(

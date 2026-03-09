@@ -15,7 +15,9 @@ use App\Infrastructure\Persistence\SQLite\UserRepository;
 use App\Infrastructure\Persistence\SQLite\CrewRepository;
 use App\Infrastructure\Persistence\SQLite\BoatRepository;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
+use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Service\DatabaseTransactionService;
+use App\Infrastructure\Service\SystemTimeService;
 use App\Infrastructure\Service\PhpPasswordService;
 use App\Infrastructure\Service\JwtTokenService;
 use App\Domain\Entity\User;
@@ -67,7 +69,7 @@ class RegisterUseCaseTest extends IntegrationTestCase
             ],
         ];
 
-        $eventRepository = new EventRepository();
+        $eventRepository = new EventRepository(new SystemTimeService(new SeasonRepository()));
         $calendarService = $this->createMock(CalendarServiceInterface::class);
         $calendarService->method('generateSeasonCalendar')->willReturn('BEGIN:VCALENDAR...END:VCALENDAR');
 

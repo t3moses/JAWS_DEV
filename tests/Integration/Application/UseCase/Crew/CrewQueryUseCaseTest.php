@@ -12,6 +12,7 @@ use App\Infrastructure\Persistence\SQLite\CrewRepository;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
+use App\Infrastructure\Service\SystemTimeService;
 use App\Domain\Entity\Crew;
 use App\Domain\Entity\User;
 use App\Domain\ValueObject\CrewKey;
@@ -43,8 +44,8 @@ class CrewQueryUseCaseTest extends IntegrationTestCase
 
         $this->boatRepository = new BoatRepository();
         $this->crewRepository = new CrewRepository();
-        $this->eventRepository = new EventRepository();
         $this->seasonRepository = new SeasonRepository();
+        $this->eventRepository = new EventRepository(new SystemTimeService($this->seasonRepository));
         $this->userRepository = new UserRepository();
 
         $this->getCrewAvailabilityUseCase = new GetCrewAvailabilityUseCase(

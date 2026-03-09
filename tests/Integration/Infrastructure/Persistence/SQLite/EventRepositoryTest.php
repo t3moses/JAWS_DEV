@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Integration\Infrastructure\Persistence\SQLite;
 
+use App\Application\Port\Service\TimeServiceInterface;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Domain\ValueObject\EventId;
 use Tests\Integration\IntegrationTestCase;
@@ -19,11 +20,16 @@ use Tests\Integration\IntegrationTestCase;
 class EventRepositoryTest extends IntegrationTestCase
 {
     private EventRepository $repository;
+    private TimeServiceInterface $timeService;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EventRepository();
+        // Use a fixed simulated date so past/future tests are deterministic
+        $this->timeService = $this->createMock(TimeServiceInterface::class);
+        $this->timeService->method('today')->willReturn(new \DateTimeImmutable('2026-02-08'));
+        $this->timeService->method('now')->willReturn(new \DateTimeImmutable('2026-02-08 09:00:00'));
+        $this->repository = new EventRepository($this->timeService);
     }
 
     public function testFindByIdReturnsEventWhenExists(): void
@@ -327,6 +333,45 @@ class EventRepositoryTest extends IntegrationTestCase
 
         // May 15 has no event even though adjacent days do
         $this->assertFalse($this->repository->hasEventOnDate(new \DateTimeImmutable('2026-05-15')));
+    }
+
+    public function testFindNextEventRespectsSimulatedDate(): void
+    {
+        // Create two events: one that would be "future" from Feb 8, one further in the future
+        $this->createEvent('2026-03-15'); // Event A
+        $this->createEvent('2026-06-20'); // Event B
+
+        // From Feb 8 perspective, Event A is next
+        $this->assertEquals('2026-03-15', $this->repository->findNextEvent());
+
+        // Now simulate date as Apr 1 (after Event A but before Event B)
+        $lateTimeService = $this->createMock(TimeServiceInterface::class);
+        $lateTimeService->method('today')->willReturn(new \DateTimeImmutable('2026-04-01'));
+        $lateTimeService->method('now')->willReturn(new \DateTimeImmutable('2026-04-01 09:00:00'));
+        $repoWithLateDate = new EventRepository($lateTimeService);
+
+        // Event A is now in the past; Event B should be next
+        $this->assertEquals('2026-06-20', $repoWithLateDate->findNextEvent());
+    }
+
+    public function testFindFutureEventsRespectsSimulatedDate(): void
+    {
+        $this->createEvent('2026-03-15'); // Event A
+        $this->createEvent('2026-06-20'); // Event B
+
+        // From Feb 8: both are future
+        $this->assertCount(2, $this->repository->findFutureEvents());
+
+        // From Apr 1: only Event B is future
+        $lateTimeService = $this->createMock(TimeServiceInterface::class);
+        $lateTimeService->method('today')->willReturn(new \DateTimeImmutable('2026-04-01'));
+        $lateTimeService->method('now')->willReturn(new \DateTimeImmutable('2026-04-01 09:00:00'));
+        $repoWithLateDate = new EventRepository($lateTimeService);
+
+        $future = $repoWithLateDate->findFutureEvents();
+        $this->assertCount(1, $future);
+        $this->assertContains('2026-06-20', $future);
+        $this->assertNotContains('2026-03-15', $future);
     }
 
     // Helper method - different name to avoid conflict with base class
