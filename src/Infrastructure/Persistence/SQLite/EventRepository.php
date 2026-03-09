@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\SQLite;
 
 use App\Application\Port\Repository\EventRepositoryInterface;
+use App\Application\Port\Service\TimeServiceInterface;
 use App\Domain\ValueObject\EventId;
 use PDO;
 
@@ -16,10 +17,12 @@ use PDO;
 class EventRepository implements EventRepositoryInterface
 {
     private PDO $pdo;
+    private TimeServiceInterface $timeService;
 
-    public function __construct()
+    public function __construct(TimeServiceInterface $timeService)
     {
         $this->pdo = Connection::getInstance();
+        $this->timeService = $timeService;
     }
 
     public function findById(EventId $eventId): ?array
@@ -49,8 +52,8 @@ class EventRepository implements EventRepositoryInterface
             ORDER BY event_date, start_time
         ');
         $stmt->execute([
-            'today' => date('Y-m-d'),
-            'current_time' => date('H:i:s'),
+            'today' => $this->timeService->today()->format('Y-m-d'),
+            'current_time' => $this->timeService->now()->format('H:i:s'),
         ]);
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
@@ -63,8 +66,8 @@ class EventRepository implements EventRepositoryInterface
             ORDER BY event_date, start_time
         ');
         $stmt->execute([
-            'today' => date('Y-m-d'),
-            'current_time' => date('H:i:s'),
+            'today' => $this->timeService->today()->format('Y-m-d'),
+            'current_time' => $this->timeService->now()->format('H:i:s'),
         ]);
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
@@ -78,8 +81,8 @@ class EventRepository implements EventRepositoryInterface
             LIMIT 1
         ');
         $stmt->execute([
-            'today' => date('Y-m-d'),
-            'current_time' => date('H:i:s'),
+            'today' => $this->timeService->today()->format('Y-m-d'),
+            'current_time' => $this->timeService->now()->format('H:i:s'),
         ]);
         $result = $stmt->fetchColumn();
         return $result === false ? null : $result;
@@ -94,8 +97,8 @@ class EventRepository implements EventRepositoryInterface
             LIMIT 1
         ');
         $stmt->execute([
-            'today' => date('Y-m-d'),
-            'current_time' => date('H:i:s'),
+            'today' => $this->timeService->today()->format('Y-m-d'),
+            'current_time' => $this->timeService->now()->format('H:i:s'),
         ]);
         $result = $stmt->fetchColumn();
         return $result === false ? null : $result;

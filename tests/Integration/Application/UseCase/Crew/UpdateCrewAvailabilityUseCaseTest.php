@@ -44,7 +44,6 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
 
         // Initialize repositories
         $this->crewRepository = new CrewRepository();
-        $this->eventRepository = new EventRepository();
 
         // Initialize use case
         // SystemTimeService is given a SeasonRepository so it reads the simulated
@@ -52,10 +51,12 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         // wall-clock time. This keeps the blackout guard inactive regardless of
         // when the tests are actually run.
         $seasonRepository = new SeasonRepository();
+        $timeService = new SystemTimeService($seasonRepository);
+        $this->eventRepository = new EventRepository($timeService);
         $this->useCase = new UpdateCrewAvailabilityUseCase(
             $this->crewRepository,
             $this->eventRepository,
-            new SystemTimeService($seasonRepository),
+            $timeService,
             $seasonRepository
         );
     }

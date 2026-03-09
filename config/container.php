@@ -92,8 +92,8 @@ $container->set(CrewRepositoryInterface::class, function () {
     return new CrewRepository();
 });
 
-$container->set(EventRepositoryInterface::class, function () {
-    return new EventRepository();
+$container->set(EventRepositoryInterface::class, function ($c) {
+    return new EventRepository($c->get(TimeServiceInterface::class));
 });
 
 $container->set(SeasonRepositoryInterface::class, function () {

@@ -11,6 +11,7 @@ use App\Application\Exception\EventNotFoundException;
 use App\Application\Exception\ValidationException;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Infrastructure\Persistence\SQLite\SeasonRepository;
+use App\Infrastructure\Service\SystemTimeService;
 use App\Domain\ValueObject\EventId;
 use Tests\Integration\IntegrationTestCase;
 
@@ -32,8 +33,8 @@ class GenerateFlotillaAndConfigTest extends IntegrationTestCase
     {
         parent::setUp();
 
-        $this->eventRepository = new EventRepository();
         $this->seasonRepository = new SeasonRepository();
+        $this->eventRepository = new EventRepository(new SystemTimeService($this->seasonRepository));
 
         $this->generateFlotillaUseCase = new GenerateFlotillaUseCase(
             $this->eventRepository,

@@ -16,6 +16,7 @@ use App\Domain\ValueObject\EventId;
 use App\Domain\Enum\AvailabilityStatus;
 use App\Infrastructure\Service\DatabaseTransactionService;
 use App\Infrastructure\Service\SQLiteLockService;
+use App\Infrastructure\Service\SystemTimeService;
 use Tests\Integration\IntegrationTestCase;
 
 /**
@@ -39,8 +40,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Initialize repositories
         $this->boatRepository = new BoatRepository();
         $this->crewRepository = new CrewRepository();
-        $this->eventRepository = new EventRepository();
         $this->seasonRepository = new SeasonRepository();
+        $this->eventRepository = new EventRepository(new SystemTimeService($this->seasonRepository));
 
         // Initialize services
         $rankingService = new RankingService();

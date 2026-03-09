@@ -9,7 +9,9 @@ use App\Application\Exception\EventNotFoundException;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
 use App\Infrastructure\Persistence\SQLite\BoatRepository;
 use App\Infrastructure\Persistence\SQLite\CrewRepository;
+use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
+use App\Infrastructure\Service\SystemTimeService;
 use App\Domain\Entity\Boat;
 use App\Domain\Entity\Crew;
 use App\Domain\Entity\User;
@@ -39,7 +41,7 @@ class AdminUseCaseTest extends IntegrationTestCase
     {
         parent::setUp();
 
-        $this->eventRepository = new EventRepository();
+        $this->eventRepository = new EventRepository(new SystemTimeService(new SeasonRepository()));
         $this->boatRepository = new BoatRepository();
         $this->crewRepository = new CrewRepository();
         $this->userRepository = new UserRepository();
