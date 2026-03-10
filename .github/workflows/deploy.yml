@@ -235,7 +235,7 @@ jobs:
           cp -r public deploy_package/
           cp -r src deploy_package/
           cp -r config deploy_package/
-          cp -r database/migrations deploy_package/migrations
+          mkdir -p deploy_package/database && cp -r database/migrations deploy_package/database/
           cp composer.json deploy_package/
           cp composer.lock deploy_package/
           cp phinx.php deploy_package/
