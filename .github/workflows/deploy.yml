@@ -322,6 +322,11 @@ jobs:
             sudo chmod 775 /opt/bitnami/jaws/database
             sudo chmod 664 /opt/bitnami/jaws/database/jaws.db
 
+            # Logs - writable by Monolog (PHP/daemon) and cron (bitnami)
+            sudo mkdir -p /opt/bitnami/jaws/logs
+            sudo chown bitnami:daemon /opt/bitnami/jaws/logs
+            sudo chmod 775 /opt/bitnami/jaws/logs
+
             echo "Permissions set successfully"
           ENDSSH
 
