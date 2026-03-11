@@ -1,6 +1,0 @@
-BA1B2F1n0 has max berths of two, but three are assigned on May 29.
-rank_flexibility = 1, rank_absence = 0.  Correct.
-
-Look in:
-
-src/Domain/Service/SelectionService.php#359

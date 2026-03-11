@@ -9,10 +9,11 @@ toggle.html
 composer.phar
 
 # Database
-/database/*.db
-/database/*.db-journal
-/database/*.db-wal
-/database/*.db-shm
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.db-backup
 /database/*.backup.*
 
 # Environment
@@ -43,7 +44,7 @@ Thumbs.db
 /legacy/Libraries/Squad/data/*.backup.csv
 
 # Debug files
-database/assignment_debug.txt
+*_debug.txt
 
 # Temporary test files
 /tests/temp/
