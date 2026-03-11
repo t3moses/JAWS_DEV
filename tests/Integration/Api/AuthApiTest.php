@@ -350,6 +350,57 @@ class AuthApiTest extends TestCase
         $this->cleanupTestUser($userId);
     }
 
+    public function testPasswordChangeRoundTrip(): void
+    {
+        $email = $this->makeUniqueEmail('password.change');
+        $originalPassword = 'TestPass123';
+        $newPassword = 'NewPass456!';
+
+        // Register
+        $suffix = $this->makeUniqueSuffix();
+        $registerResponse = $this->makeRequest('POST', "{$this->baseUrl}/auth/register", [
+            'email' => $email,
+            'password' => $originalPassword,
+            'accountType' => 'crew',
+            'profile' => [
+                'displayName' => "PwChange {$suffix}",
+                'firstName' => "PwChange{$suffix}",
+                'lastName' => "Test",
+                'skill' => 1,
+            ],
+        ]);
+        $this->assertEquals(201, $registerResponse['status']);
+        $userId = $registerResponse['body']['data']['user']['id'] ?? null;
+        $token = $registerResponse['body']['data']['token'];
+
+        // Change password via PATCH /api/users/me
+        $patchResponse = $this->makeRequest('PATCH', "{$this->baseUrl}/users/me", [
+            'password' => $newPassword,
+            'currentPassword' => $originalPassword,
+        ], [
+            "Authorization: Bearer {$token}",
+        ]);
+        $this->assertEquals(200, $patchResponse['status']);
+
+        // Old password must no longer work
+        $oldLoginResponse = $this->makeRequest('POST', "{$this->baseUrl}/auth/login", [
+            'email' => $email,
+            'password' => $originalPassword,
+        ]);
+        $this->assertEquals(401, $oldLoginResponse['status']);
+
+        // New password must work
+        $newLoginResponse = $this->makeRequest('POST', "{$this->baseUrl}/auth/login", [
+            'email' => $email,
+            'password' => $newPassword,
+        ]);
+        $this->assertEquals(200, $newLoginResponse['status']);
+        $this->assertArrayHasKey('token', $newLoginResponse['body']['data']);
+
+        // Cleanup
+        $this->cleanupTestUser($userId);
+    }
+
     public function testAuthenticationFailureWithoutToken(): void
     {
         $response = $this->makeRequest('GET', "{$this->baseUrl}/assignments");

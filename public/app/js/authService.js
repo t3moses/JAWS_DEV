@@ -5,11 +5,7 @@
  */
 
 import * as ApiService from './apiService.js';
-import { hashPassword } from './passwordUtil.js';
 import { setToken, clearToken, hasToken } from './tokenService.js';
-
-// Re-export hashPassword for backwards compatibility (used by edit-profile-page.js)
-export { hashPassword };
 
 /**
  * Sign in user via API
