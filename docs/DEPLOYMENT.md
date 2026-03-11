@@ -10,6 +10,7 @@ Complete guide for deploying JAWS to production on AWS Lightsail.
 - [Database Management](#database-management)
 - [Cron Jobs](#cron-jobs)
 - [Monitoring](#monitoring)
+  - [Shipping Logs to CloudWatch Logs (Optional)](#shipping-logs-to-cloudwatch-logs-optional)
 - [Rollback Procedures](#rollback-procedures)
 - [Troubleshooting](#troubleshooting)
 
@@ -764,7 +765,21 @@ sudo nano /etc/logrotate.d/jaws-cron
 
 ### Check Application Logs
 
-**Apache Error Log:**
+**Structured application log** (JSON, written by JAWS directly):
+```bash
+# Today's log
+tail -f /opt/bitnami/jaws/logs/app.log
+
+# All rotated files
+ls -lh /opt/bitnami/jaws/logs/app-*.log
+
+# Filter by event type
+grep '"event":"auth.login"' /opt/bitnami/jaws/logs/app-$(date +%Y-%m-%d).log | jq .
+```
+
+Log rotation is handled automatically by Monolog (`RotatingFileHandler`): 30 daily files are kept, named `app-YYYY-MM-DD.log`. No system-level logrotate configuration is needed for this file.
+
+**Apache Error Log** (PHP fatal errors, Apache-level problems):
 ```bash
 sudo tail -f /opt/bitnami/apache/logs/error_log
 ```
@@ -774,7 +789,7 @@ sudo tail -f /opt/bitnami/apache/logs/error_log
 sudo tail -f /opt/bitnami/apache/logs/access_log
 ```
 
-**Filter for errors only:**
+**Filter Apache log for errors only:**
 ```bash
 sudo grep -i error /opt/bitnami/apache/logs/error_log | tail -20
 ```
@@ -845,6 +860,83 @@ fi
 Add to cron (run every 15 minutes):
 ```bash
 */15 * * * * /home/bitnami/monitor.sh
+```
+
+### Shipping Logs to CloudWatch Logs (Optional)
+
+Forwarding `logs/app.log` to AWS CloudWatch Logs gives you searchable, alertable structured logs in the AWS Console with long-term retention.
+
+#### 1. Install the CloudWatch Agent
+
+```bash
+wget https://s3.amazonaws.com/amazoncloudwatch-agent/debian/amd64/latest/amazon-cloudwatch-agent.deb
+sudo dpkg -i amazon-cloudwatch-agent.deb
+```
+
+#### 2. Attach an IAM Role to the Lightsail Instance
+
+The agent needs `logs:CreateLogGroup`, `logs:CreateLogStream`, and `logs:PutLogEvents` permissions. The easiest approach is to attach an IAM role with the `CloudWatchAgentServerPolicy` managed policy to your Lightsail instance. See the [AWS docs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/create-iam-roles-for-cloudwatch-agent.html) for details.
+
+#### 3. Configure the Agent
+
+Create the config file:
+
+```bash
+sudo nano /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+```
+
+```json
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/opt/bitnami/jaws/logs/app-*.log",
+            "log_group_name": "jaws/application",
+            "log_stream_name": "{instance_id}",
+            "timestamp_format": "%Y-%m-%dT%H:%M:%S",
+            "multi_line_start_pattern": "^\\{"
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+The wildcard `app-*.log` picks up all rotated daily files automatically.
+
+#### 4. Start the Agent
+
+```bash
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json \
+  -s
+```
+
+Verify it is running:
+```bash
+sudo systemctl status amazon-cloudwatch-agent
+```
+
+#### 5. Query Logs in CloudWatch
+
+In the AWS Console → CloudWatch → Log Insights, select log group `jaws/application`:
+
+```
+# All errors in the last hour
+fields @timestamp, level, message, event
+| filter level = "ERROR"
+| sort @timestamp desc
+| limit 50
+
+# Failed logins
+fields @timestamp, context.email, context.ip
+| filter event = "auth.login_failed"
+| sort @timestamp desc
 ```
 
 ---

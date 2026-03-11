@@ -7,6 +7,7 @@ namespace App\Application\UseCase\Season;
 use App\Application\DTO\Request\UpdateConfigRequest;
 use App\Application\Exception\ValidationException;
 use App\Application\Port\Repository\SeasonRepositoryInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Update Config Use Case
@@ -18,6 +19,7 @@ class UpdateConfigUseCase
 {
     public function __construct(
         private SeasonRepositoryInterface $seasonRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -64,6 +66,16 @@ class UpdateConfigUseCase
 
         // Save updated config
         $this->seasonRepository->updateConfig($config);
+
+        $this->logger->info('admin.config_updated', array_filter([
+            'source'         => $request->source,
+            'simulated_date' => $request->simulatedDate,
+            'year'           => $request->year,
+            'start_time'     => $request->startTime,
+            'finish_time'    => $request->finishTime,
+            'blackout_from'  => $request->blackoutFrom,
+            'blackout_to'    => $request->blackoutTo,
+        ], fn($v) => $v !== null));
 
         return [
             'success' => true,

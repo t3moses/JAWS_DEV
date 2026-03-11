@@ -15,6 +15,7 @@ use App\Application\Port\Repository\EventRepositoryInterface;
 use App\Application\Port\Repository\SeasonRepositoryInterface;
 use App\Application\Port\Service\TimeServiceInterface;
 use App\Domain\ValueObject\EventId;
+use Psr\Log\LoggerInterface;
 
 /**
  * Update Boat Availability Use Case
@@ -28,6 +29,7 @@ class UpdateBoatAvailabilityUseCase
         private EventRepositoryInterface $eventRepository,
         private TimeServiceInterface $timeService,
         private SeasonRepositoryInterface $seasonRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -96,6 +98,11 @@ class UpdateBoatAvailabilityUseCase
 
         // Reload boat to get updated availability for response
         $boat = $this->boatRepository->findByOwnerUserId($userId);
+
+        $this->logger->info('boat.availability_updated', [
+            'boat_key'    => $boatKey->toString(),
+            'event_count' => count($request->availabilities),
+        ]);
 
         return BoatResponse::fromEntity($boat);
     }

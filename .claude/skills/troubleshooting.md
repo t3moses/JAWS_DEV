@@ -263,17 +263,27 @@ apache2ctl -M | grep rewrite
 
 ### 500 Internal Server Error
 
-**Check error logs:**
+**Check structured app log first** (JSON, most informative):
 ```bash
 # Development
-tail -f /var/log/apache2/error.log
+tail -f logs/app.log
 
 # Production
+ssh bitnami@16.52.222.15 'tail -f /opt/bitnami/jaws/logs/app-$(date +%Y-%m-%d).log'
+```
+
+**Then check PHP/Apache output** (PHP fatals, server-level errors):
+```bash
+# Development (php -S): errors print to the terminal running the dev server
+# No log file — check the terminal window where you ran:
+#   php -S localhost:8000 -t public
+
+# Production (Apache)
 ssh bitnami@16.52.222.15 'sudo tail -f /opt/bitnami/apache/logs/error_log'
 ```
 
 **Common causes:**
-- PHP syntax error (check logs)
+- PHP syntax error (check terminal / Apache log)
 - Missing dependency (run `composer install`)
 - Database connection error (check permissions)
 - Missing .env file (check environment variables)
@@ -567,8 +577,8 @@ cp jaws.backup.YYYYMMDD_HHMMSS.db jaws.db
 If none of these solutions work:
 
 1. **Check logs:**
-   - Development: Browser console + PHP errors
-   - Production: Apache error logs
+   - Development: `logs/app.log` (structured JSON) → browser console → PHP/Apache errors
+   - Production: `/opt/bitnami/jaws/logs/app-YYYY-MM-DD.log` → Apache error log
 
 2. **Search the codebase:**
    - Use Grep skill: `/database-ops`

@@ -10,6 +10,7 @@ use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Service\EmailServiceInterface;
 use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Domain\ValueObject\EventId;
+use Psr\Log\LoggerInterface;
 
 /**
  * Send Crew List Use Case
@@ -29,6 +30,7 @@ class SendCrewListUseCase
         private EmailServiceInterface $emailService,
         private EmailTemplateServiceInterface $emailTemplateService,
         private string $adminEmail,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -68,7 +70,6 @@ class SendCrewListUseCase
             $ownerUserId = (int)($boat['owner_user_id'] ?? 0);
 
             if ($ownerUserId === 0) {
-                error_log("SendCrewListUseCase: boat {$boat['display_name']} has no linked owner account — skipping CC");
                 $details[] = "Skipped boat {$boat['display_name']} (no linked owner account)";
                 $skipped++;
                 continue;
@@ -76,7 +77,6 @@ class SendCrewListUseCase
 
             $ownerUser = $this->userRepository->findById($ownerUserId);
             if ($ownerUser === null) {
-                error_log("SendCrewListUseCase: user {$ownerUserId} not found for boat {$boat['display_name']} — skipping CC");
                 $details[] = "Skipped boat {$boat['display_name']} (owner user account not found)";
                 $skipped++;
                 continue;
@@ -101,9 +101,10 @@ class SendCrewListUseCase
         if ($this->emailService->sendWithCc($this->adminEmail, $ccEmails, $subject, $body)) {
             $sent = true;
             $details[] = "Crew list sent to {$this->adminEmail} with {$cc_count} CC recipient(s)";
+            $this->logger->info('email.sent', ['event_id' => $eventId->toString(), 'type' => 'crew_list', 'to' => $this->adminEmail, 'cc_count' => $cc_count]);
         } else {
-            error_log("SendCrewListUseCase: failed to send crew list email to {$this->adminEmail}");
             $details[] = "Failed to send crew list email";
+            $this->logger->warning('email.failed', ['event_id' => $eventId->toString(), 'type' => 'crew_list', 'to' => $this->adminEmail]);
         }
 
         return compact('sent', 'cc_count', 'skipped', 'details');

@@ -23,6 +23,7 @@ use App\Infrastructure\Service\JwtTokenService;
 use App\Domain\Entity\User;
 use App\Domain\Enum\SkillLevel;
 use Tests\Integration\IntegrationTestCase;
+use Psr\Log\NullLogger;
 
 /**
  * Integration tests for RegisterUseCase
@@ -87,7 +88,8 @@ class RegisterUseCaseTest extends IntegrationTestCase
             $eventRepository,
             $calendarService,
             $config,
-            new DatabaseTransactionService()
+            new DatabaseTransactionService(),
+            new NullLogger()
         );
     }
 

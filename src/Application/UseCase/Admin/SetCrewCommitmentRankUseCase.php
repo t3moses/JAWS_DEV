@@ -9,6 +9,7 @@ use App\Application\Exception\ValidationException;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Domain\Enum\CrewRankDimension;
 use App\Domain\ValueObject\CrewKey;
+use Psr\Log\LoggerInterface;
 
 /**
  * Set Crew Commitment Rank Use Case
@@ -25,6 +26,7 @@ class SetCrewCommitmentRankUseCase
 {
     public function __construct(
         private CrewRepositoryInterface $crewRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -48,6 +50,11 @@ class SetCrewCommitmentRankUseCase
 
         $crew->setRankDimension(CrewRankDimension::COMMITMENT, $rank);
         $this->crewRepository->updateRankCommitment($crew);
+
+        $this->logger->info('admin.commitment_rank_set', [
+            'crew_key' => $crewKey,
+            'rank'     => $rank,
+        ]);
 
         return [
             'crew_key' => $crewKey,

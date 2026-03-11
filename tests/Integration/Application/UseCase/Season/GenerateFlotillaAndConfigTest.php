@@ -14,6 +14,7 @@ use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Service\SystemTimeService;
 use App\Domain\ValueObject\EventId;
 use Tests\Integration\IntegrationTestCase;
+use Psr\Log\NullLogger;
 
 /**
  * Integration tests for Season UseCase operations
@@ -42,7 +43,8 @@ class GenerateFlotillaAndConfigTest extends IntegrationTestCase
         );
 
         $this->updateConfigUseCase = new UpdateConfigUseCase(
-            $this->seasonRepository
+            $this->seasonRepository,
+            new NullLogger()
         );
 
         $this->initializeTestData();

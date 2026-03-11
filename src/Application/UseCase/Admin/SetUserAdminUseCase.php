@@ -6,6 +6,7 @@ namespace App\Application\UseCase\Admin;
 
 use App\Application\Exception\ValidationException;
 use App\Application\Port\Repository\UserRepositoryInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Set User Admin Use Case
@@ -17,6 +18,7 @@ class SetUserAdminUseCase
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -44,6 +46,13 @@ class SetUserAdminUseCase
 
         $user->setIsAdmin($isAdmin);
         $this->userRepository->save($user);
+
+        $this->logger->info('admin.user_admin_set', [
+            'user_id'             => $targetUserId,
+            'email'               => $user->getEmail(),
+            'is_admin'            => $isAdmin,
+            'changed_by_user_id'  => $requestingUserId,
+        ]);
 
         return [
             'id'           => $user->getId(),

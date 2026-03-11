@@ -18,6 +18,7 @@ use App\Domain\Entity\User;
 use App\Domain\Enum\SkillLevel;
 use App\Domain\ValueObject\CrewKey;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class UpdateUserProfileUseCaseTest extends TestCase
 {
@@ -54,6 +55,7 @@ class UpdateUserProfileUseCaseTest extends TestCase
             $this->boatRepository,
             $this->passwordService,
             $this->getUserProfileUseCase,
+            $this->createMock(LoggerInterface::class),
         );
     }
 

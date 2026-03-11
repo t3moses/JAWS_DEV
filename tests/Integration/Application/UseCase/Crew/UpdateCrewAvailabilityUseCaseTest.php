@@ -19,6 +19,7 @@ use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Persistence\SQLite\Connection;
 use App\Infrastructure\Service\SystemTimeService;
 use Tests\Integration\IntegrationTestCase;
+use Psr\Log\NullLogger;
 
 /**
  * Integration tests for UpdateCrewAvailabilityUseCase
@@ -56,8 +57,9 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         $this->useCase = new UpdateCrewAvailabilityUseCase(
             $this->crewRepository,
             $this->eventRepository,
-            $timeService,
-            $seasonRepository
+            new SystemTimeService($seasonRepository),
+            $seasonRepository,
+            new NullLogger()
         );
     }
 
@@ -532,7 +534,8 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
             $this->crewRepository,
             $this->eventRepository,
             new SystemTimeService($seasonRepository),
-            $seasonRepository
+            $seasonRepository,
+            new NullLogger()
         );
 
         $userId = $this->createTestUser();
@@ -559,7 +562,8 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
             $this->crewRepository,
             $this->eventRepository,
             new SystemTimeService($seasonRepository),
-            $seasonRepository
+            $seasonRepository,
+            new NullLogger()
         );
 
         $userId = $this->createTestUser();
@@ -584,7 +588,8 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
             $this->crewRepository,
             $this->eventRepository,
             new SystemTimeService($seasonRepository),
-            $seasonRepository
+            $seasonRepository,
+            new NullLogger()
         );
 
         $userId = $this->createTestUser();

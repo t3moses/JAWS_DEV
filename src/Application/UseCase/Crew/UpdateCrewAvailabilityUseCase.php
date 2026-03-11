@@ -17,6 +17,7 @@ use App\Application\Port\Service\TimeServiceInterface;
 use App\Domain\ValueObject\EventId;
 use App\Domain\Enum\AvailabilityStatus;
 use App\Domain\Enum\CrewRankDimension;
+use Psr\Log\LoggerInterface;
 
 /**
  * Update Crew Availability Use Case
@@ -30,6 +31,7 @@ class UpdateCrewAvailabilityUseCase
         private EventRepositoryInterface $eventRepository,
         private TimeServiceInterface $timeService,
         private SeasonRepositoryInterface $seasonRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -88,6 +90,7 @@ class UpdateCrewAvailabilityUseCase
 
         // Update commitment rank immediately if the next event was included in the request.
         // Re-registering as available (rank=2) clears any admin penalty (rank=1).
+        $nextEventCommitmentRank = null;
         $nextEventIdStr = $this->eventRepository->findNextEvent();
         if ($nextEventIdStr !== null) {
             foreach ($request->availabilities as $availability) {
@@ -95,6 +98,7 @@ class UpdateCrewAvailabilityUseCase
                     $commitmentRank = $availability['isAvailable'] ? 2 : 0;
                     $crew->setRankDimension(CrewRankDimension::COMMITMENT, $commitmentRank);
                     $this->crewRepository->updateRankCommitment($crew);
+                    $nextEventCommitmentRank = $commitmentRank;
                     break;
                 }
             }
@@ -102,6 +106,15 @@ class UpdateCrewAvailabilityUseCase
 
         // Reload crew to get updated availability for response
         $crew = $this->crewRepository->findByUserId($userId);
+
+        $logContext = [
+            'crew_key'    => $crewKey->toString(),
+            'event_count' => count($request->availabilities),
+        ];
+        if ($nextEventCommitmentRank !== null) {
+            $logContext['next_event_commitment_rank'] = $nextEventCommitmentRank;
+        }
+        $this->logger->info('crew.availability_updated', $logContext);
 
         return CrewResponse::fromEntity($crew);
     }

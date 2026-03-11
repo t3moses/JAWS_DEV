@@ -17,6 +17,7 @@ use App\Domain\Enum\AvailabilityStatus;
 use App\Infrastructure\Service\DatabaseTransactionService;
 use App\Infrastructure\Service\SQLiteLockService;
 use App\Infrastructure\Service\SystemTimeService;
+use Psr\Log\NullLogger;
 use Tests\Integration\IntegrationTestCase;
 
 /**
@@ -58,7 +59,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
             $assignmentService,
             $rankingService,
             new DatabaseTransactionService(),
-            new SQLiteLockService($this->pdo)
+            new SQLiteLockService($this->pdo),
+            new NullLogger()
         );
     }
 

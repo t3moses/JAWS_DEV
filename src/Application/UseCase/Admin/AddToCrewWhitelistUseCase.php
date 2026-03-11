@@ -10,6 +10,7 @@ use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Domain\ValueObject\BoatKey;
 use App\Domain\ValueObject\CrewKey;
+use Psr\Log\LoggerInterface;
 
 /**
  * Add To Crew Whitelist Use Case
@@ -21,6 +22,7 @@ class AddToCrewWhitelistUseCase
     public function __construct(
         private CrewRepositoryInterface $crewRepository,
         private BoatRepositoryInterface $boatRepository,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -49,6 +51,11 @@ class AddToCrewWhitelistUseCase
         }
 
         $this->crewRepository->addToWhitelist($crewKeyVO, $boatKeyVO);
+
+        $this->logger->info('admin.whitelist_added', [
+            'crew_key' => $crewKey,
+            'boat_key' => $boatKey,
+        ]);
 
         // Reload to get updated whitelist
         $crew = $this->crewRepository->findByKey($crewKeyVO);

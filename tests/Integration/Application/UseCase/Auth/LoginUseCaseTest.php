@@ -13,6 +13,7 @@ use App\Infrastructure\Service\PhpPasswordService;
 use App\Infrastructure\Service\JwtTokenService;
 use App\Domain\Entity\User;
 use Tests\Integration\IntegrationTestCase;
+use Psr\Log\NullLogger;
 
 /**
  * Integration tests for LoginUseCase
@@ -36,7 +37,8 @@ class LoginUseCaseTest extends IntegrationTestCase
         $this->useCase = new LoginUseCase(
             $this->userRepository,
             $this->passwordService,
-            $tokenService
+            $tokenService,
+            new NullLogger()
         );
     }
 

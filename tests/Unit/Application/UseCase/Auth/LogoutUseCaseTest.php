@@ -9,6 +9,7 @@ use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\UseCase\Auth\LogoutUseCase;
 use App\Domain\Entity\User;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class LogoutUseCaseTest extends TestCase
 {
@@ -43,7 +44,7 @@ class LogoutUseCaseTest extends TestCase
                 return $savedUser->getLastLogout() instanceof \DateTimeImmutable;
             }));
 
-        $useCase = new LogoutUseCase($userRepository);
+        $useCase = new LogoutUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         // Act
         $useCase->execute($userId);
@@ -68,7 +69,7 @@ class LogoutUseCaseTest extends TestCase
             ->method('save')
             ->with($user);
 
-        $useCase = new LogoutUseCase($userRepository);
+        $useCase = new LogoutUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         // Act
         $useCase->execute($userId);
@@ -90,7 +91,7 @@ class LogoutUseCaseTest extends TestCase
         $userRepository->expects($this->never())
             ->method('save');
 
-        $useCase = new LogoutUseCase($userRepository);
+        $useCase = new LogoutUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         // Assert
         $this->expectException(UserNotFoundException::class);
@@ -117,7 +118,7 @@ class LogoutUseCaseTest extends TestCase
             ->method('save')
             ->with($user);
 
-        $useCase = new LogoutUseCase($userRepository);
+        $useCase = new LogoutUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         // Act
         $useCase->execute($userId);
@@ -149,7 +150,7 @@ class LogoutUseCaseTest extends TestCase
             ->method('save')
             ->with($user);
 
-        $useCase = new LogoutUseCase($userRepository);
+        $useCase = new LogoutUseCase($userRepository, $this->createMock(LoggerInterface::class));
 
         // Act
         $useCase->execute($userId);

@@ -20,6 +20,7 @@ use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Application\Port\Service\PasswordServiceInterface;
 use App\Application\Port\Service\TokenServiceInterface;
 use App\Application\Port\Service\TransactionServiceInterface;
+use Psr\Log\LoggerInterface;
 use App\Domain\Entity\Boat;
 use App\Domain\Entity\Crew;
 use App\Domain\Entity\User;
@@ -50,6 +51,7 @@ class RegisterUseCase
         private CalendarServiceInterface $calendarService,
         private array $config,
         private TransactionServiceInterface $transactionService,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -112,6 +114,12 @@ class RegisterUseCase
             $this->transactionService->rollBack();
             throw $e;
         }
+
+        $this->logger->info('auth.registered', [
+            'user_id'      => $user->getId(),
+            'email'        => $user->getEmail(),
+            'account_type' => $request->accountType,
+        ]);
 
         // Send admin notification email (don't fail registration if email fails)
         $this->sendAdminNotification($user, $request);
@@ -361,13 +369,13 @@ class RegisterUseCase
             $result = $this->emailService->send($adminEmail, $subject, $body);
 
             if ($result) {
-                error_log("Admin notification sent successfully for registration: user_id={$user->getId()}, type={$request->accountType}");
+                $this->logger->info('email.sent', ['type' => 'admin_registration', 'account_type' => $request->accountType, 'to' => $adminEmail]);
             } else {
-                error_log("Failed to send admin notification for registration: user_id={$user->getId()}, type={$request->accountType}");
+                $this->logger->warning('email.failed', ['type' => 'admin_registration', 'account_type' => $request->accountType, 'to' => $adminEmail]);
             }
         } catch (\Exception $e) {
             // Log error but don't fail registration
-            error_log("Failed to send admin notification for registration: user_id={$user->getId()}, type={$request->accountType} - {$e->getMessage()}");
+            $this->logger->error('email.failed', ['type' => 'admin_registration', 'account_type' => $request->accountType, 'to' => $adminEmail, 'error' => $e->getMessage()]);
         }
     }
 
@@ -415,12 +423,12 @@ class RegisterUseCase
             }
 
             if ($result) {
-                error_log("Welcome email sent: user_id={$user->getId()}");
+                $this->logger->info('email.sent', ['type' => 'welcome', 'user_id' => $user->getId(), 'to' => $user->getEmail()]);
             } else {
-                error_log("Failed to send welcome email: user_id={$user->getId()}");
+                $this->logger->warning('email.failed', ['type' => 'welcome', 'user_id' => $user->getId(), 'to' => $user->getEmail()]);
             }
         } catch (\Exception $e) {
-            error_log("Failed to send welcome email: user_id={$user->getId()} - {$e->getMessage()}");
+            $this->logger->error('email.failed', ['type' => 'welcome', 'user_id' => $user->getId(), 'to' => $user->getEmail(), 'error' => $e->getMessage()]);
         }
     }
 }

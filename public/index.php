@@ -48,7 +48,7 @@ $routes = require __DIR__ . '/../config/routes.php';
 // Initialize middleware
 $corsMiddleware = new \App\Presentation\Middleware\CorsMiddleware($config['cors']);
 $jwtAuthMiddleware = $container->get(\App\Presentation\Middleware\JwtAuthMiddleware::class);
-$errorMiddleware = new \App\Presentation\Middleware\ErrorHandlerMiddleware();
+$errorMiddleware = $container->get(\App\Presentation\Middleware\ErrorHandlerMiddleware::class);
 
 // Apply CORS headers
 $corsMiddleware->apply();

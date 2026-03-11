@@ -24,6 +24,7 @@ use App\Domain\ValueObject\CrewKey;
 use App\Domain\ValueObject\Rank;
 use App\Domain\Enum\AvailabilityStatus;
 use App\Domain\Enum\SkillLevel;
+use Psr\Log\LoggerInterface;
 
 /**
  * Process Season Update Use Case
@@ -54,6 +55,7 @@ class ProcessSeasonUpdateUseCase
         private RankingService $rankingService,
         private TransactionServiceInterface $transactionService,
         private LockServiceInterface $lockService,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -100,6 +102,11 @@ class ProcessSeasonUpdateUseCase
         $boatHistoryUpdates = $this->syncBoatHistory($fleet);
         $crewHistoryUpdates = $this->syncCrewHistory($squad);
 
+        $this->logger->info('season_update.start', [
+            'future_events_count' => count($futureEvents),
+            'next_event_id'       => $nextEventId,
+        ]);
+
         $eventsProcessed = 0;
         $flotillasGenerated = 0;
         $modifiedCrews = [];
@@ -111,6 +118,14 @@ class ProcessSeasonUpdateUseCase
 
             // Phase 1: Selection (rank and capacity match)
             $selectionResult = $this->runSelection($fleet, $squad, $eventId);
+
+            $this->logger->debug('season_update.selection_complete', [
+                'event_id'         => $eventId->toString(),
+                'selected_boats'   => count($selectionResult['selected_boats']),
+                'selected_crews'   => count($selectionResult['selected_crews']),
+                'waitlisted_boats' => count($selectionResult['waitlisted_boats']),
+                'waitlisted_crews' => count($selectionResult['waitlisted_crews']),
+            ]);
 
             // Add flex boat owners to crew waitlist when their boat is cut
             $existingCrewDisplayNames = array_values(array_filter(
@@ -138,6 +153,11 @@ class ProcessSeasonUpdateUseCase
             // Phase 3: Assignment optimization (next event only)
             if ($eventIdString === $nextEventId) {
                 $flotilla = $this->runAssignment($flotilla);
+
+                $this->logger->info('season_update.assignment_complete', [
+                    'event_id'           => $eventId->toString(),
+                    'crewed_boats_count' => count($flotilla['crewed_boats']),
+                ]);
 
                 // Update commitment ranks for all crew based on assignment result
                 // Assigned crew get rank=3; others are set by availability; admin penalties (rank=1) persist
@@ -208,8 +228,16 @@ class ProcessSeasonUpdateUseCase
             $this->transactionService->commit();
         } catch (\Throwable $e) {
             $this->transactionService->rollBack();
+            $this->logger->error('season_update.transaction_failed', [
+                'exception_class' => get_class($e),
+                'message'         => $e->getMessage(),
+            ]);
             throw $e;
         }
+
+        $this->logger->info('season_update.complete', [
+            'events_processed' => $eventsProcessed,
+        ]);
 
         return [
             'success' => true,

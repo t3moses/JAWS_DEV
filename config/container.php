@@ -41,6 +41,11 @@ use App\Infrastructure\Service\SQLiteLockService;
 use App\Domain\Service\SelectionService;
 use App\Domain\Service\AssignmentService;
 use App\Domain\Service\RankingService;
+use Monolog\Logger;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\JsonFormatter;
+use Psr\Log\LoggerInterface;
 
 // Simple service container
 class Container
@@ -80,6 +85,27 @@ $container = new Container();
 $config = require __DIR__ . '/config.php';
 
 // =======================
+// Logging
+// =======================
+
+$container->set(LoggerInterface::class, function () use ($config) {
+    $env    = $config['app']['env'] ?? 'production';
+    $logger = new Logger('jaws');
+
+    $logFile = __DIR__ . '/../logs/app.log';
+    $handler = in_array($env, ['development', 'local'], true)
+        ? new StreamHandler($logFile, Logger::DEBUG)
+        : new RotatingFileHandler($logFile, maxFiles: 30, level: Logger::INFO);
+
+    $formatter = new JsonFormatter();
+    $formatter->includeStacktraces(true);
+    $handler->setFormatter($formatter);
+    $logger->pushHandler($handler);
+
+    return $logger;
+});
+
+// =======================
 // Infrastructure Layer
 // =======================
 
@@ -105,7 +131,7 @@ $container->set(UserRepositoryInterface::class, function () {
 });
 
 // Services (External Adapters)
-$container->set(EmailServiceInterface::class, function () use ($config) {
+$container->set(EmailServiceInterface::class, function ($c) use ($config) {
     $env = $config['app']['env'] ?? 'production';
     if (in_array($env, ['development', 'local'], true)) {
         // Use PHPMailer → MailHog for local email capture
@@ -115,7 +141,7 @@ $container->set(EmailServiceInterface::class, function () use ($config) {
             smtpSecure: ''
         );
     }
-    return new MailjetEmailService();
+    return new MailjetEmailService(logger: $c->get(LoggerInterface::class));
 });
 
 $container->set(EmailTemplateServiceInterface::class, function () {
@@ -177,7 +203,8 @@ $container->set(\App\Application\UseCase\Boat\UpdateBoatAvailabilityUseCase::cla
         $c->get(BoatRepositoryInterface::class),
         $c->get(EventRepositoryInterface::class),
         $c->get(TimeServiceInterface::class),
-        $c->get(SeasonRepositoryInterface::class)
+        $c->get(SeasonRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -187,7 +214,8 @@ $container->set(\App\Application\UseCase\Crew\UpdateCrewAvailabilityUseCase::cla
         $c->get(CrewRepositoryInterface::class),
         $c->get(EventRepositoryInterface::class),
         $c->get(TimeServiceInterface::class),
-        $c->get(SeasonRepositoryInterface::class)
+        $c->get(SeasonRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -248,7 +276,8 @@ $container->set(\App\Application\UseCase\Season\ProcessSeasonUpdateUseCase::clas
         $c->get(AssignmentService::class),
         $c->get(RankingService::class),
         $c->get(TransactionServiceInterface::class),
-        $c->get(LockServiceInterface::class)
+        $c->get(LockServiceInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -261,7 +290,8 @@ $container->set(\App\Application\UseCase\Season\GenerateFlotillaUseCase::class, 
 
 $container->set(\App\Application\UseCase\Season\UpdateConfigUseCase::class, function ($c) {
     return new \App\Application\UseCase\Season\UpdateConfigUseCase(
-        $c->get(SeasonRepositoryInterface::class)
+        $c->get(SeasonRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -289,7 +319,8 @@ $container->set(\App\Application\UseCase\Admin\SendCustomNotificationUseCase::cl
         $c->get(CrewRepositoryInterface::class),
         $c->get(EventRepositoryInterface::class),
         $c->get(UserRepositoryInterface::class),
-        $c->get(EmailServiceInterface::class)
+        $c->get(EmailServiceInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -307,7 +338,8 @@ $container->set(\App\Application\UseCase\Admin\GetAllUsersUseCase::class, functi
 
 $container->set(\App\Application\UseCase\Admin\SetUserAdminUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\SetUserAdminUseCase(
-        $c->get(UserRepositoryInterface::class)
+        $c->get(UserRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -332,26 +364,31 @@ $container->set(\App\Application\UseCase\Admin\GetAllBoatsUseCase::class, functi
 
 $container->set(\App\Application\UseCase\Admin\UpdateCrewProfileUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\UpdateCrewProfileUseCase(
-        $c->get(CrewRepositoryInterface::class)
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
 $container->set(\App\Application\UseCase\Admin\AddToCrewWhitelistUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\AddToCrewWhitelistUseCase(
         $c->get(CrewRepositoryInterface::class),
-        $c->get(BoatRepositoryInterface::class)
+        $c->get(BoatRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
 $container->set(\App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase(
-        $c->get(CrewRepositoryInterface::class)
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(BoatRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
 $container->set(\App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase(
-        $c->get(CrewRepositoryInterface::class)
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -362,7 +399,8 @@ $container->set(\App\Application\UseCase\Cron\SendCrewReminderUseCase::class, fu
         $c->get(CrewRepositoryInterface::class),
         $c->get(UserRepositoryInterface::class),
         $c->get(EmailServiceInterface::class),
-        $c->get(EmailTemplateServiceInterface::class)
+        $c->get(EmailTemplateServiceInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -373,7 +411,8 @@ $container->set(\App\Application\UseCase\Cron\SendCrewListUseCase::class, functi
         $c->get(UserRepositoryInterface::class),
         $c->get(EmailServiceInterface::class),
         $c->get(EmailTemplateServiceInterface::class),
-        $config['email']['admin_notification_email']
+        $config['email']['admin_notification_email'],
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -391,7 +430,8 @@ $container->set(\App\Application\UseCase\Auth\RegisterUseCase::class, function (
         $c->get(EventRepositoryInterface::class),
         $c->get(CalendarServiceInterface::class),
         $config,
-        $c->get(TransactionServiceInterface::class)
+        $c->get(TransactionServiceInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -399,7 +439,8 @@ $container->set(\App\Application\UseCase\Auth\LoginUseCase::class, function ($c)
     return new \App\Application\UseCase\Auth\LoginUseCase(
         $c->get(UserRepositoryInterface::class),
         $c->get(PasswordServiceInterface::class),
-        $c->get(TokenServiceInterface::class)
+        $c->get(TokenServiceInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -411,7 +452,8 @@ $container->set(\App\Application\UseCase\Auth\GetSessionUseCase::class, function
 
 $container->set(\App\Application\UseCase\Auth\LogoutUseCase::class, function ($c) {
     return new \App\Application\UseCase\Auth\LogoutUseCase(
-        $c->get(UserRepositoryInterface::class)
+        $c->get(UserRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -430,7 +472,8 @@ $container->set(\App\Application\UseCase\User\UpdateUserProfileUseCase::class, f
         $c->get(CrewRepositoryInterface::class),
         $c->get(BoatRepositoryInterface::class),
         $c->get(PasswordServiceInterface::class),
-        $c->get(\App\Application\UseCase\User\GetUserProfileUseCase::class)
+        $c->get(\App\Application\UseCase\User\GetUserProfileUseCase::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -440,7 +483,8 @@ $container->set(\App\Application\UseCase\User\AddProfileUseCase::class, function
         $c->get(CrewRepositoryInterface::class),
         $c->get(BoatRepositoryInterface::class),
         $c->get(RankingService::class),
-        $c->get(\App\Application\UseCase\User\GetUserProfileUseCase::class)
+        $c->get(\App\Application\UseCase\User\GetUserProfileUseCase::class),
+        $c->get(LoggerInterface::class)
     );
 });
 
@@ -516,6 +560,12 @@ $container->set(\App\Presentation\Controller\UserController::class, function ($c
 $container->set(\App\Presentation\Middleware\JwtAuthMiddleware::class, function ($c) {
     return new \App\Presentation\Middleware\JwtAuthMiddleware(
         $c->get(TokenServiceInterface::class)
+    );
+});
+
+$container->set(\App\Presentation\Middleware\ErrorHandlerMiddleware::class, function ($c) {
+    return new \App\Presentation\Middleware\ErrorHandlerMiddleware(
+        $c->get(LoggerInterface::class)
     );
 });
 
