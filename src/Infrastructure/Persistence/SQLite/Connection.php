@@ -98,6 +98,11 @@ class Connection
         // Try environment variable first
         $envPath = getenv('DB_PATH');
         if ($envPath !== false) {
+            // Resolve relative paths against the project root
+            if (!str_starts_with($envPath, '/') && !preg_match('/^[A-Za-z]:[\\/]/', $envPath)) {
+                $projectRoot = dirname(__DIR__, 4);
+                return $projectRoot . '/' . ltrim($envPath, './');
+            }
             return $envPath;
         }
 

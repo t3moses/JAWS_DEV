@@ -3,7 +3,7 @@
  * Handles profile editing form and password changes
  */
 
-import { requireAuth, getCurrentUser, signOut, hashPassword } from '../authService.js';
+import { requireAuth, getCurrentUser, signOut } from '../authService.js';
 import { updateAuthenticatedNavigation, addAdminLink } from '../navigationService.js';
 import { updateUser } from '../userService.js';
 import { validatePassword, getPasswordRequirementsHTML } from '../passwordValidator.js';
@@ -292,7 +292,7 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
     }
 
     // Update user
-    let updates = {};
+    const updates = {};
 
     if (user.accountType === 'crew') {
         updates.crewProfile = profileUpdates;
@@ -302,7 +302,7 @@ document.getElementById('edit-profile-form').addEventListener('submit', async fu
 
     // Add password change if provided
     if (newPassword) {
-        updates.password = hashPassword(newPassword);
+        updates.password = newPassword;
     }
 
     const result = await updateUser(user.userId, updates);

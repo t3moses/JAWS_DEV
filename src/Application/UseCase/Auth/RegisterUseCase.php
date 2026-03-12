@@ -373,7 +373,7 @@ class RegisterUseCase
             } else {
                 $this->logger->warning('email.failed', ['type' => 'admin_registration', 'account_type' => $request->accountType, 'to' => $adminEmail]);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Log error but don't fail registration
             $this->logger->error('email.failed', ['type' => 'admin_registration', 'account_type' => $request->accountType, 'to' => $adminEmail, 'error' => $e->getMessage()]);
         }
@@ -427,7 +427,7 @@ class RegisterUseCase
             } else {
                 $this->logger->warning('email.failed', ['type' => 'welcome', 'user_id' => $user->getId(), 'to' => $user->getEmail()]);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logger->error('email.failed', ['type' => 'welcome', 'user_id' => $user->getId(), 'to' => $user->getEmail(), 'error' => $e->getMessage()]);
         }
     }
