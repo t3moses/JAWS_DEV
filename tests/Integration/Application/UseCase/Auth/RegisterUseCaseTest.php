@@ -47,7 +47,7 @@ class RegisterUseCaseTest extends IntegrationTestCase
         $this->crewRepository = new CrewRepository();
         $this->boatRepository = new BoatRepository();
         $this->passwordService = new PhpPasswordService();
-        $tokenService = new JwtTokenService();
+        $tokenService = new JwtTokenService('test-secret-key-for-integration-tests');
 
         // We need RankingService for the usecase
         $rankingService = new \App\Domain\Service\RankingService();
