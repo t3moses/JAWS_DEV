@@ -291,6 +291,7 @@ $container->set(\App\Application\UseCase\Season\GenerateFlotillaUseCase::class, 
 $container->set(\App\Application\UseCase\Season\UpdateConfigUseCase::class, function ($c) {
     return new \App\Application\UseCase\Season\UpdateConfigUseCase(
         $c->get(SeasonRepositoryInterface::class),
+        $c->get(TimeServiceInterface::class),
         $c->get(LoggerInterface::class)
     );
 });
