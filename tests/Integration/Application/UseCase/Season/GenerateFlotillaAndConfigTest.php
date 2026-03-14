@@ -44,6 +44,7 @@ class GenerateFlotillaAndConfigTest extends IntegrationTestCase
 
         $this->updateConfigUseCase = new UpdateConfigUseCase(
             $this->seasonRepository,
+            new SystemTimeService($this->seasonRepository),
             new NullLogger()
         );
 

@@ -7,6 +7,8 @@ namespace App\Application\UseCase\Season;
 use App\Application\DTO\Request\UpdateConfigRequest;
 use App\Application\Exception\ValidationException;
 use App\Application\Port\Repository\SeasonRepositoryInterface;
+use App\Application\Port\Service\TimeServiceInterface;
+use App\Domain\Enum\TimeSource;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -19,6 +21,7 @@ class UpdateConfigUseCase
 {
     public function __construct(
         private SeasonRepositoryInterface $seasonRepository,
+        private TimeServiceInterface $timeService,
         private LoggerInterface $logger,
     ) {
     }
@@ -66,6 +69,14 @@ class UpdateConfigUseCase
 
         // Save updated config
         $this->seasonRepository->updateConfig($config);
+
+        // Sync in-memory TimeService so any same-request callers (e.g. ProcessSeasonUpdateUseCase)
+        // use the updated time, not the stale value loaded at request startup.
+        $timeSource = TimeSource::from($config['source']);
+        $simulatedDate = isset($config['simulated_date'])
+            ? new \DateTimeImmutable((string) $config['simulated_date'])
+            : null;
+        $this->timeService->setTimeSource($timeSource, $simulatedDate);
 
         $this->logger->info('admin.config_updated', array_filter([
             'source'         => $request->source,
