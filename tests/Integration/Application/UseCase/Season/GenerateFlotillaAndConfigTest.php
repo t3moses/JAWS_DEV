@@ -374,4 +374,37 @@ class GenerateFlotillaAndConfigTest extends IntegrationTestCase
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('updated', strtolower($result['message']));
     }
+
+    // ==================== In-memory TimeService sync tests ====================
+
+    public function testUpdateConfigSyncsSimulatedDateToInMemoryTimeService(): void
+    {
+        // Share a single TimeService instance between the use case and our assertions,
+        // mimicking how both live in the same DI container within a single HTTP request.
+        $timeService = new SystemTimeService($this->seasonRepository);
+        $useCase = new UpdateConfigUseCase($this->seasonRepository, $timeService, new NullLogger());
+
+        $useCase->execute(new UpdateConfigRequest(source: 'simulated', simulatedDate: '2026-06-18 09:00:00'));
+
+        // Without the fix the TimeService would still return its construction-time date.
+        $this->assertEquals('2026-06-18', $timeService->today()->format('Y-m-d'));
+        $this->assertEquals(\App\Domain\Enum\TimeSource::SIMULATED, $timeService->getTimeSource());
+    }
+
+    public function testUpdateConfigSwitchingToProductionClearsSimulatedStateInMemory(): void
+    {
+        $timeService = new SystemTimeService($this->seasonRepository);
+        $useCase = new UpdateConfigUseCase($this->seasonRepository, $timeService, new NullLogger());
+
+        // Start in simulated mode.
+        $useCase->execute(new UpdateConfigRequest(source: 'simulated', simulatedDate: '2026-06-18 09:00:00'));
+        $this->assertEquals(\App\Domain\Enum\TimeSource::SIMULATED, $timeService->getTimeSource());
+
+        // Switch back to production — the in-memory service must reflect this immediately.
+        $useCase->execute(new UpdateConfigRequest(source: 'production'));
+
+        $this->assertEquals(\App\Domain\Enum\TimeSource::PRODUCTION, $timeService->getTimeSource());
+        // today() must now return real wall-clock date, not the stale 2026-06-18.
+        $this->assertNotEquals('2026-06-18', $timeService->today()->format('Y-m-d'));
+    }
 }
