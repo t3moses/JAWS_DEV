@@ -164,7 +164,6 @@ class AssignmentService
         if (!$this->onboard($crew, $crewedBoat)) {
             throw new \RuntimeException("Trying to get loss for a crew that is not onboard");
         }
-
         if ($rule === AssignmentRule::ASSIST) {
             if (!$crewedBoat['boat']->requiresAssistance()) {
                 return 0;
@@ -185,63 +184,49 @@ class AssignmentService
                 return 1;
             }
         } elseif ($rule === AssignmentRule::HIGH_SKILL) {
-
-            if ($this->skillSpread($crewedBoat) === self::MAX_SKILL) {
-                if ($crew->getSkill()->value === self::MAX_SKILL) {
-                    return 1; // high spread, skill is max, so yes to high skill loss
-                } else {
-                    return 0; // high spread, but skill is 0 or middle, so no to high skill loss
+            if ($this->skillSpread($crewedBoat) === (SkillLevel::ADVANCED->value - SkillLevel::NOVICE->value)) {
+                $skillAvg = 0;
+                for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
+                    $cbCrew = $crewedBoat['crews'][$i];
+                    $skillAvg += $cbCrew->getSkill()->value;
                 }
+                $skillAvg = $skillAvg / count($crewedBoat['crews']);
+                $highBias = $skillAvg > 1.0;
+                if ($highBias) {
+                    return 0;
+                } else {
+                    switch ($crew->getSkill()->value) {
+                        case SkillLevel::ADVANCED->value:
+                            return 1;
+                        default:
+                            return 0;
+                    }
+                }
+            } else {
+                return 0;
             }
-            return 0; // not even high spread, so no to high skill loss
-/*
-            if ($crew->getSkill()->value === 1) return 0; // This crew is not contributing to a skill-spread violation
-            // else 
-            if ($this->skillSpread($crewedBoat) < self::MAX_SKILL) return 0; // This crew's boat does NOT contain a skill-spread violation
-            // else this crew's boat DOES contain a skill-spread violation
-            // Work out whether the crews are biased to the high-skill end or evently balanced, or to the low-skill end
-            $skillAvg = 0;
-            for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
-            $cbCrew = $crewedBoat['crews'][$i];
-            $skillAvg += $cbCrew->getSkill()->value;
-            }
-            $skillAvg = $skillAvg / count($crewedBoat['crews']);
-            $lowBias = $skillAvg <= 1.0;
-            if ($crew->getSkill()->value === self::MAX_SKILL && $lowBias) return 1;
-            // Crew skill is high and crew skills are biased to the low-skill end, identifying this high-skill crew as the best swap candidate
-            // else 
-            return 0;
-*/
         } elseif ($rule === AssignmentRule::LOW_SKILL) {
-
-        if ($this->skillSpread($crewedBoat) === self::MAX_SKILL) {
-                if ($crew->getSkill()->value === 0) {
-                    return 1; // high spread, skill is 0 so yes to low skill loss
-                } else {
-                    return 0; // high spread, but skill is high or middle, so no to low skill loss
+            if ($this->skillSpread($crewedBoat) === (SkillLevel::ADVANCED->value - SkillLevel::NOVICE->value)) {
+                $skillAvg = 0;
+                for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
+                    $cbCrew = $crewedBoat['crews'][$i];
+                    $skillAvg += $cbCrew->getSkill()->value;
                 }
+                $skillAvg = $skillAvg / count($crewedBoat['crews']);
+                $lowBias = $skillAvg < 1.0;
+                if ($lowBias) {
+                    return 0;
+                } else {
+                    switch ($crew->getSkill()->value) {
+                        case SkillLevel::NOVICE->value:
+                            return 1;
+                        default:
+                            return 0;
+                    }
+                }
+            } else {
+                return 0;
             }
-            return 0; // not even high spread, so no to low skill loss
-/*
-
-            if ($crew->getSkill()->value === 1) return 0; // This crew is not contributing to a skill-spread violation
-            // else 
-            if ($this->skillSpread($crewedBoat) < self::MAX_SKILL) return 0; // This crew's boat does NOT contain a skill-spread violation
-            // else this crew's boat DOES contain a skill-spread violation
-            // Work out whether the crews are biased to the high-skill end or evently balanced, or to the low-skill end
-            $skillAvg = 0;
-            for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
-                $cbCrew = $crewedBoat['crews'][$i];
-                $skillAvg += $cbCrew->getSkill()->value;
-            }
-            $skillAvg = $skillAvg / count($crewedBoat['crews']);
-            $highBias = $skillAvg >= 1.0;
-            if ($crew->getSkill()->value === 0 && $highBias) return 1;
-            // Crew skill is low and crew skills are biased to the high-skill end or evenly balanced, identifying this low-skill crew as the best swap candidate
-            // else 
-            return 0;
-        }
-*/
         } elseif ($rule === AssignmentRule::PARTNER) {
             // Check if partner is on the same boat (violation)
             for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
@@ -265,7 +250,6 @@ class AssignmentService
             }
             return 0;
         }
-
         return 0;
     }
 
@@ -284,8 +268,28 @@ class AssignmentService
         } elseif ($rule === AssignmentRule::WHITELIST) {
             return count($crew->getWhitelist());
         } elseif ($rule === AssignmentRule::HIGH_SKILL) {
-            if ($crew->getSkill()->value === self::MAX_SKILL) return 0;
-            // Work out whether the crew skills are biased to the high end or evenly balanced, or to the low end
+            // Work out whether the crews are biased to the high-skill end or evenly balanced, or to the low-skill end
+            $skillAvg = 0;
+            for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
+                $cbCrew = $crewedBoat['crews'][$i];
+                $skillAvg += $cbCrew->getSkill()->value;
+            }
+            $skillAvg = $skillAvg / count($crewedBoat['crews']);
+            $lowBias = $skillAvg < 1.0;
+            if ($lowBias) { // Exascerbates problem for source boat
+                return 0;
+            } else {
+                switch ($crew->getSkill()->value) {
+                    case SkillLevel::NOVICE->value: // Swaps NOVICE for ADVANCED
+                        return 2;
+                    case SkillLevel::INTERMEDIATE->value: // Swaps INTERMEDIATE for ADVANCED
+                        return 1;
+                    default: // Swaps ADVANCD for ADVANCED
+                        return 0;
+                }
+            }
+        } elseif ($rule === AssignmentRule::LOW_SKILL) {
+            // Work out whether the crews are biased to the high-skill end or evenly balanced, or to the low-skill end
             $skillAvg = 0;
             for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
                 $cbCrew = $crewedBoat['crews'][$i];
@@ -293,28 +297,18 @@ class AssignmentService
             }
             $skillAvg = $skillAvg / count($crewedBoat['crews']);
             $highBias = $skillAvg >= 1.0;
-            if ($crew->getSkill()->value === 0 && $this->skillSpread($crewedBoat) === self::MAX_SKILL && $highBias) return 3; // this ameliorates two violations
-            //else
-            if ($crew->getSkill()->value === 1 && $highBias) return 2; // this ameliorates one violation without exacerbating another one
-            //else
-            if ($crew->getSkill()->value === 0) return 1; // this ameliorates one violation without exacerbating another one
-            return 0;
-        } elseif ($rule === AssignmentRule::LOW_SKILL) {
-		    if ($crew->getSkill()->value === 0) return 0;
-            // Work out whether the crews are biased to the high-skill end or evently balanced, or to the low-skill end
-        	$skillAvg = 0;
-        	for ($i = 0; $i < count($crewedBoat['crews']); $i++) {
-             	$cbCrew = $crewedBoat['crews'][$i];
-    			$skillAvg += $cbCrew->getSkill()->value;
-        	}
-            $skillAvg = $skillAvg / count($crewedBoat['crews']);
-	   	    $lowBias = $skillAvg <= 1.0;
-            if ($crew->getSkill()->value === self::MAX_SKILL && $lowBias && $this->skillSpread($crewedBoat) === self::MAX_SKILL) return 3; // this mitigates two violations
-            //else
-            if ($crew->getSkill()->value === 1) return 2; // this mitigates one violation without causing another
-            //else
-            if ($crew->getSkill()->value === self::MAX_SKILL) return 1; // this mitigates one violation without causing another
-            return 0;
+            if ($highBias) { // Exascerbates problem for source boat
+                return 0;
+            } else {
+                switch ($crew->getSkill()->value) {
+                    case SkillLevel::NOVICE->value: // Swaps NOVICE for NOVICE
+                        return 0;
+                    case SkillLevel::INTERMEDIATE->value: // Swaps INTERMEDIATE for NOVICE
+                        return 1;
+                    default: // Swaps ADVANCED for NOVICE
+                        return 2;
+                }
+            }
         } elseif ($rule === AssignmentRule::PARTNER) {
             if ($crew->getPartnerKey() === null) {
                 return 1;
@@ -331,7 +325,6 @@ class AssignmentService
             }
             return $emptyCount;
         }
-
         return 0;
     }
 
@@ -343,7 +336,7 @@ class AssignmentService
      * @param AssignmentRule $rule
      * @return Crew|null Best swap candidate or null if none found
      */
-    public function bestSwap(array $losses, array $grads, AssignmentRule $rule): ?Crew
+    private function bestSwap(array $losses, array $grads, AssignmentRule $rule): ?Crew
     {
         // Find the crew and boat corresponding to the highest loss
         $aCrewKey = array_keys($losses)[0];
@@ -378,8 +371,6 @@ class AssignmentService
                 return $this->crewFromKey($bCrewKey); // Valid swap found
             }
         }
-
-
         return null; // No valid swap found
     }
 
@@ -402,7 +393,6 @@ class AssignmentService
                 return true;
             }
         }
-
         return false;
     }
 
@@ -537,5 +527,4 @@ class AssignmentService
         $fileName = __DIR__ . "/../../../trace.txt";
         file_put_contents($fileName, $contents, FILE_APPEND | LOCK_EX);
     }
-
 }

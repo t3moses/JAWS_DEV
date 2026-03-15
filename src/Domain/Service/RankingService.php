@@ -150,7 +150,7 @@ class RankingService
      *
      * @param array<Crew> $crews
      * @param EventId $nextEventId
-     * @param array<string> $assignedCrewKeys Crew keys assigned to the next event (empty when called from pipeline pre-assignment)
+     * @param array<string> $assignedCrewKeys Crew keys assigned to the next event
      */
     public function updateCrewCommitmentRanks(array $crews, EventId $nextEventId, array $assignedCrewKeys = []): void
     {
