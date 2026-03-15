@@ -263,8 +263,6 @@ class AssignmentService
             }
             return 0;
         }
-
-        return 0;
     }
 
     /**
@@ -325,10 +323,7 @@ class AssignmentService
                 return 2; // this mitigates one violation without causing another
             }
             //else
-            if ($crew->getSkill()->value === self::MAX_SKILL) {
-                return 1; // this mitigates one violation without causing another
-            }
-            return 0;
+            return 1; // this mitigates one violation without causing another (value must be MAX_SKILL here)
         } elseif ($rule === AssignmentRule::PARTNER) {
             if ($crew->getPartnerKey() === null) {
                 return 1;
@@ -345,8 +340,6 @@ class AssignmentService
             }
             return $emptyCount;
         }
-
-        return 0;
     }
 
     /**
@@ -544,11 +537,5 @@ class AssignmentService
 
         // $aCrew is not onboard $crewedBoat
         throw new \RuntimeException("Can't find crew to replace");
-    }
-
-    private function trace(string $contents): void
-    {
-        $fileName = __DIR__ . "/../../../trace.txt";
-        file_put_contents($fileName, $contents, FILE_APPEND | LOCK_EX);
     }
 }
