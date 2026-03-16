@@ -174,7 +174,7 @@ class ForgotPasswordUseCaseTest extends TestCase
         $this->useCase->execute(new ForgotPasswordRequest('user@example.com'));
 
         $this->assertNotNull($capturedUrl);
-        $this->assertStringStartsWith('https://example.com/reset-password?token=', $capturedUrl);
+        $this->assertStringStartsWith('https://example.com/reset-password.html?token=', $capturedUrl);
     }
 
     public function testSucceedsWhenEmailServiceFails(): void

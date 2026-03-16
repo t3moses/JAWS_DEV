@@ -62,7 +62,7 @@ class ForgotPasswordUseCase
 
         $this->tokenRepository->save($user->getId(), $tokenHash, $expiresAt);
 
-        $resetUrl = rtrim($this->config['app']['url'], '/') . '/reset-password?token=' . urlencode($plainToken);
+        $resetUrl = rtrim($this->config['app']['url'], '/') . '/reset-password.html?token=' . urlencode($plainToken);
 
         try {
             $body = $this->emailTemplateService->renderPasswordResetNotification($resetUrl, $expiresAt);
