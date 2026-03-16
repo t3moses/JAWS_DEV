@@ -14,6 +14,7 @@ declare(strict_types=1);
 use App\Application\Port\Repository\BoatRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
 use App\Application\Port\Repository\EventRepositoryInterface;
+use App\Application\Port\Repository\PasswordResetTokenRepositoryInterface;
 use App\Application\Port\Repository\SeasonRepositoryInterface;
 use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Service\EmailServiceInterface;
@@ -27,6 +28,7 @@ use App\Application\Port\Service\TransactionServiceInterface;
 use App\Infrastructure\Persistence\SQLite\BoatRepository;
 use App\Infrastructure\Persistence\SQLite\CrewRepository;
 use App\Infrastructure\Persistence\SQLite\EventRepository;
+use App\Infrastructure\Persistence\SQLite\PasswordResetTokenRepository;
 use App\Infrastructure\Persistence\SQLite\SeasonRepository;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
 use App\Infrastructure\Service\MailjetEmailService;
@@ -128,6 +130,10 @@ $container->set(SeasonRepositoryInterface::class, function () {
 
 $container->set(UserRepositoryInterface::class, function () {
     return new UserRepository();
+});
+
+$container->set(PasswordResetTokenRepositoryInterface::class, function () {
+    return new PasswordResetTokenRepository();
 });
 
 // Services (External Adapters)
@@ -458,6 +464,26 @@ $container->set(\App\Application\UseCase\Auth\LogoutUseCase::class, function ($c
     );
 });
 
+$container->set(\App\Application\UseCase\Auth\ForgotPasswordUseCase::class, function ($c) use ($config) {
+    return new \App\Application\UseCase\Auth\ForgotPasswordUseCase(
+        $c->get(UserRepositoryInterface::class),
+        $c->get(PasswordResetTokenRepositoryInterface::class),
+        $c->get(EmailServiceInterface::class),
+        $c->get(EmailTemplateServiceInterface::class),
+        $config,
+        $c->get(LoggerInterface::class)
+    );
+});
+
+$container->set(\App\Application\UseCase\Auth\ResetPasswordUseCase::class, function ($c) {
+    return new \App\Application\UseCase\Auth\ResetPasswordUseCase(
+        $c->get(PasswordResetTokenRepositoryInterface::class),
+        $c->get(UserRepositoryInterface::class),
+        $c->get(PasswordServiceInterface::class),
+        $c->get(LoggerInterface::class)
+    );
+});
+
 // User Use Cases
 $container->set(\App\Application\UseCase\User\GetUserProfileUseCase::class, function ($c) {
     return new \App\Application\UseCase\User\GetUserProfileUseCase(
@@ -542,7 +568,9 @@ $container->set(\App\Presentation\Controller\AuthController::class, function ($c
         $c->get(\App\Application\UseCase\Auth\RegisterUseCase::class),
         $c->get(\App\Application\UseCase\Auth\LoginUseCase::class),
         $c->get(\App\Application\UseCase\Auth\GetSessionUseCase::class),
-        $c->get(\App\Application\UseCase\Auth\LogoutUseCase::class)
+        $c->get(\App\Application\UseCase\Auth\LogoutUseCase::class),
+        $c->get(\App\Application\UseCase\Auth\ForgotPasswordUseCase::class),
+        $c->get(\App\Application\UseCase\Auth\ResetPasswordUseCase::class)
     );
 });
 

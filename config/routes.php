@@ -83,6 +83,22 @@ return [
     ],
 
     [
+        'method' => 'POST',
+        'path' => '/api/auth/forgot-password',
+        'controller' => AuthController::class,
+        'action' => 'forgotPassword',
+        'auth' => false,
+    ],
+
+    [
+        'method' => 'POST',
+        'path' => '/api/auth/reset-password',
+        'controller' => AuthController::class,
+        'action' => 'resetPassword',
+        'auth' => false,
+    ],
+
+    [
         'method' => 'GET',
         'path' => '/api/auth/session',
         'controller' => AuthController::class,

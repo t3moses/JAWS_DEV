@@ -434,6 +434,56 @@ CSS;
     }
 
     /**
+     * Render password reset email
+     *
+     * @param string $resetUrl Full URL including the plain token
+     * @param \DateTimeImmutable $expiresAt Token expiry time
+     * @return string HTML email body
+     */
+    public function renderPasswordResetNotification(string $resetUrl, \DateTimeImmutable $expiresAt): string
+    {
+        $expiryFormatted = $expiresAt->format('g:i A \o\n F j, Y');
+        $resetUrlEscaped = htmlspecialchars($resetUrl, ENT_QUOTES);
+
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        {$this->getSharedStyles()}
+        .btn { display: inline-block; padding: 12px 24px; background-color: #0066cc; color: #ffffff !important; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 1em; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Password Reset Request</h2>
+        </div>
+        <div class="content">
+            <p>We received a request to reset the password for your Social Day Cruising account.</p>
+
+            <p>Click the button below to choose a new password. This link expires at <strong>{$expiryFormatted}</strong>.</p>
+
+            <p style="text-align: center;">
+                <a href="{$resetUrlEscaped}" class="btn">Reset My Password</a>
+            </p>
+
+            <p>If the button above does not work, copy and paste the following link into your browser:</p>
+            <div class="command-block">{$resetUrlEscaped}</div>
+
+            <p>If you did not request a password reset, you can safely ignore this email. Your password will not change.</p>
+
+            <div class="footer">
+                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
+    /**
      * Parse Yes/No value to boolean
      *
      * @param mixed $value Value to parse

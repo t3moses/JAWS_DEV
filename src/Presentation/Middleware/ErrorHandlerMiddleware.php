@@ -11,6 +11,7 @@ use App\Application\Exception\EventNotFoundException;
 use App\Application\Exception\FlotillaNotFoundException;
 use App\Application\Exception\BlackoutWindowException;
 use App\Application\Exception\InvalidCredentialsException;
+use App\Application\Exception\InvalidResetTokenException;
 use App\Application\Exception\UserAlreadyExistsException;
 use App\Application\Exception\InvalidTokenException;
 use App\Application\Exception\WeakPasswordException;
@@ -96,6 +97,14 @@ class ErrorHandlerMiddleware
         // Weak password (400 Bad Request)
         if ($e instanceof WeakPasswordException) {
             $this->logger->info('http.weak_password', [
+                'message' => $e->getMessage(),
+            ]);
+            return JsonResponse::error($e->getMessage(), 400);
+        }
+
+        // Invalid password reset token (400 Bad Request)
+        if ($e instanceof InvalidResetTokenException) {
+            $this->logger->info('http.invalid_reset_token', [
                 'message' => $e->getMessage(),
             ]);
             return JsonResponse::error($e->getMessage(), 400);
