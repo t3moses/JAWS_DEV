@@ -48,12 +48,19 @@ class ResetPasswordUseCase
         $record    = $this->tokenRepository->findByTokenHash($tokenHash);
 
         if ($record === null) {
+            $this->logger->warning('auth.reset_password.invalid_token', [
+                'reason' => 'unknown_token',
+            ]);
             throw new InvalidResetTokenException();
         }
 
         $expiresAt = new \DateTimeImmutable($record['expires_at']);
         if ($expiresAt < new \DateTimeImmutable()) {
             $this->tokenRepository->deleteByTokenHash($tokenHash);
+            $this->logger->warning('auth.reset_password.invalid_token', [
+                'reason'  => 'expired',
+                'user_id' => $record['user_id'],
+            ]);
             throw new InvalidResetTokenException('Reset token has expired');
         }
 
@@ -65,6 +72,10 @@ class ResetPasswordUseCase
         if ($user === null) {
             // Token references a deleted user — clean up and reject
             $this->tokenRepository->deleteByTokenHash($tokenHash);
+            $this->logger->warning('auth.reset_password.invalid_token', [
+                'reason'  => 'orphaned_token',
+                'user_id' => $record['user_id'],
+            ]);
             throw new InvalidResetTokenException();
         }
 
