@@ -341,6 +341,25 @@ export async function getAuthSession() {
 }
 
 /**
+ * Request a password reset email
+ * @param {string} email - User email
+ * @returns {Promise<Object>}
+ */
+export async function forgotPassword(email) {
+    return await post(API_CONFIG.ENDPOINTS.AUTH_FORGOT_PASSWORD, { email });
+}
+
+/**
+ * Reset password using token from email
+ * @param {string} token - Reset token from email link
+ * @param {string} password - New password
+ * @returns {Promise<Object>}
+ */
+export async function resetPassword(token, password) {
+    return await post(API_CONFIG.ENDPOINTS.AUTH_RESET_PASSWORD, { token, password });
+}
+
+/**
  * Get current user with full profile data from /users/me
  * @returns {Promise<Object|null>} { user, crewProfile, boatProfile } or null
  */

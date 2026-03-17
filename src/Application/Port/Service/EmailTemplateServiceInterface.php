@@ -85,4 +85,13 @@ interface EmailTemplateServiceInterface
      * @return string HTML email body
      */
     public function renderWelcomeNotification(): string;
+
+    /**
+     * Render password reset email
+     *
+     * @param string $resetUrl Full URL including the plain token
+     * @param \DateTimeImmutable $expiresAt Token expiry time
+     * @return string HTML email body
+     */
+    public function renderPasswordResetNotification(string $resetUrl, \DateTimeImmutable $expiresAt): string;
 }

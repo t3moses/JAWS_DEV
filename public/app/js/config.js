@@ -12,6 +12,8 @@ export const API_CONFIG = {
         AUTH_REGISTER: '/auth/register',
         AUTH_LOGOUT: '/auth/logout',
         AUTH_SESSION: '/auth/session',
+        AUTH_FORGOT_PASSWORD: '/auth/forgot-password',
+        AUTH_RESET_PASSWORD: '/auth/reset-password',
 
         // User endpoints
         USERS: '/users',
