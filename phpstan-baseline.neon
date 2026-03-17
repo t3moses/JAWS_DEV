@@ -43,6 +43,12 @@ parameters:
 			path: src/Domain/Service/AssignmentService.php
 
 		-
+			message: '#^Method App\\Domain\\Service\\AssignmentService::trace\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: src/Domain/Service/AssignmentService.php
+
+		-
 			message: '#^Unreachable statement \- code above always terminates\.$#'
 			identifier: deadCode.unreachable
 			count: 2
