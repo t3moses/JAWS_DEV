@@ -1343,4 +1343,68 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->assertEquals('Y', $participatedAfterFirst, 'boat-a was in crewed_boats so participated should be Y');
         $this->assertEquals(0, $rankAfterFirst, 'boat-a was present in past flotilla so absence should be 0');
     }
+
+    /**
+     * Test: Stale DB commitment ranks are refreshed before selection on first pipeline run
+     *
+     * Regression test for issue #116. When the "next event" changes (e.g., simulated date
+     * advances past a completed event), commitment ranks persisted for the old next event
+     * must not influence selection for the new next event.
+     *
+     * Scenario:
+     *   - crew-member (rank_membership=1) has stale rank_commitment=0 (was UNAVAILABLE previously)
+     *   - crew-nonmember (rank_membership=0) has stale rank_commitment=3 (was ASSIGNED previously)
+     *   - Both crews are AVAILABLE for the next event
+     *
+     * Without the fix: non-member selected ([3,0,0] > [0,1,0]) — WRONG
+     * With the fix:    commitment refreshed to 2 for both; member selected ([2,1,0] > [2,0,0]) — CORRECT
+     */
+    public function testStaleCommitmentRanksAreRefreshedBeforeSelection(): void
+    {
+        // Arrange: 1 boat (1 berth) forces Case 2 — 2 crews available, 1 is waitlisted
+        $boatId = $this->createTestBoat('boat-alpha', 1, 1);
+
+        // crew-member: valid NSC membership (rank_membership=1), stale rank_commitment=0
+        // Simulates a crew who was UNAVAILABLE for the previous next event
+        $this->pdo->prepare("
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, rank_commitment, rank_membership, rank_absence)
+            VALUES ('crew-member', 'Alice Member', 'Alice', 'Member', 1, '12345', 'No', 0, 1, 0)
+        ")->execute();
+        $memberCrewId = (int) $this->pdo->lastInsertId();
+
+        // crew-nonmember: no valid membership (rank_membership=0), stale rank_commitment=3
+        // Simulates a crew who was ASSIGNED to the previous next event
+        $this->pdo->prepare("
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, rank_commitment, rank_membership, rank_absence)
+            VALUES ('crew-nonmember', 'Bob NoMember', 'Bob', 'NoMember', 1, '', 'No', 3, 0, 0)
+        ")->execute();
+        $nonMemberCrewId = (int) $this->pdo->lastInsertId();
+
+        $this->createTestEvent('Fri May 29', '2026-05-29');
+
+        $this->setBoatAvailability($boatId, 'Fri May 29', 1);
+        $this->setCrewAvailability($memberCrewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($nonMemberCrewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+
+        // Act
+        $this->useCase->execute();
+
+        $flotilla = $this->seasonRepository->getFlotilla(EventId::fromString('Fri May 29'));
+        $this->assertNotNull($flotilla);
+
+        $selectedKey   = $flotilla['crewed_boats'][0]['crews'][0]['key'];
+        $waitlistedKey = $flotilla['waitlist_crews'][0]['key'];
+
+        // Assert: crew-member wins on membership rank after stale commitment ranks are refreshed
+        $this->assertEquals(
+            'crew-member',
+            $selectedKey,
+            'crew-member (membership=1) should be selected once stale commitment ranks are refreshed to 2 for both'
+        );
+        $this->assertEquals(
+            'crew-nonmember',
+            $waitlistedKey,
+            'crew-nonmember (membership=0) should be waitlisted once stale commitment ranks are refreshed'
+        );
+    }
 }
