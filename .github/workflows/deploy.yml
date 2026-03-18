@@ -288,7 +288,7 @@ jobs:
             cd /opt/bitnami/jaws
 
             echo "Checking migration status..."
-            vendor/bin/phinx status --environment=production
+            vendor/bin/phinx status --environment=production || true
 
             echo "Running database migrations..."
             vendor/bin/phinx migrate --environment=production
