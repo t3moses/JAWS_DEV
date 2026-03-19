@@ -42,7 +42,7 @@ class RankingService
             $commitment = match ($availability) {
                 AvailabilityStatus::GUARANTEED => 3,    // High priority (assigned to next event)
                 AvailabilityStatus::AVAILABLE => 2,     // Normal priority
-                AvailabilityStatus::WITHDRAWN => 0,     // No priority
+                AvailabilityStatus::WITHDRAWN => 1,     // Admin no-show penalty
                 AvailabilityStatus::UNAVAILABLE => 0,   // No priority
             };
         }
@@ -173,7 +173,8 @@ class RankingService
             $commitmentRank = match ($availability) {
                 AvailabilityStatus::GUARANTEED => 3,    // Currently assigned for this event
                 AvailabilityStatus::AVAILABLE => 2,     // Normal priority
-                default => 0,                           // UNAVAILABLE or WITHDRAWN
+                AvailabilityStatus::WITHDRAWN => 1,     // Admin no-show penalty
+                default => 0,                           // UNAVAILABLE
             };
 
             $crew->setRankDimension(CrewRankDimension::COMMITMENT, $commitmentRank);
