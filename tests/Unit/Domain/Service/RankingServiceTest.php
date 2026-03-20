@@ -204,7 +204,7 @@ class RankingServiceTest extends TestCase
         $this->assertEquals(2, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
     }
 
-    // Tests that crew with withdrawn status receives commitment rank of 0 (no priority)
+    // Tests that crew with withdrawn status receives commitment rank of 1 (admin no-show penalty)
     public function testUpdateCrewCommitmentRanksWithWithdrawn(): void
     {
         // Arrange
@@ -216,7 +216,7 @@ class RankingServiceTest extends TestCase
         $this->service->updateCrewCommitmentRanks([$crew], $eventId);
 
         // Assert
-        $this->assertEquals(0, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
+        $this->assertEquals(1, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
     }
 
     // Tests that crew with unavailable status receives commitment rank of 0 (no priority)
@@ -302,6 +302,21 @@ class RankingServiceTest extends TestCase
 
         // Assert — resets to normal available priority
         $this->assertEquals(2, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
+    }
+
+    // Tests that calculateCrewRank returns commitment=1 for a withdrawn crew (admin no-show penalty)
+    public function testCalculateCrewRankWithWithdrawn(): void
+    {
+        // Arrange
+        $crew = $this->createCrew('johndoe');
+        $eventId = EventId::fromString('Fri May 29');
+        $crew->setAvailability($eventId, AvailabilityStatus::WITHDRAWN);
+
+        // Act
+        $rank = $this->service->calculateCrewRank($crew, [], $eventId);
+
+        // Assert
+        $this->assertEquals(1, $rank->getDimension(CrewRankDimension::COMMITMENT));
     }
 
     // Tests that crew with membership number receives membership rank of 1
