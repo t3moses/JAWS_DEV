@@ -67,6 +67,90 @@ JAWS uses Clean Architecture (also called Hexagonal Architecture or Ports and Ad
 
 **Key Insight:** Dependency always points inward. The Domain layer has ZERO external dependencies—it's pure PHP with no knowledge of databases, HTTP, or frameworks.
 
+### Domain Model
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Boat {
+        -BoatKey key
+        -string displayName
+        -int minBerths
+        -int maxBerths
+        -bool assistanceRequired
+        -Rank rank [2D]
+        +getBerths(EventId) int
+        +isAvailableFor(EventId) bool
+        +getRank() Rank
+    }
+
+    class Crew {
+        -CrewKey key
+        -string displayName
+        -CrewKey partnerKey
+        -SkillLevel skill
+        -string membershipNumber
+        -Rank rank [3D]
+        +getAvailability(EventId) AvailabilityStatus
+        +getWhitelist() string[]
+        +isWhitelisted(BoatKey) bool
+        +getRank() Rank
+    }
+
+    class Rank {
+        -int[] values
+        +forBoat(flexibility, absence)$ Rank
+        +forCrew(commitment, membership, absence)$ Rank
+        +compareTo(Rank) int
+        +getDimension(Dimension) int
+    }
+
+    class BoatKey {
+        -string value
+        +fromBoatName(string)$ BoatKey
+        +toString() string
+    }
+
+    class CrewKey {
+        -string value
+        +fromName(first, last)$ CrewKey
+        +toString() string
+    }
+
+    class EventId {
+        -string value
+        +getHash() int
+        +toString() string
+    }
+
+    class Fleet {
+        -Map boats
+        +add(Boat)
+        +get(BoatKey) Boat
+        +getAvailableFor(EventId) Boat[]
+    }
+
+    class Squad {
+        -Map crews
+        +add(Crew)
+        +get(CrewKey) Crew
+        +getAvailableFor(EventId) Crew[]
+    }
+
+    Boat --> BoatKey : identified by
+    Boat --> Rank : ranked by
+    Crew --> CrewKey : identified by
+    Crew --> Rank : ranked by
+    Crew --> CrewKey : partnerKey
+    Fleet o-- Boat : contains
+    Squad o-- Crew : contains
+    Fleet ..> BoatKey : indexes by
+    Squad ..> CrewKey : indexes by
+    Boat ..> EventId : berths/history per
+    Crew ..> EventId : availability/history per
+```
+
 ### Data Flow Example
 
 Here's how an availability update flows through the layers:
@@ -899,12 +983,71 @@ JAWS has three critical algorithms that have been preserved from the legacy syst
 **Purpose:** Rank and select boats/crews based on multi-dimensional criteria
 
 **Key Features:**
-- Multi-dimensional ranking (boats: flexibility, absence; crews: commitment, flexibility, membership, absence)
+- Multi-dimensional ranking (boats: flexibility, absence; crews: commitment, membership, absence)
 - Deterministic shuffling using `crc32($eventId)` as seed
 - Lexicographic rank comparison
 - Capacity matching (3 cases: too few crews, too many crews, perfect fit)
 
 **Critical Method:** `cut()` - Performs capacity matching
+
+```mermaid
+flowchart TD
+    Start([select boats, crews, eventId]) --> Shuffle
+
+    subgraph Shuffle [Deterministic Shuffle]
+        S1["Seed RNG: mt_srand(crc32(eventId))"]
+        S1 --> S2[shuffle boats]
+        S2 --> S3[shuffle crews]
+    end
+
+    Shuffle --> Bubble
+
+    subgraph Bubble [Bubble Sort — Descending by Rank]
+        B1[Compare ranks lexicographically]
+        B1 --> B2[Highest rank first]
+        B2 --> B3[Early termination if no swaps]
+    end
+
+    Bubble --> CutCheck{Any boats?}
+    CutCheck -- No --> Empty[All lists empty]
+    CutCheck -- Yes --> CalcBerths[Calculate total minBerths and maxBerths]
+
+    CalcBerths --> Decision{crewCount vs berths}
+
+    Decision -- "crewCount < minBerths" --> Case1
+
+    subgraph Case1 [Case 1: Too Few Crews]
+        C1A[Set all boats to minBerths]
+        C1A --> C1B[Pop lowest-rank boats until berths ≤ crews]
+        C1B --> C1C{Perfect fit?}
+        C1C -- Yes --> C1D[Selected = remaining boats + all crews]
+        C1C -- No --> C1E{Flex capacity enough?}
+        C1E -- Yes --> C1F[Delegate to Case 3]
+        C1E -- No --> C1G[Delegate to Case 2]
+    end
+
+    Decision -- "crewCount > maxBerths" --> Case2
+
+    subgraph Case2 [Case 2: Too Many Crews]
+        C2A[Set all boats to maxBerths]
+        C2A --> C2B[Cut lowest-rank crews to fit]
+        C2B --> C2C[All boats selected, excess crews waitlisted]
+    end
+
+    Decision -- "minBerths ≤ crewCount ≤ maxBerths" --> Case3
+
+    subgraph Case3 [Case 3: Fit Within Range]
+        C3A[Set all boats to minBerths]
+        C3A --> C3B[Add berth to boat with most spare capacity]
+        C3B --> C3C{totalBerths == crewCount?}
+        C3C -- No --> C3B
+        C3C -- Yes --> C3D[All boats and crews selected, no waitlist]
+    end
+
+    Case1 --> Result([selectedBoats, selectedCrews, waitlistBoats, waitlistCrews])
+    Case2 --> Result
+    Case3 --> Result
+```
 
 ### AssignmentService
 
@@ -920,9 +1063,46 @@ JAWS has three critical algorithms that have been preserved from the legacy syst
 - Lock crew after swapping to prevent thrashing
 
 **Critical Methods:**
-- `crew_loss()` - Calculate violation severity
-- `crew_grad()` - Calculate mitigation capacity
-- `best_swap()` - Greedy swap selection
+- `crewLoss()` - Calculate violation severity
+- `crewGrad()` - Calculate mitigation capacity
+- `bestSwap()` - Greedy swap selection
+
+```mermaid
+flowchart TD
+    Start([assign flotilla]) --> Init[Build unlockedCrews list]
+    Init --> PreLock[Pre-lock: high-skill crew on assistance boats]
+
+    PreLock --> RuleLoop
+
+    subgraph RuleLoop [For each rule in priority order]
+        direction TB
+        Rule[/"Next Rule: ASSIST → WHITELIST → HIGH_SKILL → LOW_SKILL → PARTNER → REPEAT"/]
+        Rule --> CrewLoop
+
+        subgraph CrewLoop [While unlockedCrews > 1]
+            CalcLoss[Calculate loss for each unlocked crew]
+            CalcLoss --> CalcGrad[Calculate grad for each unlocked crew]
+            CalcGrad --> SortBoth[Sort losses and grads descending]
+            SortBoth --> CheckLoss{Top loss == 0?}
+            CheckLoss -- Yes --> NextRule[Break: no violations remain]
+            CheckLoss -- No --> CheckGrad{Top grad == 0?}
+            CheckGrad -- Yes --> NextRule
+            CheckGrad -- No --> FindSwap[bestSwap: find candidate on different boat]
+            FindSwap --> ValidSwap{Valid swap found?}
+            ValidSwap -- No --> NextRule
+            ValidSwap -- Yes --> BadCheck{badSwap: would it increase\nloss for any prior rule?}
+            BadCheck -- Yes --> TryNext[Try next grad candidate]
+            TryNext --> FindSwap
+            BadCheck -- No --> Swap[Swap crew positions between boats]
+            Swap --> Lock[Lock swapped-in crew]
+            Lock --> CalcLoss
+        end
+
+        NextRule --> Rule
+    end
+
+    RuleLoop --> Return([Return optimized flotilla])
+```
 
 ### RankingService
 
@@ -932,13 +1112,138 @@ JAWS has three critical algorithms that have been preserved from the legacy syst
 
 **Rank Components:**
 - **Boats**: `[flexibility, absence]` (2D)
-- **Crews**: `[commitment, flexibility, membership, absence]` (4D)
+- **Crews**: `[commitment, membership, absence]` (3D)
 
 **Key Methods:**
 - `calculateBoatRank()` - Calculate boat rank tensor
 - `calculateCrewRank()` - Calculate crew rank tensor
 
+```mermaid
+classDiagram
+    direction TB
+
+    class Rank {
+        &lt;&lt;value object&gt;&gt;
+        -int[] values
+        +compareTo(Rank) int
+        +getDimension(Dimension) int
+        +withDimension(Dimension, int) Rank
+        +toArray() int[]
+    }
+
+    class BoatRank {
+        &lt;&lt;Rank forBoat&gt;&gt;
+        values = flexibility, absence
+    }
+
+    class CrewRank {
+        &lt;&lt;Rank forCrew&gt;&gt;
+        values = commitment, membership, absence
+    }
+
+    class BoatRankDimension {
+        &lt;&lt;enumeration&gt;&gt;
+        FLEXIBILITY = 0
+        ABSENCE = 1
+    }
+
+    class CrewRankDimension {
+        &lt;&lt;enumeration&gt;&gt;
+        COMMITMENT = 0
+        MEMBERSHIP = 1
+        ABSENCE = 2
+    }
+
+    class RankingService {
+        +calculateBoatRank(Boat, pastEventIds, Squad) Rank
+        +calculateCrewRank(Crew, pastEventIds, EventId) Rank
+        +updateBoatAbsenceRanks(Boat[], pastEventIds)
+        +updateCrewAbsenceRanks(Crew[], pastEventIds)
+        +updateCrewCommitmentRanks(Crew[], EventId, assignedKeys)
+    }
+
+    Rank <|-- BoatRank : forBoat()
+    Rank <|-- CrewRank : forCrew()
+    BoatRank ..> BoatRankDimension : indexed by
+    CrewRank ..> CrewRankDimension : indexed by
+    RankingService ..> Rank : creates
+    RankingService ..> BoatRankDimension : uses
+    RankingService ..> CrewRankDimension : uses
+
+    note for BoatRank "flexibility: 0=flex (owner is crew), 1=not flex\nabsence: count of past no-shows\nHigher values = higher priority\nCompared left-to-right (lexicographic)"
+    note for CrewRank "commitment: 3=assigned, 2=available, 1=penalty, 0=unavail\nmembership: 1=valid member, 0=non-member\nabsence: count of past no-shows"
+```
+
 ⚠️ **Important:** These algorithms must produce identical results to the legacy system. Do not modify them without thorough testing and user approval.
+
+### Season Update Pipeline
+
+The following diagram shows how `ProcessSeasonUpdateUseCase` orchestrates the full pipeline. This runs after every user action that changes availability.
+
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant P as ProcessSeasonUpdate
+    participant R as Repositories
+    participant RK as RankingService
+    participant SS as SelectionService
+    participant AS as AssignmentService
+    participant TX as TransactionService
+
+    C->>P: execute()
+    Note over P: Acquire concurrency lock
+
+    rect rgb(240, 248, 255)
+        Note over P,R: Phase 1 — Load
+        P->>R: findAll() boats, crews
+        R-->>P: Fleet, Squad
+        P->>R: findFutureEvents(), findNextEvent()
+        R-->>P: eventIds[], nextEventId
+    end
+
+    rect rgb(255, 248, 240)
+        Note over P,RK: Phase 2 — Sync History & Ranks
+        P->>P: syncBoatHistory(Fleet)
+        P->>P: syncCrewHistory(Squad)
+        P->>RK: updateCrewCommitmentRanks()
+    end
+
+    loop Each future event
+        rect rgb(240, 255, 240)
+            Note over P,SS: Phase 3 — Selection
+            P->>SS: select(boats, crews, eventId)
+            SS-->>P: selected + waitlisted
+        end
+
+        P->>P: buildFlexCrewEntries()
+        P->>P: consolidateEvent() → flotilla
+
+        alt Is next event
+            rect rgb(255, 240, 255)
+                Note over P,AS: Phase 4 — Assignment (next event only)
+                P->>AS: assign(flotilla)
+                AS-->>P: optimized flotilla
+                P->>RK: updateCrewCommitmentRanks(assignedKeys)
+            end
+        end
+
+        P->>P: promoteWaitlistCrew()
+        P->>P: updateAvailabilityStatuses()
+        P->>P: serializeFlotilla()
+    end
+
+    rect rgb(255, 255, 230)
+        Note over P,TX: Phase 5 — Persist (single transaction)
+        P->>TX: begin()
+        P->>R: saveFlotillas, updateAvailability
+        P->>R: persistCommitmentRanks
+        P->>R: updateHistory (boats + crews)
+        P->>R: updateRankAbsence (boats + crews)
+        P->>TX: commit()
+    end
+
+    P-->>C: success, events_processed, flotillas_generated
+```
 
 ---
 
