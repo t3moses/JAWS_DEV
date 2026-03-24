@@ -8,6 +8,7 @@ use App\Infrastructure\Service\MailjetEmailService;
 use Mailjet\Client;
 use Mailjet\Response;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Unit tests for MailjetEmailService.
@@ -321,5 +322,29 @@ class MailjetEmailServiceTest extends TestCase
 
         $this->assertSame('from@test.com', $state->messages[0]['From']['Email']);
         $this->assertSame('Test Sender',   $state->messages[0]['From']['Name']);
+    }
+
+    // ── Group 8: Credential validation ────────────────────────────────────────
+
+    public function testSendReturnsFalseWhenApiKeyIsEmpty(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('error')
+            ->with('email.credentials_missing', $this->anything());
+
+        $svc = new MailjetEmailService('', 'secret', 'from@test.com', 'Test', $logger);
+        $this->assertFalse($svc->send('to@example.com', 'Sub', 'Body'));
+    }
+
+    public function testSendReturnsFalseWhenApiSecretIsEmpty(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('error')
+            ->with('email.credentials_missing', $this->anything());
+
+        $svc = new MailjetEmailService('key', '', 'from@test.com', 'Test', $logger);
+        $this->assertFalse($svc->send('to@example.com', 'Sub', 'Body'));
     }
 }

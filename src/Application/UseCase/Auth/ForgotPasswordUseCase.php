@@ -71,6 +71,9 @@ class ForgotPasswordUseCase
                 subject: 'Reset your password',
                 body: $body,
             );
+            $this->logger->info('auth.forgot_password.sent', [
+                'user_id' => $user->getId(),
+            ]);
         } catch (\Throwable $e) {
             // Non-fatal: log but do not surface the error to the caller
             $this->logger->error('auth.forgot_password.email_failed', [
@@ -78,9 +81,5 @@ class ForgotPasswordUseCase
                 'error'   => $e->getMessage(),
             ]);
         }
-
-        $this->logger->info('auth.forgot_password.sent', [
-            'user_id' => $user->getId(),
-        ]);
     }
 }

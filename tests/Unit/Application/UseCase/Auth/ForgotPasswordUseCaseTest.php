@@ -13,6 +13,7 @@ use App\Application\Port\Service\EmailTemplateServiceInterface;
 use App\Application\UseCase\Auth\ForgotPasswordUseCase;
 use App\Domain\Entity\User;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 class ForgotPasswordUseCaseTest extends TestCase
@@ -189,6 +190,34 @@ class ForgotPasswordUseCaseTest extends TestCase
         $this->useCase->execute(new ForgotPasswordRequest('user@example.com'));
 
         $this->addToAssertionCount(1);
+    }
+
+    public function testDoesNotLogSentWhenEmailFails(): void
+    {
+        $user = $this->makeUser(1, 'user@example.com');
+        $this->userRepository->method('findByEmail')->willReturn($user);
+
+        $this->emailService->method('send')
+            ->willThrowException(new \RuntimeException('SMTP unavailable'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('error')
+            ->with('auth.forgot_password.email_failed', $this->anything());
+        $logger->expects($this->never())
+            ->method('info')
+            ->with('auth.forgot_password.sent', $this->anything());
+
+        $useCase = new ForgotPasswordUseCase(
+            $this->userRepository,
+            $this->tokenRepository,
+            $this->emailService,
+            $this->emailTemplateService,
+            $this->config,
+            $logger,
+        );
+
+        $useCase->execute(new ForgotPasswordRequest('user@example.com'));
     }
 
     // -------------------------------------------------------------------------
