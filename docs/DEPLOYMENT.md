@@ -96,7 +96,40 @@ sudo /opt/bitnami/ctlscript.sh restart apache
 
 #### 3. Configure SSL/HTTPS with Let's Encrypt
 
-Follow these steps to configure SSL after obtaining your Let's Encrypt certificate.
+Follow these steps to install certbot, obtain a certificate, and configure Apache for HTTPS.
+
+##### Install Certbot
+
+```bash
+sudo apt install certbot python3-certbot-dns-route53
+```
+
+##### Configure AWS Credentials for DNS Validation
+
+Certbot runs as root and needs access to the AWS IAM credentials to create DNS records for domain validation. Copy the existing Bitnami credentials to the root account:
+
+```bash
+sudo mkdir -p /root/.aws
+sudo cp /home/bitnami/.aws/credentials /root/.aws/credentials
+sudo cp /home/bitnami/.aws/config /root/.aws/config
+```
+
+##### Issue the Certificate
+
+```bash
+sudo certbot certonly \
+  --dns-route53 \
+  -d nsc-sdc.ca \
+  -d www.nsc-sdc.ca
+```
+
+Certbot will use DNS-01 validation via Route 53 and store the certificate at:
+
+```
+/etc/letsencrypt/live/nsc-sdc.ca/
+```
+
+> **Note:** If the certificate has been issued before, certbot may use a numbered directory such as `/etc/letsencrypt/live/nsc-sdc.ca-0001/`. Run `certbot certificates` to confirm the actual path.
 
 ##### Create SSL Certificate Symbolic Links
 
@@ -128,7 +161,7 @@ lrwxrwxrwx 1 root root 55 Feb 16 12:00 server.key -> /etc/letsencrypt/live/your-
 
 Create an HTTPS virtual host configuration for SSL traffic.
 
-**File:** `/opt/bitnami/apache/conf/vhosts/jaws-https-vhost.conf`
+**File:** `/opt/bitnami/apache2/conf/vhosts/jaws-https-vhost.conf`
 
 ```apache
 <VirtualHost 127.0.0.1:443 _default_:443>
@@ -138,8 +171,8 @@ Create an HTTPS virtual host configuration for SSL traffic.
 
     # SSL Configuration
     SSLEngine on
-    SSLCertificateFile "/opt/bitnami/apache/conf/server.crt"
-    SSLCertificateKeyFile "/opt/bitnami/apache/conf/server.key"
+    SSLCertificateFile "/opt/bitnami/apache2/conf/server.crt"
+    SSLCertificateKeyFile "/opt/bitnami/apache2/conf/server.key"
 
     <Directory /opt/bitnami/jaws/public>
         Options -Indexes +FollowSymLinks -MultiViews
@@ -147,15 +180,38 @@ Create an HTTPS virtual host configuration for SSL traffic.
         Require all granted
     </Directory>
 
-    Include "/opt/bitnami/apache/conf/vhosts/htaccess/jaws-htaccess.conf"
+    Include "/opt/bitnami/apache2/conf/vhosts/htaccess/jaws-htaccess.conf"
 </VirtualHost>
 ```
 
 **Configuration Notes:**
+
 - The SSL directives point to the symlinks created in the previous step
 - When Let's Encrypt renews certificates (every 90 days), the symlinks automatically reference the new certificates
 - No Apache configuration changes are needed during certificate renewal
 - Both HTTP (port 80) and HTTPS (port 443) virtual hosts can coexist
+
+> **Alternative:** Instead of using symlinks, you can point the `SSLCertificateFile` and `SSLCertificateKeyFile` directives directly to the Let's Encrypt paths (e.g. `/etc/letsencrypt/live/nsc-sdc.ca/fullchain.pem`). Either approach works; symlinks make the vhost config domain-agnostic.
+
+##### Restart Apache and Verify
+
+```bash
+sudo /opt/bitnami/ctlscript.sh restart apache
+```
+
+Check the certificate status and confirm paths:
+
+```bash
+certbot certificates
+```
+
+Confirm that automatic renewal will work:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+Then visit the site in a browser and verify the certificate details.
 
 #### 4. Install Composer (if not already installed)
 
@@ -1171,7 +1227,7 @@ sudo chmod 775 /opt/bitnami/jaws/database
 
 1. Verify Apache virtual host configuration:
    ```bash
-   sudo cat /opt/bitnami/apache/conf/vhosts/jaws-vhost.conf
+   sudo cat /opt/bitnami/apache2/conf/vhosts/jaws-vhost.conf
    ```
 
 2. Verify .htaccess exists:
