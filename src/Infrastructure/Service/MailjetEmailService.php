@@ -162,6 +162,13 @@ class MailjetEmailService implements EmailServiceInterface
 
     private function postMessage(array $message): bool
     {
+        if ($this->apiKey === '' || $this->apiSecret === '') {
+            $this->logger->error('email.credentials_missing', [
+                'message' => 'Mailjet API key or secret is empty',
+            ]);
+            return false;
+        }
+
         $mj    = $this->newMailjetClient();
         $delay = self::RETRY_BASE_DELAY;
 
