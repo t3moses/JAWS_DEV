@@ -27,6 +27,16 @@ foreach ($_ENV as $key => $value) {
 // Load configuration
 $config = require __DIR__ . '/../config/config.php';
 
+// Fail fast if JWT_SECRET is absent or too short in production
+if ($config['app']['env'] === 'production') {
+    $jwtSecret = getenv('JWT_SECRET');
+    if ($jwtSecret === false || $jwtSecret === '' || strlen($jwtSecret) < 32) {
+        throw new RuntimeException(
+            'JWT_SECRET environment variable must be set to at least 32 characters in production.'
+        );
+    }
+}
+
 // Set timezone
 date_default_timezone_set($config['app']['timezone']);
 
