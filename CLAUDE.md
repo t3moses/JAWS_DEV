@@ -141,7 +141,7 @@ Compared lexicographically, higher = higher priority (sorted descending). Ties b
 - `flexibility` — boats only: 0 if flex (owner also crew), else 1
 - `absence` — count of past no-shows (deprioritizes unreliable participants)
 - `commitment` — 3=assigned, 2=available, 1=admin penalty, 0=unavailable/withdrawn
-- `membership` — 0=valid NSC membership, 1=invalid
+- `membership` — 1=valid NSC membership, 0=invalid (higher = higher priority)
 
 ## Assignment Optimization
 
