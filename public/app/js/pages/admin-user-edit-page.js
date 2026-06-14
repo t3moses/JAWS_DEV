@@ -93,6 +93,7 @@ function renderPage() {
 
     renderUserInfo(user);
     renderAdminRights(user);
+    renderAccountStatus(user);
 
     if (crew) {
         renderSkill(crew);
@@ -153,6 +154,82 @@ async function handleAdminSave(toggle) {
         showToast(error.message || 'Failed to update admin status', 'error');
         // Revert toggle
         toggle.checked = targetUserData.user.is_admin;
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// ==================== Account Status ====================
+
+function renderAccountStatus(user) {
+    const section = document.getElementById('section-account-status');
+    const btn = document.getElementById('status-toggle-btn');
+
+    updateAccountStatusView(user);
+
+    // Cannot deactivate your own account
+    if (user.id === currentUser.id) {
+        btn.disabled = true;
+        btn.title = 'You cannot deactivate your own account';
+    } else {
+        btn.addEventListener('click', handleStatusToggle);
+    }
+
+    section.style.display = '';
+}
+
+/**
+ * Reflect the current disabled state in the status label and toggle button
+ */
+function updateAccountStatusView(user) {
+    const label = document.getElementById('status-current');
+    const btn = document.getElementById('status-toggle-btn');
+
+    if (user.disabled) {
+        const when = user.disabled_at
+            ? ` (since ${new Date(user.disabled_at).toLocaleDateString()})`
+            : '';
+        label.textContent = `Deactivated${when}`;
+        btn.textContent = 'Reactivate Account';
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
+    } else {
+        label.textContent = 'Active';
+        btn.textContent = 'Deactivate Account';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger');
+    }
+}
+
+async function handleStatusToggle() {
+    const btn = document.getElementById('status-toggle-btn');
+    const currentlyDisabled = targetUserData.user.disabled === true;
+    const willDisable = !currentlyDisabled;
+
+    // Confirm the heavier (deactivation) action; reactivation is low-risk
+    if (willDisable && !window.confirm(
+        'Deactivate this account? The user will be signed out and blocked from ' +
+        'signing in, and their boat/crew will be removed from upcoming flotillas. ' +
+        'You can reactivate the account later.'
+    )) {
+        return;
+    }
+
+    btn.disabled = true;
+
+    try {
+        await adminService.setUserStatus(targetUserId, willDisable);
+        // Refresh user data so the label and button reflect the new state
+        const detail = await adminService.getUserDetail(targetUserId);
+        targetUserData = detail;
+        updateAccountStatusView(detail.user);
+        showToast(
+            willDisable ? 'Account deactivated.' : 'Account reactivated.',
+            'success'
+        );
+    } catch (error) {
+        console.error('Failed to update account status:', error);
+        showToast(error.message || 'Failed to update account status', 'error');
     } finally {
         btn.disabled = false;
     }

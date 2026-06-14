@@ -350,6 +350,14 @@ $container->set(\App\Application\UseCase\Admin\SetUserAdminUseCase::class, funct
     );
 });
 
+$container->set(\App\Application\UseCase\Admin\SetUserStatusUseCase::class, function ($c) {
+    return new \App\Application\UseCase\Admin\SetUserStatusUseCase(
+        $c->get(UserRepositoryInterface::class),
+        $c->get(\App\Application\UseCase\Season\ProcessSeasonUpdateUseCase::class),
+        $c->get(LoggerInterface::class)
+    );
+});
+
 $container->set(\App\Application\UseCase\Admin\GetUserDetailUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\GetUserDetailUseCase(
         $c->get(UserRepositoryInterface::class),
@@ -553,6 +561,7 @@ $container->set(\App\Presentation\Controller\AdminController::class, function ($
         $c->get(\App\Application\UseCase\Season\ProcessSeasonUpdateUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetAllUsersUseCase::class),
         $c->get(\App\Application\UseCase\Admin\SetUserAdminUseCase::class),
+        $c->get(\App\Application\UseCase\Admin\SetUserStatusUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetUserDetailUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetAllCrewsUseCase::class),
         $c->get(\App\Application\UseCase\Admin\GetAllBoatsUseCase::class),
@@ -588,7 +597,8 @@ $container->set(\App\Presentation\Controller\UserController::class, function ($c
 
 $container->set(\App\Presentation\Middleware\JwtAuthMiddleware::class, function ($c) {
     return new \App\Presentation\Middleware\JwtAuthMiddleware(
-        $c->get(TokenServiceInterface::class)
+        $c->get(TokenServiceInterface::class),
+        $c->get(UserRepositoryInterface::class)
     );
 });
 

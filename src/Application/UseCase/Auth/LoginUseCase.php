@@ -7,6 +7,7 @@ namespace App\Application\UseCase\Auth;
 use App\Application\DTO\Request\LoginRequest;
 use App\Application\DTO\Response\AuthResponse;
 use App\Application\DTO\Response\UserResponse;
+use App\Application\Exception\AccountDisabledException;
 use App\Application\Exception\InvalidCredentialsException;
 use App\Application\Exception\ValidationException;
 use App\Application\Port\Repository\UserRepositoryInterface;
@@ -37,6 +38,7 @@ class LoginUseCase
      * @return AuthResponse Authentication response with token
      * @throws ValidationException If validation fails
      * @throws InvalidCredentialsException If credentials are invalid
+     * @throws AccountDisabledException If the account has been suspended
      */
     public function execute(LoginRequest $request): AuthResponse
     {
@@ -55,6 +57,16 @@ class LoginUseCase
         // Verify password
         if (!$this->passwordService->verify($request->password, $user->getPasswordHash())) {
             throw new InvalidCredentialsException();
+        }
+
+        // Block suspended (disabled) accounts. Checked after password
+        // verification so disabled status is not leaked to anonymous callers.
+        if ($user->isDisabled()) {
+            $this->logger->warning('auth.login_disabled', [
+                'user_id' => $user->getId(),
+                'email'   => $user->getEmail(),
+            ]);
+            throw new AccountDisabledException();
         }
 
         // Update last login

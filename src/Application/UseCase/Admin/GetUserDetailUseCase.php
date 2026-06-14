@@ -43,6 +43,8 @@ class GetUserDetailUseCase
                 'email'        => $user->getEmail(),
                 'account_type' => $user->getAccountType(),
                 'is_admin'     => $user->isAdmin(),
+                'disabled'     => $user->isDisabled(),
+                'disabled_at'  => $user->getDisabledAt()?->format('Y-m-d H:i:s'),
                 'created_at'   => $user->getCreatedAt()->format('Y-m-d H:i:s'),
             ],
             'crew' => $crew ? [

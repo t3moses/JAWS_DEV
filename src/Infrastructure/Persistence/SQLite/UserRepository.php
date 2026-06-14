@@ -147,8 +147,8 @@ class UserRepository implements UserRepositoryInterface
     private function insert(User $user): void
     {
         $stmt = $this->pdo->prepare('
-            INSERT INTO users (email, password_hash, account_type, is_admin, last_login, last_logout, created_at, updated_at)
-            VALUES (:email, :password_hash, :account_type, :is_admin, :last_login, :last_logout, :created_at, :updated_at)
+            INSERT INTO users (email, password_hash, account_type, is_admin, last_login, last_logout, disabled_at, created_at, updated_at)
+            VALUES (:email, :password_hash, :account_type, :is_admin, :last_login, :last_logout, :disabled_at, :created_at, :updated_at)
         ');
 
         $stmt->execute([
@@ -158,6 +158,7 @@ class UserRepository implements UserRepositoryInterface
             'is_admin' => $user->isAdmin() ? 1 : 0,
             'last_login' => $user->getLastLogin()?->format('Y-m-d H:i:s'),
             'last_logout' => $user->getLastLogout()?->format('Y-m-d H:i:s'),
+            'disabled_at' => $user->getDisabledAt()?->format('Y-m-d H:i:s'),
             'created_at' => $user->getCreatedAt()->format('Y-m-d H:i:s'),
             'updated_at' => $user->getUpdatedAt()->format('Y-m-d H:i:s'),
         ]);
@@ -182,6 +183,7 @@ class UserRepository implements UserRepositoryInterface
                 is_admin = :is_admin,
                 last_login = :last_login,
                 last_logout = :last_logout,
+                disabled_at = :disabled_at,
                 updated_at = :updated_at
             WHERE id = :id
         ');
@@ -194,6 +196,7 @@ class UserRepository implements UserRepositoryInterface
             'is_admin' => $user->isAdmin() ? 1 : 0,
             'last_login' => $user->getLastLogin()?->format('Y-m-d H:i:s'),
             'last_logout' => $user->getLastLogout()?->format('Y-m-d H:i:s'),
+            'disabled_at' => $user->getDisabledAt()?->format('Y-m-d H:i:s'),
             'updated_at' => $user->getUpdatedAt()->format('Y-m-d H:i:s'),
         ]);
     }
@@ -215,6 +218,7 @@ class UserRepository implements UserRepositoryInterface
             lastLogout: $row['last_logout'] ? new \DateTimeImmutable($row['last_logout']) : null,
             createdAt: new \DateTimeImmutable($row['created_at']),
             updatedAt: new \DateTimeImmutable($row['updated_at']),
+            disabledAt: !empty($row['disabled_at']) ? new \DateTimeImmutable($row['disabled_at']) : null,
         );
 
         $user->setId((int)$row['id']);

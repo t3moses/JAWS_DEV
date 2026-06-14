@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Middleware;
 
+use App\Application\Exception\AccountDisabledException;
 use App\Application\Exception\ValidationException;
 use App\Application\Exception\BoatNotFoundException;
 use App\Application\Exception\CrewNotFoundException;
@@ -59,6 +60,14 @@ class ErrorHandlerMiddleware
                 'message'         => $e->getMessage(),
             ]);
             return JsonResponse::notFound($e->getMessage());
+        }
+
+        // Disabled / suspended account (403 Forbidden)
+        if ($e instanceof AccountDisabledException) {
+            $this->logger->warning('http.account_disabled', [
+                'message' => $e->getMessage(),
+            ]);
+            return JsonResponse::error($e->getMessage(), 403);
         }
 
         // Blackout window (403 Forbidden)

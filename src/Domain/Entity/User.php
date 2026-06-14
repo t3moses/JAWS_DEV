@@ -26,6 +26,7 @@ class User
         private ?\DateTimeImmutable $lastLogout = null,
         private ?\DateTimeImmutable $createdAt = null,
         private ?\DateTimeImmutable $updatedAt = null,
+        private ?\DateTimeImmutable $disabledAt = null,
     ) {
         $this->validateEmail($email);
         $this->validateAccountType($accountType);
@@ -181,6 +182,49 @@ class User
     }
 
     /**
+     * Get the timestamp the account was disabled (null if active)
+     */
+    public function getDisabledAt(): ?\DateTimeImmutable
+    {
+        return $this->disabledAt;
+    }
+
+    /**
+     * Check if the account is currently disabled (suspended)
+     */
+    public function isDisabled(): bool
+    {
+        return $this->disabledAt !== null;
+    }
+
+    /**
+     * Disable (suspend) the account
+     *
+     * Idempotent: re-disabling an already-disabled account preserves the
+     * original disabled_at timestamp.
+     */
+    public function disable(\DateTimeImmutable $time): void
+    {
+        if ($this->disabledAt !== null) {
+            return;
+        }
+        $this->disabledAt = $time;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * Reactivate (un-suspend) the account
+     */
+    public function reactivate(): void
+    {
+        if ($this->disabledAt === null) {
+            return;
+        }
+        $this->disabledAt = null;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    /**
      * Get created at timestamp
      */
     public function getCreatedAt(): \DateTimeImmutable
@@ -208,6 +252,7 @@ class User
             'is_admin' => $this->isAdmin,
             'last_login' => $this->lastLogin?->format('Y-m-d H:i:s'),
             'last_logout' => $this->lastLogout?->format('Y-m-d H:i:s'),
+            'disabled_at' => $this->disabledAt?->format('Y-m-d H:i:s'),
             'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
             'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
         ];

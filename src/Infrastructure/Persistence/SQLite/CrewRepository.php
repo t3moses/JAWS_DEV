@@ -82,7 +82,14 @@ class CrewRepository implements CrewRepositoryInterface
 
     public function findAll(): array
     {
-        $stmt = $this->pdo->query('SELECT * FROM crews ORDER BY display_name');
+        // Exclude crews whose linked user account is disabled (suspended).
+        // Crews with no linked user (user_id IS NULL) remain visible.
+        $stmt = $this->pdo->query('
+            SELECT c.* FROM crews c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE u.disabled_at IS NULL
+            ORDER BY c.display_name
+        ');
         $rows = $stmt->fetchAll();
 
         if (empty($rows)) {
@@ -115,7 +122,9 @@ class CrewRepository implements CrewRepositoryInterface
         $stmt = $this->pdo->prepare('
             SELECT c.* FROM crews c
             INNER JOIN crew_availability ca ON c.id = ca.crew_id
+            LEFT JOIN users u ON c.user_id = u.id
             WHERE ca.event_id = :event_id AND ca.status IN (1, 2)
+              AND u.disabled_at IS NULL
             ORDER BY c.display_name
         ');
         $stmt->execute(['event_id' => $eventId->toString()]);
@@ -129,7 +138,9 @@ class CrewRepository implements CrewRepositoryInterface
         $stmt = $this->pdo->prepare('
             SELECT c.* FROM crews c
             INNER JOIN crew_availability ca ON c.id = ca.crew_id
+            LEFT JOIN users u ON c.user_id = u.id
             WHERE ca.event_id = :event_id AND ca.status = 2
+              AND u.disabled_at IS NULL
             ORDER BY c.display_name
         ');
         $stmt->execute(['event_id' => $eventId->toString()]);

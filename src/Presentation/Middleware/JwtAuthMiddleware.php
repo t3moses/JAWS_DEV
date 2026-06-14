@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Middleware;
 
+use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Service\TokenServiceInterface;
 use App\Presentation\Response\JsonResponse;
 
@@ -19,7 +20,8 @@ use App\Presentation\Response\JsonResponse;
 class JwtAuthMiddleware
 {
     public function __construct(
-        private TokenServiceInterface $tokenService
+        private TokenServiceInterface $tokenService,
+        private UserRepositoryInterface $userRepository
     ) {
     }
 
@@ -54,6 +56,14 @@ class JwtAuthMiddleware
         $payload = $this->tokenService->validate($token);
 
         if ($payload === null) {
+            return null;
+        }
+
+        // Reject tokens belonging to suspended (disabled) or deleted accounts.
+        // This makes deactivation take effect immediately rather than waiting
+        // for the existing token to expire.
+        $user = $this->userRepository->findById((int)$payload['sub']);
+        if ($user === null || $user->isDisabled()) {
             return null;
         }
 
