@@ -79,7 +79,14 @@ class BoatRepository implements BoatRepositoryInterface
 
     public function findAll(): array
     {
-        $stmt = $this->pdo->query('SELECT * FROM boats ORDER BY display_name');
+        // Exclude boats whose linked owner account is disabled (suspended).
+        // Boats with no linked owner (owner_user_id IS NULL) remain visible.
+        $stmt = $this->pdo->query('
+            SELECT b.* FROM boats b
+            LEFT JOIN users u ON b.owner_user_id = u.id
+            WHERE u.disabled_at IS NULL
+            ORDER BY b.display_name
+        ');
         $rows = $stmt->fetchAll();
 
         if (empty($rows)) {
@@ -110,7 +117,9 @@ class BoatRepository implements BoatRepositoryInterface
         $stmt = $this->pdo->prepare('
             SELECT b.* FROM boats b
             INNER JOIN boat_availability ba ON b.id = ba.boat_id
+            LEFT JOIN users u ON b.owner_user_id = u.id
             WHERE ba.event_id = :event_id AND ba.berths > 0
+              AND u.disabled_at IS NULL
             ORDER BY b.display_name
         ');
         $stmt->execute(['event_id' => $eventId->toString()]);

@@ -10,6 +10,7 @@ use App\Application\UseCase\Admin\SendCustomNotificationUseCase;
 use App\Application\UseCase\Admin\GetConfigUseCase;
 use App\Application\UseCase\Admin\GetAllUsersUseCase;
 use App\Application\UseCase\Admin\SetUserAdminUseCase;
+use App\Application\UseCase\Admin\SetUserStatusUseCase;
 use App\Application\UseCase\Admin\GetUserDetailUseCase;
 use App\Application\UseCase\Admin\GetAllCrewsUseCase;
 use App\Application\UseCase\Admin\GetAllBoatsUseCase;
@@ -42,6 +43,7 @@ class AdminController
         private ProcessSeasonUpdateUseCase $processSeasonUpdateUseCase,
         private GetAllUsersUseCase $getAllUsersUseCase,
         private SetUserAdminUseCase $setUserAdminUseCase,
+        private SetUserStatusUseCase $setUserStatusUseCase,
         private GetUserDetailUseCase $getUserDetailUseCase,
         private GetAllCrewsUseCase $getAllCrewsUseCase,
         private GetAllBoatsUseCase $getAllBoatsUseCase,
@@ -259,6 +261,42 @@ class AdminController
             $requestingUserId = (int)$auth['user_id'];
 
             $result = $this->setUserAdminUseCase->execute($targetUserId, $isAdmin, $requestingUserId);
+
+            return JsonResponse::success($result);
+        } catch (ValidationException $e) {
+            return JsonResponse::error($e->getMessage(), 400, $e->getErrors());
+        } catch (\RuntimeException $e) {
+            return JsonResponse::notFound($e->getMessage());
+        } catch (\Exception $e) {
+            return JsonResponse::serverError($e->getMessage());
+        }
+    }
+
+    /**
+     * PATCH /api/admin/users/{userId}/status
+     *
+     * Suspends (disables) or reactivates a user account. Reversible.
+     *
+     * @param array $params Route parameters (userId)
+     * @param array $body   Request body (disabled boolean)
+     * @param array $auth   Authentication context
+     */
+    public function setUserStatus(array $params, array $body, array $auth): JsonResponse
+    {
+        if (!$this->isAdmin($auth)) {
+            return JsonResponse::error('Admin privileges required', 403);
+        }
+
+        if (!array_key_exists('disabled', $body)) {
+            return JsonResponse::error('disabled is required', 400);
+        }
+
+        try {
+            $targetUserId     = (int)$params['userId'];
+            $disabled         = (bool)$body['disabled'];
+            $requestingUserId = (int)$auth['user_id'];
+
+            $result = $this->setUserStatusUseCase->execute($targetUserId, $disabled, $requestingUserId);
 
             return JsonResponse::success($result);
         } catch (ValidationException $e) {

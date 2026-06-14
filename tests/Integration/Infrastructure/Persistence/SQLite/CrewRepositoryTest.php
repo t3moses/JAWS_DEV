@@ -189,6 +189,62 @@ class CrewRepositoryTest extends IntegrationTestCase
         $this->assertNotContains('Unavailable Test', $displayNames);
     }
 
+    public function testFindAllExcludesCrewLinkedToDisabledUser(): void
+    {
+        // Active crew (no linked user)
+        $this->createAndSaveCrew('Active', 'Member', SkillLevel::NOVICE);
+
+        // Crew linked to a disabled user
+        $user = new User(
+            email: 'suspended-crew@example.com',
+            passwordHash: 'hash',
+            accountType: 'crew',
+            isAdmin: false
+        );
+        $user->disable(new \DateTimeImmutable());
+        $this->userRepository->save($user);
+
+        $disabledCrew = $this->createTestCrew('Suspended', 'Member', SkillLevel::ADVANCED);
+        $disabledCrew->setUserId($user->getId());
+        $this->repository->save($disabledCrew);
+
+        $crews = $this->repository->findAll();
+        $displayNames = array_map(fn($c) => $c->getDisplayName(), $crews);
+
+        $this->assertContains('Active Member', $displayNames);
+        $this->assertNotContains('Suspended Member', $displayNames);
+
+        // Direct lookup still returns the crew (admin/profile views must still work)
+        $this->assertNotNull($this->repository->findByKey($disabledCrew->getKey()));
+    }
+
+    public function testFindAvailableForEventExcludesCrewLinkedToDisabledUser(): void
+    {
+        $eventId = EventId::fromString('2026-04-10');
+        $this->createTestEvent('2026-04-10', '2026-04-10');
+
+        $user = new User(
+            email: 'suspended-available@example.com',
+            passwordHash: 'hash',
+            accountType: 'crew',
+            isAdmin: false
+        );
+        $user->disable(new \DateTimeImmutable());
+        $this->userRepository->save($user);
+
+        $crew = $this->createTestCrew('SuspendedAvail', 'Member', SkillLevel::INTERMEDIATE);
+        $crew->setUserId($user->getId());
+        $this->repository->save($crew);
+
+        // Even though available, a suspended account must not be selectable
+        $this->repository->updateAvailability($crew->getKey(), $eventId, AvailabilityStatus::AVAILABLE);
+
+        $available = $this->repository->findAvailableForEvent($eventId);
+        $displayNames = array_map(fn($c) => $c->getDisplayName(), $available);
+
+        $this->assertNotContains('SuspendedAvail Member', $displayNames);
+    }
+
     public function testFindAssignedToEventReturnsOnlyGuaranteedCrew(): void
     {
         $eventId = EventId::fromString('2026-03-25');

@@ -6,6 +6,7 @@ namespace Tests\Integration\Application\UseCase\Auth;
 
 use App\Application\UseCase\Auth\LoginUseCase;
 use App\Application\DTO\Request\LoginRequest;
+use App\Application\Exception\AccountDisabledException;
 use App\Application\Exception\InvalidCredentialsException;
 use App\Application\Exception\ValidationException;
 use App\Infrastructure\Persistence\SQLite\UserRepository;
@@ -129,6 +130,57 @@ class LoginUseCaseTest extends IntegrationTestCase
         $this->expectException(InvalidCredentialsException::class);
 
         $this->useCase->execute($request);
+    }
+
+    public function testLoginWithDisabledAccountThrowsAccountDisabledException(): void
+    {
+        // Create a suspended user
+        $password = 'SecurePassword123';
+        $user = new User(
+            email: 'disabled@example.com',
+            passwordHash: $this->passwordService->hash($password),
+            accountType: 'crew',
+            isAdmin: false
+        );
+        $user->disable(new \DateTimeImmutable());
+        $this->userRepository->save($user);
+
+        // Correct credentials, but the account is disabled
+        $request = new LoginRequest(
+            email: 'disabled@example.com',
+            password: $password
+        );
+
+        $this->expectException(AccountDisabledException::class);
+
+        $this->useCase->execute($request);
+    }
+
+    public function testReactivatedAccountCanLoginAgain(): void
+    {
+        $password = 'SecurePassword123';
+        $user = new User(
+            email: 'reactivated@example.com',
+            passwordHash: $this->passwordService->hash($password),
+            accountType: 'crew',
+            isAdmin: false
+        );
+        $user->disable(new \DateTimeImmutable());
+        $this->userRepository->save($user);
+
+        // Reactivate
+        $reloaded = $this->userRepository->findById($user->getId());
+        $reloaded->reactivate();
+        $this->userRepository->save($reloaded);
+
+        $request = new LoginRequest(
+            email: 'reactivated@example.com',
+            password: $password
+        );
+
+        $response = $this->useCase->execute($request);
+
+        $this->assertNotEmpty($response->token);
     }
 
     public function testLoginWithEmptyEmailThrowsValidationException(): void

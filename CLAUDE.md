@@ -186,6 +186,7 @@ For each rule: find highest-loss crew → find best-grad swap → swap if improv
 | GET | /api/admin/users | AdminController::getUsers |
 | GET | /api/admin/users/{userId} | AdminController::getUser |
 | PATCH | /api/admin/users/{userId}/admin | AdminController::setUserAdmin |
+| PATCH | /api/admin/users/{userId}/status | AdminController::setUserStatus |
 | GET | /api/admin/crews | AdminController::getAllCrews |
 | PATCH | /api/admin/crews/{crewKey} | AdminController::updateCrewProfile |
 | POST | /api/admin/crews/{crewKey}/whitelist/{boatKey} | AdminController::addToWhitelist |

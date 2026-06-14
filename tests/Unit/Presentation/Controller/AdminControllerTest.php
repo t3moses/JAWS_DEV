@@ -17,6 +17,7 @@ use App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase;
 use App\Application\UseCase\Admin\SendCustomNotificationUseCase;
 use App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase;
 use App\Application\UseCase\Admin\SetUserAdminUseCase;
+use App\Application\UseCase\Admin\SetUserStatusUseCase;
 use App\Application\UseCase\Admin\UpdateCrewProfileUseCase;
 use App\Application\UseCase\Season\ProcessSeasonUpdateUseCase;
 use App\Application\UseCase\Season\UpdateConfigUseCase;
@@ -41,6 +42,7 @@ class AdminControllerTest extends TestCase
             $processSeasonUpdateUseCase,
             $this->createStub(GetAllUsersUseCase::class),
             $this->createStub(SetUserAdminUseCase::class),
+            $this->createStub(SetUserStatusUseCase::class),
             $this->createStub(GetUserDetailUseCase::class),
             $this->createStub(GetAllCrewsUseCase::class),
             $this->createStub(GetAllBoatsUseCase::class),

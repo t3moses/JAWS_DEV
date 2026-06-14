@@ -240,6 +240,15 @@ return [
         'auth' => true,
     ],
 
+    // Set User Account Status (suspend / reactivate)
+    [
+        'method' => 'PATCH',
+        'path' => '/api/admin/users/{userId}/status',
+        'controller' => AdminController::class,
+        'action' => 'setUserStatus',
+        'auth' => true,
+    ],
+
     // Get Single User Detail (with crew profile)
     [
         'method' => 'GET',
