@@ -39,6 +39,7 @@ export const API_CONFIG = {
         ADMIN_CONFIG: '/admin/config',
         ADMIN_USERS: '/admin/users',
         ADMIN_USER_ADMIN: '/admin/users/:id/admin',
+        ADMIN_USER_STATUS: '/admin/users/:id/status',
         ADMIN_USER_DETAIL: '/admin/users/:userId',
         ADMIN_CREWS: '/admin/crews',
         ADMIN_BOATS: '/admin/boats',

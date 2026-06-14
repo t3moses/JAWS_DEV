@@ -129,6 +129,27 @@ export async function setUserAdmin(userId, isAdmin) {
 }
 
 /**
+ * Suspend (disable) or reactivate a user account
+ * @param {number} userId - Target user ID
+ * @param {boolean} disabled - Whether to suspend (true) or reactivate (false)
+ * @returns {Promise<Object>} Updated user summary
+ */
+export async function setUserStatus(userId, disabled) {
+    try {
+        const response = await apiService.patch(API_CONFIG.ENDPOINTS.ADMIN_USER_STATUS, { disabled }, { id: userId });
+
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to update account status');
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('AdminService: Failed to set user status:', error);
+        throw error;
+    }
+}
+
+/**
  * Get a single user's detail including linked crew profile
  * @param {number} userId - Target user ID
  * @returns {Promise<{user: Object, crew: Object|null}>}

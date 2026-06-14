@@ -1276,6 +1276,19 @@ nav .user-greeting {
   box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
 }
 
+/* Deactivated account indicators */
+.user-badge.disabled {
+  background: #6c757d;
+  box-shadow: none;
+  margin-top: 0;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+}
+
+.user-row-disabled td {
+  opacity: 0.6;
+}
+
 /* Admin Actions Grid */
 .admin-actions {
   display: grid;
