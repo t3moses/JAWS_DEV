@@ -155,15 +155,15 @@ class RankingService
     public function updateCrewCommitmentRanks(array $crews, EventId $nextEventId, array $assignedCrewKeys = []): void
     {
         foreach ($crews as $crew) {
-            // Crew assigned to next event gets highest priority
-            if (in_array($crew->getKey()->toString(), $assignedCrewKeys, true)) {
-                $crew->setRankDimension(CrewRankDimension::COMMITMENT, 3);
-                continue;
-            }
-
             // Admin penalty (rank=1) persists — do not overwrite unless crew re-registers
             $storedRank = $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT);
             if ($storedRank === 1) {
+                continue;
+            }
+
+            // Crew assigned to next event gets highest priority
+            if (in_array($crew->getKey()->toString(), $assignedCrewKeys, true)) {
+                $crew->setRankDimension(CrewRankDimension::COMMITMENT, 3);
                 continue;
             }
 

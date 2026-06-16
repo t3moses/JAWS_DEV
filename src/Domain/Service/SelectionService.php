@@ -52,12 +52,21 @@ class SelectionService
         $this->eventId = $eventId;
 
         // Shuffle with deterministic seeding (event_id hash)
-        $shuffledBoats = $this->shuffle($boats, $eventId->toString());
+        $shuffledBoats = $this->mix($boats, $eventId->toString());
         $sortedBoats = $this->bubble($shuffledBoats);
 
-        $shuffledCrews = $this->shuffle($crews, $eventId->toString());
+        $shuffledCrews = $this->mix($crews, $eventId->toString());
         $sortedCrews = $this->bubble($shuffledCrews);
-
+/*
+        self::trace("Event: " . $eventId->toString() . "\n");
+        foreach ($shuffledBoats as $boat) {
+            self::trace("boat: " . $boat->getId() . " Rank: " . $boat->getRank() . "\n");
+        }
+        foreach ($shuffledCrews as $crew) {
+            self::trace("crew: " . $crew->getId() . " Rank: " . $crew->getRank() . "\n");
+        }
+        self::trace("\n\n");
+*/
         // Cut boats or crews to fit, then distribute
         $this->cut($sortedBoats, $sortedCrews);
     }
@@ -142,7 +151,8 @@ class SelectionService
      * @param string|null $seed
      * @return array<Boat|Crew>
      */
-    private function shuffle(array $list, ?string $seed): array
+
+    private function mix(array $list, ?string $seed): array
     {
         if ($seed !== null) {
             mt_srand(crc32($seed));
@@ -151,7 +161,21 @@ class SelectionService
         shuffle($list);
         return $list;
     }
+/*
+    private function mix(array $list, ?string $seed): array
+    {
+        if ($seed !== null) {
+            mt_srand(crc32($seed));
+        }
 
+        for ($i = count($list) - 1; $i > 0; $i--) {
+            $j = mt_rand(0, $i);
+            [$list[$i], $list[$j]] = [$list[$j], $list[$i]];
+        }
+
+        return $list;
+    }
+*/
     /**
      * Lexicographic rank comparison
      *
@@ -181,7 +205,7 @@ class SelectionService
     }
 
     /**
-     * Bubble sort based on rank
+     * Bubble sort based on rank (highest to lowest)
      *
      * CRITICAL: Uses optimized bubble sort with early termination.
      * Sorts in descending rank order (highest rank = highest priority first).
@@ -214,6 +238,14 @@ class SelectionService
                 break;
             }
         }
+
+/*
+        self::trace("Sorted List:\n");
+        foreach ($list as $entry) {
+            self::trace("    " . $entry->getId() . "\n");
+        }
+        self::trace("\n\n");
+*/
         return $list;
     }
 
@@ -242,6 +274,11 @@ class SelectionService
         if (count($crews) < $minBerths) {
             $this->case1($boats, $crews);
         } elseif (count($crews) > $maxBerths) {
+/*
+            foreach ($crews as $crew) {
+                $this->trace("Crew: " . $crew->getId() . " Rank: " . implode(",", $crew->getRank()->toArray()) . "\n");
+            }
+*/
             $this->case2($boats, $crews);
         } else {
             $this->case3($boats, $crews);
@@ -373,4 +410,11 @@ class SelectionService
         $this->waitlistBoats = [];
         $this->waitlistCrews = [];
     }
+/*
+    private function trace(string $contents): void
+    {
+        $fileName = __DIR__ . "/../../../trace.txt";
+        file_put_contents($fileName, $contents, FILE_APPEND | LOCK_EX);
+    }
+*/
 }

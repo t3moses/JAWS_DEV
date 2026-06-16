@@ -521,10 +521,4 @@ class AssignmentService
         // $aCrew is not onboard $crewedBoat
         throw new \RuntimeException("Can't find crew to replace");
     }
-
-    private function trace(string $contents): void
-    {
-        $fileName = __DIR__ . "/../../../trace.txt";
-        file_put_contents($fileName, $contents, FILE_APPEND | LOCK_EX);
-    }
 }

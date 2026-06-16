@@ -11,3 +11,9 @@ parameters:
     # PHPStan needs more memory on Windows with this codebase size
     parallel:
         maximumNumberOfProcesses: 1
+    ignoreErrors:
+        -
+            message: '#^Method App\\Domain\\Service\\AssignmentService::trace\(\) is unused\.$#'
+            identifier: method.unused
+            count: 1
+            path: src/Domain/Service/AssignmentService.php

@@ -133,7 +133,7 @@ cp database/jaws.db database/backup_$(date +%Y%m%d_%H%M%S).db
 ```bash
 sqlite3 database/jaws.db < database/backup_YYYYMMDD_HHMMSS.sql
 # Or copy the backup file
-cp database/backup_YYYYMMDD_HHMMSS.db database/jaws.db
+cp database/backups/backup_YYYYMMDD_HHMMSS.db database/jaws.db
 ```
 
 ## Test Data Seeding
@@ -206,6 +206,14 @@ SELECT c.* FROM crews c
 JOIN crew_availability ca ON c.id = ca.crew_id
 WHERE ca.event_id = 'Fri May 29' AND ca.status IN (1, 2);
 
+-- Withdraw a boat from an event.  "event id" takes the form: 'Fri May 29'.  "boat display name" takes the form: 'Astraeus'.
+UPDATE boat_availability
+SET berths = 0
+WHERE event_id = "event id"
+  AND boat_id = (
+    SELECT id FROM boats WHERE display_name = "boat display name"
+  );
+
 -- Get crew assignment history
 SELECT c.display_name, ch.event_id, ch.boat_key
 FROM crews c
@@ -226,4 +234,14 @@ WHERE u.email = 'user@example.com';
 
 -- Get migration status
 SELECT * FROM phinxlog ORDER BY version DESC;
+
+-- Move the date of an event without modifying the lists of available boats and crew.  An event id takes the form: Fri May 29.  The corresponding event date takes the form: 2026-05-29.
+PRAGMA foreign_keys = OFF;
+UPDATE events SET event_id = REPLACE(event_id, 'old event id', 'new event id') WHERE event_id LIKE '%old event id%';
+UPDATE events SET event_date = REPLACE(event_date, 'old event date', 'new event date') WHERE event_date LIKE '%old event date%';
+UPDATE "boat_availability" SET event_id = REPLACE(event_id, 'old event id', 'new event id') WHERE event_id LIKE '%old event id%';
+UPDATE "crew_availability" SET event_id = REPLACE(event_id, 'old event id', 'new event id') WHERE event_id LIKE '%old event id%';
+UPDATE flotillas SET event_id = REPLACE(event_id, 'old event id', 'new event id') WHERE event_id LIKE '%old event id%';
+UPDATE flotillas SET flotilla_data = REPLACE(flotilla_data, 'old event id', 'new event id') WHERE flotilla_data LIKE '%old event id%';
+PRAGMA foreign_keys = ON;
 ```
