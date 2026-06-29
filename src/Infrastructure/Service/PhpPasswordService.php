@@ -28,10 +28,15 @@ class PhpPasswordService implements PasswordServiceInterface
      *
      * @param string $password Plaintext password
      * @return string Hashed password
+     * @throws \RuntimeException If password hashing fails
      */
     public function hash(string $password): string
     {
-        return password_hash($password, PASSWORD_BCRYPT, ['cost' => self::HASH_COST]);
+        $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => self::HASH_COST]);
+        if ($hash === false) {
+            throw new \RuntimeException('Failed to hash password. Check PHP bcrypt configuration.');
+        }
+        return $hash;
     }
 
     /**

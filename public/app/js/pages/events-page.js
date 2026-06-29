@@ -37,7 +37,8 @@ function renderEvent(event) {
             // Boat name
             const boatNameDiv = document.createElement('div');
             const boatNameStrong = document.createElement('strong');
-            boatNameStrong.textContent = assignment.boat.displayName;
+            const ownerName = assignment.boat.ownerFirstName ? ` [${assignment.boat.ownerFirstName}]` : '';
+            boatNameStrong.textContent = assignment.boat.displayName + ownerName;
             boatNameDiv.appendChild(boatNameStrong);
             boatDiv.appendChild(boatNameDiv);
 
@@ -74,7 +75,8 @@ function renderEvent(event) {
         waitlistedBoats.forEach(boat => {
             const boatTag = document.createElement('span');
             boatTag.className = 'crew-tag';
-            boatTag.textContent = boat.displayName;
+            const ownerName = boat.ownerFirstName ? ` [${boat.ownerFirstName}]` : '';
+            boatTag.textContent = boat.displayName + ownerName;
             waitlistContent.appendChild(boatTag);
         });
 

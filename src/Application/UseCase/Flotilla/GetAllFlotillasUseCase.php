@@ -75,6 +75,7 @@ class GetAllFlotillasUseCase
                     'boat' => [
                         'key' => $crewedBoat['boat']['key'],
                         'displayName' => $crewedBoat['boat']['display_name'],
+                        'ownerFirstName' => $crewedBoat['boat']['owner_first_name'],
                     ],
                     'crews' => array_map(function ($crew) {
                         return [
@@ -88,6 +89,7 @@ class GetAllFlotillasUseCase
                 return [
                     'key' => $boat['key'],
                     'displayName' => $boat['display_name'],
+                    'ownerFirstName' => $boat['owner_first_name'],
                 ];
             }, $waitlistBoats),
             'waitlistedCrews' => array_map(function ($crew) {
