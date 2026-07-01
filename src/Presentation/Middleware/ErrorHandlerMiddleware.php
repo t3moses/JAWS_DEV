@@ -61,12 +61,12 @@ class ErrorHandlerMiddleware
             return JsonResponse::notFound($e->getMessage());
         }
 
-        // Blackout window (403 Forbidden)
+        // Blackout window (200 OK - update rejected but not an error)
         if ($e instanceof BlackoutWindowException) {
             $this->logger->info('http.blackout_window', [
                 'message' => $e->getMessage(),
             ]);
-            return JsonResponse::error($e->getMessage(), 403);
+            return JsonResponse::error($e->getMessage(), 200);
         }
 
         // Authentication errors (401 Unauthorized)
