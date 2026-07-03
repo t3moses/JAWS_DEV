@@ -240,7 +240,7 @@ HTML;
 
             <div class="footer">
                 <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
-                <p>If you have any questions, please contact the sailing coordinator.</p>
+                <p>If you have any questions, try the Social Day Cruising network on WhatsApp.</p>
             </div>
         </div>
     </div>
