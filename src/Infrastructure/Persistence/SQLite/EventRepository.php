@@ -62,7 +62,7 @@ class EventRepository implements EventRepositoryInterface
     {
         $stmt = $this->pdo->prepare('
             SELECT event_id FROM events
-            WHERE event_date > :today OR (event_date = :today AND start_time > :current_time)
+            WHERE event_date > :today OR (event_date = :today AND finish_time > :current_time)
             ORDER BY event_date, start_time
         ');
         $stmt->execute([
@@ -76,7 +76,7 @@ class EventRepository implements EventRepositoryInterface
     {
         $stmt = $this->pdo->prepare('
             SELECT event_id FROM events
-            WHERE event_date > :today OR (event_date = :today AND start_time > :current_time)
+            WHERE event_date > :today OR (event_date = :today AND finish_time > :current_time)
             ORDER BY event_date, start_time
             LIMIT 1
         ');
