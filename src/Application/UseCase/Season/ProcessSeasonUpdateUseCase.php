@@ -353,7 +353,18 @@ class ProcessSeasonUpdateUseCase
         $crewIndex = 0;
         foreach ($crewedBoats as &$crewedBoat) {
             $boat = $crewedBoat['boat'];
-            $crewsForThisBoat = $boat->occupied_berths;
+            $maxCrewsForBoat = min($boat->occupied_berths, $boat->getBerths($eventId));
+            $crewsForThisBoat = max(0, $maxCrewsForBoat);
+
+            if ($crewsForThisBoat < $boat->occupied_berths) {
+                $this->logger->warning('season_update.berth_capacity_capped', [
+                    'event_id' => $eventId->toString(),
+                    'boat_key' => $boat->getKey()->toString(),
+                    'occupied_berths' => $boat->occupied_berths,
+                    'available_berths' => $boat->getBerths($eventId),
+                    'crews_assigned' => $crewsForThisBoat,
+                ]);
+            }
 
             for ($i = 0; $i < $crewsForThisBoat && $crewIndex < count($selectedCrews); $i++) {
                 $crewedBoat['crews'][] = $selectedCrews[$crewIndex];

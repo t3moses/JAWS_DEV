@@ -296,9 +296,9 @@ class SelectionService
      */
     private function case1(array $boats, array $crews): void
     {
-        // Set all boats to minimum berths
+        // Set all boats to minimum berths, capped to actual available berths for this event
         foreach ($boats as $boat) {
-            $boat->occupied_berths = $boat->getMinBerths();
+            $boat->occupied_berths = min($boat->getMinBerths(), $boat->getBerths($this->eventId));
         }
 
         $allBerths = $this->getMinBerths($boats);
@@ -379,9 +379,9 @@ class SelectionService
      */
     private function case3(array $boats, array $crews): void
     {
-        // Start with minimum berths for all boats
+        // Start with minimum berths for all boats, capped to actual available berths for this event
         foreach ($boats as $boat) {
-            $boat->occupied_berths = $boat->getMinBerths();
+            $boat->occupied_berths = min($boat->getMinBerths(), $boat->getBerths($this->eventId));
         }
 
         $allBerths = $this->getMinBerths($boats);
