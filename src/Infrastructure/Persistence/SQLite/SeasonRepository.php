@@ -96,6 +96,11 @@ class SeasonRepository implements SeasonRepositoryInterface
 
     public function saveFlotilla(EventId $eventId, array $flotillaData): void
     {
+        $encoded = json_encode($flotillaData);
+        if ($encoded === false) {
+            throw new \RuntimeException('Failed to encode flotilla data: ' . json_last_error_msg());
+        }
+
         $stmt = $this->pdo->prepare('
             INSERT INTO flotillas (event_id, flotilla_data)
             VALUES (:event_id, :flotilla_data)
@@ -105,7 +110,7 @@ class SeasonRepository implements SeasonRepositoryInterface
         ');
         $stmt->execute([
             'event_id' => $eventId->toString(),
-            'flotilla_data' => json_encode($flotillaData),
+            'flotilla_data' => $encoded,
         ]);
     }
 

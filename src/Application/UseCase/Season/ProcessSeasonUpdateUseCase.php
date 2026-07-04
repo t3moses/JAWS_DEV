@@ -120,6 +120,7 @@ class ProcessSeasonUpdateUseCase
         $flotillasGenerated = 0;
         $modifiedCrews = [];
         $commitmentCrews = null;
+        $serializedFlotillas = [];
 
         // Process each future event (in-memory only — no DB writes yet)
         foreach ($futureEvents as $eventIdString) {
@@ -204,9 +205,15 @@ class ProcessSeasonUpdateUseCase
         // Persist all writes in a single transaction
         $this->transactionService->begin();
         try {
+            $flotillasSaved = 0;
             foreach ($serializedFlotillas ?? [] as $eventIdString => $serializedFlotilla) {
                 $this->seasonRepository->saveFlotilla(EventId::fromString($eventIdString), $serializedFlotilla);
+                $flotillasSaved++;
             }
+            $this->logger->debug('season_update.flotillas_persisted', [
+                'flotillas_saved' => $flotillasSaved,
+                'flotillas_expected' => $flotillasGenerated,
+            ]);
 
             $this->persistChanges($modifiedCrews);
 
