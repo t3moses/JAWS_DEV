@@ -62,7 +62,7 @@ try {
     $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
     // Serve frontend for non-API routes
-    if (!str_starts_with($path, '/api')) {
+    if (!$path || !str_starts_with($path, '/api')) {
         // Map frontend asset paths to /app/ directory
         // /js/* -> /app/js/*, /css/* -> /app/css/*, etc.
         if (preg_match('/^\/(js|css|assets)\/(.+)$/', $path, $matches)) {
