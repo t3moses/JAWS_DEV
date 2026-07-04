@@ -98,6 +98,12 @@ class ProcessSeasonUpdateUseCase
         $futureEvents = $this->eventRepository->findFutureEvents();
         $nextEventId = $this->eventRepository->findNextEvent();
 
+        // Load current assignments for next event (Rule 2: protect existing assignments)
+        $nextEventAssignments = null;
+        if ($nextEventId !== null) {
+            $nextEventAssignments = $this->seasonRepository->getFlotilla(EventId::fromString($nextEventId));
+        }
+
         // Sync boat participation history from past flotillas and update absence ranks
         $boatHistoryUpdates = $this->syncBoatHistory($fleet);
         $crewHistoryUpdates = $this->syncCrewHistory($squad);
@@ -121,6 +127,17 @@ class ProcessSeasonUpdateUseCase
         $modifiedCrews = [];
         $commitmentCrews = null;
         $serializedFlotillas = [];
+
+        // Build locked crews set for next event (Rule 2: protect existing assignments)
+        $lockedCrewKeys = [];
+        if ($nextEventAssignments !== null) {
+            foreach ($nextEventAssignments['crewed_boats'] as $crewedBoat) {
+                foreach ($crewedBoat['crews'] as $crew) {
+                    // Crews from flotilla JSON are arrays, access 'key' field directly
+                    $lockedCrewKeys[] = $crew['key'];
+                }
+            }
+        }
 
         // Process each future event (in-memory only — no DB writes yet)
         foreach ($futureEvents as $eventIdString) {
@@ -162,7 +179,7 @@ class ProcessSeasonUpdateUseCase
 
             // Phase 3: Assignment optimization (next event only)
             if ($eventIdString === $nextEventId) {
-                $flotilla = $this->runAssignment($flotilla);
+                $flotilla = $this->runAssignment($flotilla, $lockedCrewKeys);
 
                 $this->logger->info('season_update.assignment_complete', [
                     'event_id'           => $eventId->toString(),
@@ -182,6 +199,11 @@ class ProcessSeasonUpdateUseCase
 
             // Phase 3.5: Promote waitlisted crews to boats with spare capacity
             $flotilla = $this->promoteWaitlistCrew($flotilla, $eventId);
+
+            // Rule 2: If boat capacity decreased, remove lowest-ranked crews first (next event only)
+            if ($eventIdString === $nextEventId) {
+                $flotilla = $this->enforceCapacityConstraints($flotilla, $eventId);
+            }
 
             // Phase 4: Update availability statuses
             $modified = $this->updateAvailabilityStatuses(
@@ -389,11 +411,12 @@ class ProcessSeasonUpdateUseCase
      * @param array{event_id: string, crewed_boats: array, waitlist_boats: array, waitlist_crews: array} $flotilla
      * @return array{event_id: string, crewed_boats: array, waitlist_boats: array, waitlist_crews: array}
      */
-    private function runAssignment(array $flotilla): array
+    private function runAssignment(array $flotilla, array $lockedCrewKeys = []): array
     {
         // Run assignment optimization (6 rules: ASSIST, WHITELIST, HIGH_SKILL, LOW_SKILL, PARTNER, REPEAT)
         // The assign() method expects the full flotilla structure and returns it optimized
-        return $this->assignmentService->assign($flotilla);
+        // Locked crews (Rule 2) are protected from reassignment
+        return $this->assignmentService->assign($flotilla, $lockedCrewKeys);
     }
 
     /**
@@ -730,5 +753,43 @@ class ProcessSeasonUpdateUseCase
         foreach ($crews as $crew) {
             $this->crewRepository->updateRankCommitment($crew);
         }
+    }
+
+    /**
+     * Enforce capacity constraints - remove lowest-ranked crews if boat capacity exceeded
+     *
+     * Rule 2: If boat capacity decreased, remove lowest-ranked crews first to fit new capacity
+     *
+     * @param array $flotilla Flotilla structure
+     * @param EventId $eventId Event being processed
+     * @return array Flotilla with excess crews moved to waitlist
+     */
+    private function enforceCapacityConstraints(array $flotilla, EventId $eventId): array
+    {
+        foreach ($flotilla['crewed_boats'] as &$crewedBoat) {
+            $boat = $crewedBoat['boat'];
+            $maxBerths = $boat->getBerths($eventId);
+            $assignedCount = count($crewedBoat['crews']);
+
+            if ($assignedCount > $maxBerths) {
+                // Sort crews by rank (descending - keep highest ranked)
+                usort($crewedBoat['crews'], fn($a, $b) => $b->getRank() <=> $a->getRank());
+
+                // Remove lowest-ranked crews until we fit capacity
+                $toRemove = $assignedCount - $maxBerths;
+                $removed = array_splice($crewedBoat['crews'], -$toRemove);
+
+                // Move removed crews to waitlist
+                $flotilla['waitlist_crews'] = array_merge($flotilla['waitlist_crews'], $removed);
+
+                $this->logger->warning('season_update.capacity_reduced', [
+                    'event_id' => $eventId->toString(),
+                    'boat_key' => $boat->getKey()->toString(),
+                    'crews_removed' => count($removed),
+                ]);
+            }
+        }
+
+        return $flotilla;
     }
 }

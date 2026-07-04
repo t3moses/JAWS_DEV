@@ -37,23 +37,33 @@ class AssignmentService
     /** @var array<string, mixed> Flotilla structure */
     private array $flotilla = [];
 
+    /** @var array<string> Crews protected from reassignment (Rule 2) */
+    private array $lockedCrewKeys = [];
+
     /**
      * Main assignment optimization algorithm
      *
      * @param array<string, mixed> $flotilla Flotilla structure with 'crewed_boats'
+     * @param array<string> $lockedCrewKeys Crew keys to protect from reassignment (Rule 2)
      * @return array<string, mixed> Optimized flotilla
      */
-    public function assign(array $flotilla): array
+    public function assign(array $flotilla, array $lockedCrewKeys = []): array
     {
         $this->flotilla = $flotilla;
+        $this->lockedCrewKeys = $lockedCrewKeys;
 
         // Build the unlocked_crews array listing the keys of all crew objects in the flotilla
+        // Exclude locked crews (Rule 2: protected from reassignment)
         $unlockedCrews = [];
         for ($i = 0; $i < count($this->flotilla['crewed_boats']); $i++) {
             $crewedBoat = $this->flotilla['crewed_boats'][$i];
             for ($j = 0; $j < count($crewedBoat['crews']); $j++) {
                 $crew = $crewedBoat['crews'][$j];
-                $unlockedCrews[] = $crew->getKey()->toString();
+                $crewKey = $crew->getKey()->toString();
+                // Only add to unlocked list if NOT protected by Rule 2
+                if (!in_array($crewKey, $this->lockedCrewKeys)) {
+                    $unlockedCrews[] = $crewKey;
+                }
             }
         }
 
