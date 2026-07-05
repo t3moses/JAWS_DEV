@@ -44,8 +44,9 @@ class Crew
         private SkillLevel $skill,
         private ?string $experience,
     ) {
-        // Initialize default rank
+        // Initialize default rank with 4 dimensions: [availability, commitment, membership, absence]
         $this->rank = Rank::forCrew(
+            availability: 0, // Default: not available for event
             commitment: 0,   // Default: unavailable
             membership: self::calculateMembershipRank($membershipNumber),
             absence: 0       // Default: no absences

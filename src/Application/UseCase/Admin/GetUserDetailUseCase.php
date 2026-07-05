@@ -6,6 +6,7 @@ namespace App\Application\UseCase\Admin;
 
 use App\Application\Port\Repository\UserRepositoryInterface;
 use App\Application\Port\Repository\CrewRepositoryInterface;
+use App\Domain\Enum\CrewRankDimension;
 
 /**
  * Get User Detail Use Case
@@ -52,7 +53,7 @@ class GetUserDetailUseCase
                 'skill'           => $crew->getSkill()->value,
                 'partner_key'     => $crew->getPartnerKey()?->toString(),
                 'whitelist'       => $crew->getWhitelist(),
-                'rank_commitment' => $crew->getRank()->toArray()[0],
+                'rank_commitment' => $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT),
             ] : null,
         ];
     }

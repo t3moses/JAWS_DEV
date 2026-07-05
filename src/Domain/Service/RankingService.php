@@ -26,26 +26,29 @@ class RankingService
      *
      * @param Crew $crew Crew entity
      * @param array<string> $pastEventIds Past event IDs for absence calculation
-     * @param EventId|null $nextEventId Next event for commitment calculation (optional)
-     * @return Rank Calculated crew rank (3D: commitment, membership, absence)
+     * @param EventId|null $nextEventId Next event for availability calculation (optional)
+     * @return Rank Calculated crew rank (4D: availability, commitment, membership, absence)
      */
     public function calculateCrewRank(
         Crew $crew,
         array $pastEventIds,
         ?EventId $nextEventId = null
     ): Rank {
-        // Calculate commitment (availability for next event)
+        // Calculate availability (0-1: whether crew was selected/participated in event)
+        // 1 = available and selected/participated (status=1 in crew_availability)
+        // 0 = not available or status=0
         // Higher value = higher priority (SelectionService sorts descending)
-        $commitment = 2; // Default: AVAILABLE = normal priority
+        $availabilityDimension = 0;
         if ($nextEventId !== null) {
             $availability = $crew->getAvailability($nextEventId);
-            $commitment = match ($availability) {
-                AvailabilityStatus::GUARANTEED => 3,    // High priority (assigned to next event)
-                AvailabilityStatus::AVAILABLE => 2,     // Normal priority
-                AvailabilityStatus::WITHDRAWN => 1,     // Admin no-show penalty
-                AvailabilityStatus::UNAVAILABLE => 0,   // No priority
-            };
+            // Check if crew has a crew_availability record with status=1
+            // status=1 means they were selected for or participated in a past event
+            $availabilityDimension = ($availability->value === 1) ? 1 : 0;
         }
+
+        // Get crew's persistent commitment rank (admin-set, 0-2)
+        // Uses the crew_rank_commitment from database, not auto-calculated
+        $commitment = $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT);
 
         // Calculate membership (has valid membership number)
         $membership = Crew::calculateMembershipRank($crew->getMembershipNumber());
@@ -59,7 +62,7 @@ class RankingService
             }
         }
 
-        return Rank::forCrew($commitment, $membership, $absence);
+        return Rank::forCrew($availabilityDimension, $commitment, $membership, $absence);
     }
 
     /**
@@ -155,15 +158,15 @@ class RankingService
     public function updateCrewCommitmentRanks(array $crews, EventId $nextEventId, array $assignedCrewKeys = []): void
     {
         foreach ($crews as $crew) {
-            // Admin penalty (rank=1) persists — do not overwrite unless crew re-registers
-            $storedRank = $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT);
-            if ($storedRank === 1) {
+            // Crew assigned to next event gets highest priority (overrides penalty)
+            if (in_array($crew->getKey()->toString(), $assignedCrewKeys, true)) {
+                $crew->setRankDimension(CrewRankDimension::COMMITMENT, 3);
                 continue;
             }
 
-            // Crew assigned to next event gets highest priority
-            if (in_array($crew->getKey()->toString(), $assignedCrewKeys, true)) {
-                $crew->setRankDimension(CrewRankDimension::COMMITMENT, 3);
+            // Admin penalty (rank=1) persists — do not overwrite unless crew re-registers
+            $storedRank = $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT);
+            if ($storedRank === 1) {
                 continue;
             }
 

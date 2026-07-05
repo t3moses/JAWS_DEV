@@ -25,12 +25,14 @@ class RankTest extends TestCase
     {
         // Arrange
         $rank = Rank::forCrew(
+            availability: 0,
             commitment: 0,
             membership: 0,
             absence: 3
         );
 
         // Assert
+        $this->assertEquals(0, $rank->getDimension(CrewRankDimension::AVAILABILITY));
         $this->assertEquals(0, $rank->getDimension(CrewRankDimension::COMMITMENT));
         $this->assertEquals(0, $rank->getDimension(CrewRankDimension::MEMBERSHIP));
         $this->assertEquals(3, $rank->getDimension(CrewRankDimension::ABSENCE));
@@ -225,6 +227,7 @@ class RankTest extends TestCase
         // Arrange
         $boatRank = Rank::forBoat(flexibility: 1, absence: 0);
         $crewRank = Rank::forCrew(
+            availability: 0,
             commitment: 1,
             membership: 0,
             absence: 3
@@ -234,9 +237,8 @@ class RankTest extends TestCase
         // Act
         $result = $boatRank->compareTo($crewRank);
 
-        // First dimension: 1 vs 1 (equal), second dimension: 0 vs 0 (equal)
-        // But crew has more dimensions (absence=3), so boat rank is less overall
+        // First dimension: 1 vs 0 (boat higher), so boat ranks higher
         // Assert
-        $this->assertLessThan(0, $result);
+        $this->assertGreaterThan(0, $result);
     }
 }

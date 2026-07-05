@@ -684,7 +684,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $stmt = $this->pdo->prepare("
             INSERT INTO crews (key, display_name, first_name, last_name,
                               skill, membership_number, social_preference,
-                              rank_commitment, rank_membership, rank_absence)
+                              commitment_rank, rank_membership, rank_absence)
             VALUES ('janesmith', 'Jane Smith', 'Jane', 'Smith',
                     1, '12345', 'No', 0, 0, 0)
         ");
@@ -1105,16 +1105,16 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Arrange: 1 boat (1 berth), 2 crews differentiated by commitment rank
         $boat1Id = $this->createTestBoat('boat1', 1, 1);
 
-        // crew-high: rank_commitment=2 (normal AVAILABLE rank)
+        // crew-high: commitment_rank=2 (normal AVAILABLE rank)
         $this->pdo->prepare("
-            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, rank_commitment, rank_membership, rank_absence)
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, commitment_rank, rank_membership, rank_absence)
             VALUES ('crew-high', 'Crew High', 'Crew', 'High', 1, '12345', 'No', 2, 0, 0)
         ")->execute();
         $crewHighId = (int)$this->pdo->lastInsertId();
 
-        // crew-low: rank_commitment=1 (admin penalty)
+        // crew-low: commitment_rank=1 (admin penalty)
         $this->pdo->prepare("
-            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, rank_commitment, rank_membership, rank_absence)
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, commitment_rank, rank_membership, rank_absence)
             VALUES ('crew-low', 'Crew Low', 'Crew', 'Low', 1, '12345', 'No', 1, 0, 0)
         ")->execute();
         $crewLowId = (int)$this->pdo->lastInsertId();
@@ -1145,24 +1145,24 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
     }
 
     /**
-     * Test: Commitment rank (rank_commitment) drives crew selection priority
+     * Test: Commitment rank (commitment_rank) drives crew selection priority
      *
      * Two crews with identical absence and membership, but different commitment ranks.
-     * crew-normal (rank_commitment=2) should beat crew-penalised (rank_commitment=1).
+     * crew-normal (commitment_rank=2) should beat crew-penalised (commitment_rank=1).
      */
     public function testCommitmentRankDrivesSelectionPriority(): void
     {
-        // Arrange: 1 boat (1 berth), 2 crews differentiated only by rank_commitment
+        // Arrange: 1 boat (1 berth), 2 crews differentiated only by commitment_rank
         $boat1Id = $this->createTestBoat('boat1', 1, 1);
 
         $this->pdo->prepare("
-            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, rank_commitment, rank_membership, rank_absence)
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, commitment_rank, rank_membership, rank_absence)
             VALUES ('crew-normal', 'Crew Normal', 'Crew', 'Normal', 1, '12345', 'No', 2, 0, 0)
         ")->execute();
         $crewNormalId = (int)$this->pdo->lastInsertId();
 
         $this->pdo->prepare("
-            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, rank_commitment, rank_membership, rank_absence)
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, commitment_rank, rank_membership, rank_absence)
             VALUES ('crew-penalised', 'Crew Penalised', 'Crew', 'Penalised', 1, '12345', 'No', 1, 0, 0)
         ")->execute();
         $crewPenalisedId = (int)$this->pdo->lastInsertId();
@@ -1352,8 +1352,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
      * must not influence selection for the new next event.
      *
      * Scenario:
-     *   - crew-member (rank_membership=1) has stale rank_commitment=0 (was UNAVAILABLE previously)
-     *   - crew-nonmember (rank_membership=0) has stale rank_commitment=3 (was ASSIGNED previously)
+     *   - crew-member (rank_membership=1) has stale commitment_rank=0 (was UNAVAILABLE previously)
+     *   - crew-nonmember (rank_membership=0) has stale commitment_rank=3 (was ASSIGNED previously)
      *   - Both crews are AVAILABLE for the next event
      *
      * Without the fix: non-member selected ([3,0,0] > [0,1,0]) — WRONG
@@ -1364,18 +1364,18 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Arrange: 1 boat (1 berth) forces Case 2 — 2 crews available, 1 is waitlisted
         $boatId = $this->createTestBoat('boat-alpha', 1, 1);
 
-        // crew-member: valid NSC membership (rank_membership=1), stale rank_commitment=0
+        // crew-member: valid NSC membership (rank_membership=1), stale commitment_rank=0
         // Simulates a crew who was UNAVAILABLE for the previous next event
         $this->pdo->prepare("
-            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, rank_commitment, rank_membership, rank_absence)
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, commitment_rank, rank_membership, rank_absence)
             VALUES ('crew-member', 'Alice Member', 'Alice', 'Member', 1, '12345', 'No', 0, 1, 0)
         ")->execute();
         $memberCrewId = (int) $this->pdo->lastInsertId();
 
-        // crew-nonmember: no valid membership (rank_membership=0), stale rank_commitment=3
+        // crew-nonmember: no valid membership (rank_membership=0), stale commitment_rank=3
         // Simulates a crew who was ASSIGNED to the previous next event
         $this->pdo->prepare("
-            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, rank_commitment, rank_membership, rank_absence)
+            INSERT INTO crews (key, display_name, first_name, last_name, skill, membership_number, social_preference, commitment_rank, rank_membership, rank_absence)
             VALUES ('crew-nonmember', 'Bob NoMember', 'Bob', 'NoMember', 1, '', 'No', 3, 0, 0)
         ")->execute();
         $nonMemberCrewId = (int) $this->pdo->lastInsertId();

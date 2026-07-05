@@ -84,7 +84,7 @@ class RegisterUseCaseTest extends TestCase
 
         // Setup ranking service to return valid ranks
         $this->rankingService->method('calculateCrewRank')->willReturn(
-            Rank::forCrew(commitment: 0, membership: 0, absence: 0)
+            Rank::forCrew(availability: 0, commitment: 0, membership: 0, absence: 0)
         );
         $this->rankingService->method('calculateBoatRank')->willReturn(
             Rank::forBoat(flexibility: 1, absence: 0)

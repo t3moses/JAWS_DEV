@@ -13,9 +13,10 @@ class CrewRankDimensionTest extends TestCase
     {
         // Arrange
         // Assert
-        $this->assertEquals(0, CrewRankDimension::COMMITMENT->value);
-        $this->assertEquals(1, CrewRankDimension::MEMBERSHIP->value);
-        $this->assertEquals(2, CrewRankDimension::ABSENCE->value);
+        $this->assertEquals(0, CrewRankDimension::AVAILABILITY->value);
+        $this->assertEquals(1, CrewRankDimension::COMMITMENT->value);
+        $this->assertEquals(2, CrewRankDimension::MEMBERSHIP->value);
+        $this->assertEquals(3, CrewRankDimension::ABSENCE->value);
     }
 
     public function testAllReturnsAllDimensionsInOrder(): void
@@ -24,10 +25,11 @@ class CrewRankDimensionTest extends TestCase
         $dimensions = CrewRankDimension::all();
 
         // Assert
-        $this->assertCount(3, $dimensions);
-        $this->assertEquals(CrewRankDimension::COMMITMENT, $dimensions[0]);
-        $this->assertEquals(CrewRankDimension::MEMBERSHIP, $dimensions[1]);
-        $this->assertEquals(CrewRankDimension::ABSENCE, $dimensions[2]);
+        $this->assertCount(4, $dimensions);
+        $this->assertEquals(CrewRankDimension::AVAILABILITY, $dimensions[0]);
+        $this->assertEquals(CrewRankDimension::COMMITMENT, $dimensions[1]);
+        $this->assertEquals(CrewRankDimension::MEMBERSHIP, $dimensions[2]);
+        $this->assertEquals(CrewRankDimension::ABSENCE, $dimensions[3]);
     }
 
     public function testAllEnumCasesExist(): void
@@ -36,7 +38,8 @@ class CrewRankDimensionTest extends TestCase
         $cases = CrewRankDimension::cases();
 
         // Assert
-        $this->assertCount(3, $cases);
+        $this->assertCount(4, $cases);
+        $this->assertContains(CrewRankDimension::AVAILABILITY, $cases);
         $this->assertContains(CrewRankDimension::COMMITMENT, $cases);
         $this->assertContains(CrewRankDimension::MEMBERSHIP, $cases);
         $this->assertContains(CrewRankDimension::ABSENCE, $cases);
@@ -46,9 +49,10 @@ class CrewRankDimensionTest extends TestCase
     {
         // Arrange
         // Assert
-        $this->assertEquals(CrewRankDimension::COMMITMENT, CrewRankDimension::from(0));
-        $this->assertEquals(CrewRankDimension::MEMBERSHIP, CrewRankDimension::from(1));
-        $this->assertEquals(CrewRankDimension::ABSENCE, CrewRankDimension::from(2));
+        $this->assertEquals(CrewRankDimension::AVAILABILITY, CrewRankDimension::from(0));
+        $this->assertEquals(CrewRankDimension::COMMITMENT, CrewRankDimension::from(1));
+        $this->assertEquals(CrewRankDimension::MEMBERSHIP, CrewRankDimension::from(2));
+        $this->assertEquals(CrewRankDimension::ABSENCE, CrewRankDimension::from(3));
     }
 
     public function testEnumFromIntThrowsExceptionForInvalidValue(): void

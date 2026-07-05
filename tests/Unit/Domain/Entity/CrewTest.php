@@ -187,6 +187,7 @@ class CrewTest extends TestCase
         // Arrange
         $crew = $this->createCrew();
         $rank = Rank::forCrew(
+            availability: 0,
             commitment: 1,
             membership: 1,
             absence: 2

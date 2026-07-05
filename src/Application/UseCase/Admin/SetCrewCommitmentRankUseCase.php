@@ -15,12 +15,12 @@ use Psr\Log\LoggerInterface;
  * Set Crew Commitment Rank Use Case
  *
  * Allows admins to manually set the commitment rank for a crew member.
+ * Commitment rank is persistent and independent of event availability.
  *
- * Valid values:
+ * Valid values (0-2):
  *   0 = unavailable/withdrawn (lowest priority)
- *   1 = admin penalty (manually deprioritised)
- *   2 = normal priority (available)
- *   3 = high priority (assigned to next event)
+ *   1 = low priority (admin penalty or deprioritized)
+ *   2 = normal priority (available, default)
  */
 class SetCrewCommitmentRankUseCase
 {
@@ -32,15 +32,15 @@ class SetCrewCommitmentRankUseCase
 
     /**
      * @param string $crewKey  Crew identifier
-     * @param int    $rank     Commitment rank (0–3)
+     * @param int    $rank     Commitment rank (0–2)
      * @return array{crew_key: string, rank_commitment: int}
      * @throws CrewNotFoundException
      * @throws ValidationException
      */
     public function execute(string $crewKey, int $rank): array
     {
-        if ($rank < 0 || $rank > 3) {
-            throw new ValidationException(['commitment_rank' => 'Must be an integer between 0 and 3']);
+        if ($rank < 0 || $rank > 2) {
+            throw new ValidationException(['commitment_rank' => 'Must be an integer between 0 and 2']);
         }
 
         $crew = $this->crewRepository->findByKey(CrewKey::fromString($crewKey));

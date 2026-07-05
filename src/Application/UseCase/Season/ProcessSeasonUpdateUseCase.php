@@ -574,9 +574,10 @@ class ProcessSeasonUpdateUseCase
                     experience: null,
                 );
                 $crew->setRank(Rank::forCrew(
-                    commitment: 2,  // Available (willing to crew)
-                    membership: 1,  // Club member (implied by boat ownership)
-                    absence: 0      // No crew absence history
+                    availability: 0, // Flex owners created for event (no prior availability)
+                    commitment: 2,   // Available (willing to crew)
+                    membership: 1,   // Club member (implied by boat ownership)
+                    absence: 0       // No crew absence history
                 ));
                 $entries[] = $crew;
             }
