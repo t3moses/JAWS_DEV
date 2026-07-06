@@ -175,10 +175,10 @@ class CrewRepositoryTest extends IntegrationTestCase
         $crew4 = $this->createAndSaveCrew('Guaranteed', 'Test', SkillLevel::INTERMEDIATE);
 
         // Set availability (1=AVAILABLE, 2=GUARANTEED, 0=UNAVAILABLE)
-        $this->repository->updateAvailability($crew1->getKey(), $eventId, AvailabilityStatus::AVAILABLE);
-        $this->repository->updateAvailability($crew2->getKey(), $eventId, AvailabilityStatus::AVAILABLE);
-        $this->repository->updateAvailability($crew3->getKey(), $eventId, AvailabilityStatus::UNAVAILABLE);
-        $this->repository->updateAvailability($crew4->getKey(), $eventId, AvailabilityStatus::GUARANTEED);
+        $this->repository->updateAvailability($crew1->getKey(), $eventId, AvailabilityStatus::NOT_SELECTED);
+        $this->repository->updateAvailability($crew2->getKey(), $eventId, AvailabilityStatus::NOT_SELECTED);
+        $this->repository->updateAvailability($crew3->getKey(), $eventId, AvailabilityStatus::NOT_SELECTED);
+        $this->repository->updateAvailability($crew4->getKey(), $eventId, AvailabilityStatus::SELECTED);
 
         $availableCrew = $this->repository->findAvailableForEvent($eventId);
 
@@ -198,9 +198,9 @@ class CrewRepositoryTest extends IntegrationTestCase
         $crew2 = $this->createAndSaveCrew('Assigned2', 'Test', SkillLevel::INTERMEDIATE);
         $crew3 = $this->createAndSaveCrew('NotAssigned', 'Test', SkillLevel::ADVANCED);
 
-        $this->repository->updateAvailability($crew1->getKey(), $eventId, AvailabilityStatus::GUARANTEED);
-        $this->repository->updateAvailability($crew2->getKey(), $eventId, AvailabilityStatus::GUARANTEED);
-        $this->repository->updateAvailability($crew3->getKey(), $eventId, AvailabilityStatus::AVAILABLE);
+        $this->repository->updateAvailability($crew1->getKey(), $eventId, AvailabilityStatus::SELECTED);
+        $this->repository->updateAvailability($crew2->getKey(), $eventId, AvailabilityStatus::SELECTED);
+        $this->repository->updateAvailability($crew3->getKey(), $eventId, AvailabilityStatus::NOT_SELECTED);
 
         $assignedCrew = $this->repository->findAssignedToEvent($eventId);
 
@@ -272,10 +272,10 @@ class CrewRepositoryTest extends IntegrationTestCase
 
         $crew = $this->createAndSaveCrew('Avail', 'Test', SkillLevel::INTERMEDIATE);
 
-        $this->repository->updateAvailability($crew->getKey(), $eventId, AvailabilityStatus::AVAILABLE);
+        $this->repository->updateAvailability($crew->getKey(), $eventId, AvailabilityStatus::NOT_SELECTED);
 
         $foundCrew = $this->repository->findByKey($crew->getKey());
-        $this->assertEquals(AvailabilityStatus::AVAILABLE, $foundCrew->getAvailability($eventId));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED, $foundCrew->getAvailability($eventId));
     }
 
     public function testUpdateAvailabilityUpdatesExistingRecord(): void
@@ -286,13 +286,13 @@ class CrewRepositoryTest extends IntegrationTestCase
         $crew = $this->createAndSaveCrew('Update', 'Avail', SkillLevel::ADVANCED);
 
         // Set initial availability
-        $this->repository->updateAvailability($crew->getKey(), $eventId, AvailabilityStatus::AVAILABLE);
+        $this->repository->updateAvailability($crew->getKey(), $eventId, AvailabilityStatus::NOT_SELECTED);
 
         // Update to guaranteed
-        $this->repository->updateAvailability($crew->getKey(), $eventId, AvailabilityStatus::GUARANTEED);
+        $this->repository->updateAvailability($crew->getKey(), $eventId, AvailabilityStatus::SELECTED);
 
         $foundCrew = $this->repository->findByKey($crew->getKey());
-        $this->assertEquals(AvailabilityStatus::GUARANTEED, $foundCrew->getAvailability($eventId));
+        $this->assertEquals(AvailabilityStatus::SELECTED, $foundCrew->getAvailability($eventId));
     }
 
     public function testUpdateAvailabilityThrowsExceptionForNonExistentCrew(): void
@@ -305,7 +305,7 @@ class CrewRepositoryTest extends IntegrationTestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Crew not found');
 
-        $this->repository->updateAvailability($key, $eventId, AvailabilityStatus::AVAILABLE);
+        $this->repository->updateAvailability($key, $eventId, AvailabilityStatus::NOT_SELECTED);
     }
 
     public function testUpdateHistoryCreatesHistoryRecord(): void
@@ -467,12 +467,12 @@ class CrewRepositoryTest extends IntegrationTestCase
 
         $crew = $this->createAndSaveCrew('Multi', 'Event', SkillLevel::INTERMEDIATE);
 
-        $this->repository->updateAvailability($crew->getKey(), $event1, AvailabilityStatus::AVAILABLE);
-        $this->repository->updateAvailability($crew->getKey(), $event2, AvailabilityStatus::UNAVAILABLE);
+        $this->repository->updateAvailability($crew->getKey(), $event1, AvailabilityStatus::NOT_SELECTED);
+        $this->repository->updateAvailability($crew->getKey(), $event2, AvailabilityStatus::NOT_SELECTED);
 
         $foundCrew = $this->repository->findByKey($crew->getKey());
-        $this->assertEquals(AvailabilityStatus::AVAILABLE, $foundCrew->getAvailability($event1));
-        $this->assertEquals(AvailabilityStatus::UNAVAILABLE, $foundCrew->getAvailability($event2));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED, $foundCrew->getAvailability($event1));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED, $foundCrew->getAvailability($event2));
     }
 
     // Helper methods

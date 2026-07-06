@@ -42,9 +42,9 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         $crew = $this->createCrew($crewKey);
 
         // Set mixed availability statuses
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::AVAILABLE);
-        $crew->setAvailability(EventId::fromString('event2'), AvailabilityStatus::GUARANTEED);
-        $crew->setAvailability(EventId::fromString('event3'), AvailabilityStatus::UNAVAILABLE);
+        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::NOT_SELECTED);
+        $crew->setAvailability(EventId::fromString('event2'), AvailabilityStatus::SELECTED);
+        // event3 has no availability record (not registered)
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -69,9 +69,9 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         // Assert
         $this->assertInstanceOf(AvailabilityResponse::class, $result);
         $this->assertCount(3, $result->availability);
-        $this->assertTrue($result->availability['2026-05-01']); // AVAILABLE
-        $this->assertTrue($result->availability['2026-05-08']); // GUARANTEED
-        $this->assertFalse($result->availability['2026-05-15']); // UNAVAILABLE
+        $this->assertTrue($result->availability['2026-05-01']); // Has record (NOT_SELECTED)
+        $this->assertTrue($result->availability['2026-05-08']); // Has record (SELECTED)
+        $this->assertFalse($result->availability['2026-05-15']); // No record
     }
 
     public function testExecuteHandlesMultipleEvents(): void
@@ -80,11 +80,11 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         $crewKey = CrewKey::fromString('johndoe');
         $crew = $this->createCrew($crewKey);
 
-        // Test all 4 AvailabilityStatus values
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::AVAILABLE);
-        $crew->setAvailability(EventId::fromString('event2'), AvailabilityStatus::GUARANTEED);
-        $crew->setAvailability(EventId::fromString('event3'), AvailabilityStatus::UNAVAILABLE);
-        $crew->setAvailability(EventId::fromString('event4'), AvailabilityStatus::WITHDRAWN);
+        // Test availability records with different statuses
+        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::NOT_SELECTED);
+        $crew->setAvailability(EventId::fromString('event2'), AvailabilityStatus::SELECTED);
+        // event3 has no record (not registered)
+        // event4 has no record (not registered)
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -109,10 +109,10 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
 
         // Assert
         $this->assertCount(4, $result->availability);
-        $this->assertTrue($result->availability['2026-05-01']); // AVAILABLE
-        $this->assertTrue($result->availability['2026-05-08']); // GUARANTEED
-        $this->assertFalse($result->availability['2026-05-15']); // UNAVAILABLE
-        $this->assertFalse($result->availability['2026-05-22']); // WITHDRAWN
+        $this->assertTrue($result->availability['2026-05-01']); // Has record (NOT_SELECTED)
+        $this->assertTrue($result->availability['2026-05-08']); // Has record (SELECTED)
+        $this->assertFalse($result->availability['2026-05-15']); // No record
+        $this->assertFalse($result->availability['2026-05-22']); // No record
     }
 
     public function testExecuteMapsAvailableToTrue(): void
@@ -120,7 +120,7 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         // Arrange
         $crewKey = CrewKey::fromString('johndoe');
         $crew = $this->createCrew($crewKey);
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::NOT_SELECTED);
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -147,7 +147,7 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         // Arrange
         $crewKey = CrewKey::fromString('johndoe');
         $crew = $this->createCrew($crewKey);
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::GUARANTEED);
+        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::SELECTED);
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -174,7 +174,6 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         // Arrange
         $crewKey = CrewKey::fromString('johndoe');
         $crew = $this->createCrew($crewKey);
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::UNAVAILABLE);
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -201,7 +200,6 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         // Arrange
         $crewKey = CrewKey::fromString('johndoe');
         $crew = $this->createCrew($crewKey);
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::WITHDRAWN);
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -277,7 +275,10 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
 
         // Assert
         $this->assertInstanceOf(AvailabilityResponse::class, $result);
-        $this->assertEmpty($result->availability);
+        // When crew has no availability records, return false for all events in the map
+        $this->assertCount(2, $result->availability);
+        $this->assertFalse($result->availability['2026-05-01']);
+        $this->assertFalse($result->availability['2026-05-08']);
     }
 
     public function testExecuteReturnsEmptyArrayWhenEventDateMapIsEmpty(): void
@@ -285,8 +286,8 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         // Arrange
         $crewKey = CrewKey::fromString('johndoe');
         $crew = $this->createCrew($crewKey);
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::AVAILABLE);
-        $crew->setAvailability(EventId::fromString('event2'), AvailabilityStatus::GUARANTEED);
+        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::NOT_SELECTED);
+        $crew->setAvailability(EventId::fromString('event2'), AvailabilityStatus::SELECTED);
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -317,9 +318,9 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         $crew = $this->createCrew($crewKey);
 
         // Crew has availability for 3 events
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::AVAILABLE);
-        $crew->setAvailability(EventId::fromString('event2'), AvailabilityStatus::GUARANTEED);
-        $crew->setAvailability(EventId::fromString('orphaned'), AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::NOT_SELECTED);
+        $crew->setAvailability(EventId::fromString('event2'), AvailabilityStatus::SELECTED);
+        $crew->setAvailability(EventId::fromString('orphaned'), AvailabilityStatus::NOT_SELECTED);
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -355,7 +356,7 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         // Arrange
         $crewKey = CrewKey::fromString('johndoe');
         $crew = $this->createCrew($crewKey);
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::NOT_SELECTED);
 
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);
         $crewRepository->expects($this->once())
@@ -385,7 +386,7 @@ class GetCrewAvailabilityUseCaseTest extends TestCase
         // Arrange
         $crewKey = CrewKey::fromString('johndoe');
         $crew = $this->createCrew($crewKey);
-        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability(EventId::fromString('event1'), AvailabilityStatus::NOT_SELECTED);
 
         // Mock with strict expectations
         $crewRepository = $this->createMock(CrewRepositoryInterface::class);

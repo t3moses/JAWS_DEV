@@ -10,7 +10,6 @@ use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\Rank;
 use App\Domain\Enum\BoatRankDimension;
 use App\Domain\Enum\CrewRankDimension;
-use App\Domain\Enum\AvailabilityStatus;
 use App\Domain\Collection\Squad;
 
 /**
@@ -143,13 +142,10 @@ class RankingService
     }
 
     /**
-     * Update commitment rank for crews based on availability and assignment for the next event
+     * Update commitment rank for crews based on assignment for the next event
      *
-     * 4-level commitment rank (higher value = higher priority):
-     *   3 = assigned to next event (set after pipeline assigns berths)
-     *   2 = normal priority (crew registered available)
-     *   1 = admin penalty (preserved; not overwritten by this method unless crew re-registers)
-     *   0 = unavailable/withdrawn
+     * Commitment rank is now persistent and admin-set (0-2), but we temporarily boost
+     * assigned crews to rank 3 for sorting purposes in this cycle only.
      *
      * @param array<Crew> $crews
      * @param EventId $nextEventId
@@ -158,29 +154,16 @@ class RankingService
     public function updateCrewCommitmentRanks(array $crews, EventId $nextEventId, array $assignedCrewKeys = []): void
     {
         foreach ($crews as $crew) {
+            $storedRank = $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT);
+
             // Crew assigned to next event gets highest priority (overrides penalty)
             if (in_array($crew->getKey()->toString(), $assignedCrewKeys, true)) {
                 $crew->setRankDimension(CrewRankDimension::COMMITMENT, 3);
                 continue;
             }
 
-            // Admin penalty (rank=1) persists — do not overwrite unless crew re-registers
-            $storedRank = $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT);
-            if ($storedRank === 1) {
-                continue;
-            }
-
-            // Map availability to commitment rank
-            // Higher value = higher priority (SelectionService sorts descending)
-            $availability = $crew->getAvailability($nextEventId);
-            $commitmentRank = match ($availability) {
-                AvailabilityStatus::GUARANTEED => 3,    // Currently assigned for this event
-                AvailabilityStatus::AVAILABLE => 2,     // Normal priority
-                AvailabilityStatus::WITHDRAWN => 1,     // Admin no-show penalty
-                default => 0,                           // UNAVAILABLE
-            };
-
-            $crew->setRankDimension(CrewRankDimension::COMMITMENT, $commitmentRank);
+            // Crew not assigned: keep their persistent stored rank (0, 1, or 2)
+            // No need to recalculate; admin sets this value
         }
     }
 

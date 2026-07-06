@@ -156,10 +156,10 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Set availability
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 2);
         $this->setBoatAvailability($boat2Id, 'Fri May 29', 2);
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew4Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew4Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         // Execute use case
@@ -206,9 +206,9 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         }
 
         foreach ($crewIds as $crewId) {
-            $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-            $this->setCrewAvailability($crewId, 'Fri Jun 05', AvailabilityStatus::AVAILABLE->value);
-            $this->setCrewAvailability($crewId, 'Fri Jun 12', AvailabilityStatus::AVAILABLE->value);
+            $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+            $this->setCrewAvailability($crewId, 'Fri Jun 05', AvailabilityStatus::NOT_SELECTED->value);
+            $this->setCrewAvailability($crewId, 'Fri Jun 12', AvailabilityStatus::NOT_SELECTED->value);
         }
 
         // Act
@@ -250,8 +250,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         // Initial setup: 2 crews available
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 3); // Offer all 3 berths
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         // First execution
@@ -260,7 +260,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $initialCrewCount = count($initialFlotilla['crewed_boats'][0]['crews'] ?? []);
 
         // Update: Add third crew
-        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Second execution
         $this->useCase->execute();
@@ -283,7 +283,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         $this->createTestEvent('Fri May 29', '2026-05-29');
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 2);
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -326,8 +326,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         $this->createTestEvent('Fri May 29', '2026-05-29');
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 2);
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         // First execution
@@ -362,9 +362,9 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         $this->createTestEvent('Fri May 29', '2026-05-29');
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 1); // Only 1 berth offered
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -425,10 +425,10 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 2);
         $this->setBoatAvailability($boat2Id, 'Fri May 29', 2);
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew4Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew4Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -469,7 +469,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 2);
         $this->setBoatAvailability($boat2Id, 'Fri May 29', 2);
         foreach ($crewIds as $crewId) {
-            $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+            $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
         }
 
         // Act
@@ -512,10 +512,10 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 2);
         $this->setBoatAvailability($boat2Id, 'Fri May 29', 2);
         $this->setBoatAvailability($boat3Id, 'Fri May 29', 2);
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew4Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew4Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -573,7 +573,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         // All crews available
         foreach ($crewIds as $crewId) {
-            $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+            $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
         }
 
         // Act
@@ -633,7 +633,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->setBoatAvailability($boat3Id, 'Fri May 29', 5);
 
         foreach ($crewIds as $crewId) {
-            $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+            $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
         }
 
         // Act
@@ -696,7 +696,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         // Set availability
         $this->setBoatAvailability($boatId, 'Fri May 29', 2);
-        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Verify initial boat rank
         $boatRank = $this->pdo->query("SELECT rank_flexibility FROM boats WHERE id = $boatId")->fetchColumn();
@@ -750,7 +750,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Both boats offer 2 berths; min_berths=1 means Boat B will have spare capacity after selection
         $this->setBoatAvailability($boatAId, 'Fri May 29', 2);
         $this->setBoatAvailability($boatBId, 'Fri May 29', 2);
-        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -809,7 +809,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $crewId = $this->createTestCrew('crew1');
         $this->setBoatAvailability($boatAId, 'Fri May 29', 2);
         $this->setBoatAvailability($boatBId, 'Fri May 29', 2);
-        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -865,7 +865,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         // Set availability for the future event so the pipeline has something to process
         $this->setBoatAvailability($boatId, 'Fri May 29', 2);
-        $this->setCrewAvailability($crewAssignedId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewAssignedId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -926,8 +926,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         // Both crews available for next event; boat only has 1 berth → 1 crew waitlisted
         $this->setBoatAvailability($boatId, 'Fri May 29', 1);
-        $this->setCrewAvailability($crewPresentId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crewAbsentId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewPresentId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crewAbsentId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -972,7 +972,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         ]);
 
         $this->setBoatAvailability($boatId, 'Fri May 29', 2);
-        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act: run pipeline twice
         $this->useCase->execute();
@@ -1038,7 +1038,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $crewId = $this->createTestCrew('crew1');
         $this->setBoatAvailability($boatAId, 'Fri May 29', 1);
         $this->setBoatAvailability($boatBId, 'Fri May 29', 1);
-        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -1078,9 +1078,9 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         // Both boats offer 4 berths; min=2 so total min berths (4) > crews (3) → case1
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 4);
         $this->setBoatAvailability($boat2Id, 'Fri May 29', 4);
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -1122,8 +1122,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->createTestEvent('Fri May 29', '2026-05-29');
 
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 1);
-        $this->setCrewAvailability($crewHighId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crewLowId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewHighId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crewLowId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -1133,12 +1133,12 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $crewLowStatus  = $this->getCrewAvailabilityStatus($crewLowId, 'Fri May 29');
 
         $this->assertEquals(
-            AvailabilityStatus::GUARANTEED->value,
+            AvailabilityStatus::SELECTED->value,
             $crewHighStatus,
             'crew-high (commitment=2) should be GUARANTEED after selection'
         );
         $this->assertEquals(
-            AvailabilityStatus::AVAILABLE->value,
+            AvailabilityStatus::NOT_SELECTED->value,
             $crewLowStatus,
             'crew-low (waitlisted) should remain AVAILABLE — only selected crews are promoted to GUARANTEED'
         );
@@ -1170,8 +1170,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->createTestEvent('Fri May 29', '2026-05-29');
 
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 1);
-        $this->setCrewAvailability($crewNormalId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crewPenalisedId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewNormalId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crewPenalisedId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -1207,9 +1207,9 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->createTestEvent('Fri May 29', '2026-05-29');
 
         $this->setBoatAvailability($boat1Id, 'Fri May 29', 2);
-        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::WITHDRAWN->value);
+        $this->setCrewAvailability($crew1Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew2Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($crew3Id, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -1257,7 +1257,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         // Set availability for the future event so the pipeline has something to process
         $this->setBoatAvailability($boatId, 'Fri May 29', 2);
-        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();
@@ -1284,7 +1284,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->createTestEvent('Fri May 29', '2026-05-29');
 
         $this->setBoatAvailability($boatId, 'Fri May 29', 2);
-        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act: must not throw — past event without flotilla is silently skipped
         $result = $this->useCase->execute();
@@ -1322,7 +1322,7 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
 
         $crewId = $this->createTestCrew('crew1');
         $this->setBoatAvailability($boatId, 'Fri May 29', 2);
-        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($crewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act: run pipeline twice
         $this->useCase->execute();
@@ -1383,8 +1383,8 @@ class ProcessSeasonUpdateUseCaseTest extends IntegrationTestCase
         $this->createTestEvent('Fri May 29', '2026-05-29');
 
         $this->setBoatAvailability($boatId, 'Fri May 29', 1);
-        $this->setCrewAvailability($memberCrewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
-        $this->setCrewAvailability($nonMemberCrewId, 'Fri May 29', AvailabilityStatus::AVAILABLE->value);
+        $this->setCrewAvailability($memberCrewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
+        $this->setCrewAvailability($nonMemberCrewId, 'Fri May 29', AvailabilityStatus::NOT_SELECTED->value);
 
         // Act
         $this->useCase->execute();

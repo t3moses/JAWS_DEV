@@ -76,7 +76,7 @@ class SelectionServiceTest extends TestCase
 
         // Set event-specific availability
         $crew->setHistory($this->eventId, 'Y');
-        $crew->setAvailability($this->eventId, AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability($this->eventId, AvailabilityStatus::SELECTED);
 
         return $crew;
     }

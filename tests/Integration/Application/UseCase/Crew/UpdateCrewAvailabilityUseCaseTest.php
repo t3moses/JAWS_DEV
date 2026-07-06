@@ -150,11 +150,11 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         // Assert
         $this->assertEquals($crewKey, $response->key);
         $this->assertArrayHasKey('Fri May 15', $response->availabilities);
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities['Fri May 15']);
 
         // Verify database
         $status = $this->getCrewAvailability($crewKey, 'Fri May 15');
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $status);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $status);
     }
 
     public function testUpdateAvailabilityForMultipleEvents(): void
@@ -173,14 +173,14 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         $response = $this->useCase->execute($userId, $request);
 
         // Assert
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response->availabilities['Fri May 15']);
-        $this->assertEquals(AvailabilityStatus::UNAVAILABLE->value, $response->availabilities['Fri May 22']);
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response->availabilities['Fri May 29']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities['Fri May 22']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities['Fri May 29']);
 
         // Verify database
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $this->getCrewAvailability($crewKey, 'Fri May 15'));
-        $this->assertEquals(AvailabilityStatus::UNAVAILABLE->value, $this->getCrewAvailability($crewKey, 'Fri May 22'));
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $this->getCrewAvailability($crewKey, 'Fri May 29'));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $this->getCrewAvailability($crewKey, 'Fri May 15'));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $this->getCrewAvailability($crewKey, 'Fri May 22'));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $this->getCrewAvailability($crewKey, 'Fri May 29'));
     }
 
     public function testUpdateAvailabilityToAvailable(): void
@@ -197,7 +197,7 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         $response = $this->useCase->execute($userId, $request);
 
         // Assert
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities['Fri May 15']);
     }
 
     public function testUpdateAvailabilityToUnavailable(): void
@@ -214,7 +214,7 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         $response = $this->useCase->execute($userId, $request);
 
         // Assert
-        $this->assertEquals(AvailabilityStatus::UNAVAILABLE->value, $response->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities['Fri May 15']);
     }
 
     public function testUpdateSameEventMultipleTimes(): void
@@ -228,24 +228,24 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
             ['eventId' => 'Fri May 15', 'isAvailable' => true]
         ]);
         $response1 = $this->useCase->execute($userId, $request1);
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response1->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response1->availabilities['Fri May 15']);
 
         // Second update - unavailable
         $request2 = new UpdateAvailabilityRequest([
             ['eventId' => 'Fri May 15', 'isAvailable' => false]
         ]);
         $response2 = $this->useCase->execute($userId, $request2);
-        $this->assertEquals(AvailabilityStatus::UNAVAILABLE->value, $response2->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response2->availabilities['Fri May 15']);
 
         // Third update - available again
         $request3 = new UpdateAvailabilityRequest([
             ['eventId' => 'Fri May 15', 'isAvailable' => true]
         ]);
         $response3 = $this->useCase->execute($userId, $request3);
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response3->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response3->availabilities['Fri May 15']);
 
         // Verify final state in database
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $this->getCrewAvailability($crewKey, 'Fri May 15'));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $this->getCrewAvailability($crewKey, 'Fri May 15'));
     }
 
     public function testUpdateAllSeasonEvents(): void
@@ -266,8 +266,8 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
 
         // Assert - all events should be available
         foreach (['Fri May 15', 'Fri May 22', 'Fri May 29', 'Fri Jun 05'] as $eventId) {
-            $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response->availabilities[$eventId]);
-            $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $this->getCrewAvailability($crewKey, $eventId));
+            $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities[$eventId]);
+            $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $this->getCrewAvailability($crewKey, $eventId));
         }
     }
 
@@ -575,7 +575,7 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
 
         // Should succeed — blackout only applies when an event is scheduled today
         $response = $useCase->execute($userId, $request);
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities['Fri May 15']);
     }
 
     public function testDoesNotThrowBlackoutExceptionBeforeWindowOpens(): void
@@ -601,7 +601,7 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
 
         // 09:00 is before 10:00 — should succeed
         $response = $useCase->execute($userId, $request);
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response->availabilities['Fri May 15']);
     }
 
     public function testConcurrentAvailabilityUpdatesForDifferentCrew(): void
@@ -626,12 +626,12 @@ class UpdateCrewAvailabilityUseCaseTest extends IntegrationTestCase
         $response2 = $this->useCase->execute($userId2, $request2);
 
         // Assert - each crew should have independent availability
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $response1->availabilities['Fri May 15']);
-        $this->assertEquals(AvailabilityStatus::UNAVAILABLE->value, $response2->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response1->availabilities['Fri May 15']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $response2->availabilities['Fri May 15']);
 
         // Verify in database
-        $this->assertEquals(AvailabilityStatus::AVAILABLE->value, $this->getCrewAvailability('crew_1', 'Fri May 15'));
-        $this->assertEquals(AvailabilityStatus::UNAVAILABLE->value, $this->getCrewAvailability('crew_2', 'Fri May 15'));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $this->getCrewAvailability('crew_1', 'Fri May 15'));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED->value, $this->getCrewAvailability('crew_2', 'Fri May 15'));
     }
 
 }

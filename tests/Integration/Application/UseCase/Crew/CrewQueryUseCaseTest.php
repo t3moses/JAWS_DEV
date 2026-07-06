@@ -89,9 +89,9 @@ class CrewQueryUseCaseTest extends IntegrationTestCase
         $crew->setUserId($user->getId());
 
         // Set availability for events
-        $crew->setAvailability(EventId::fromString('Fri May 15'), AvailabilityStatus::AVAILABLE);
-        $crew->setAvailability(EventId::fromString('Fri May 22'), AvailabilityStatus::UNAVAILABLE);
-        $crew->setAvailability(EventId::fromString('Fri May 29'), AvailabilityStatus::GUARANTEED);
+        $crew->setAvailability(EventId::fromString('Fri May 15'), AvailabilityStatus::NOT_SELECTED);
+        $crew->setAvailability(EventId::fromString('Fri May 22'), AvailabilityStatus::NOT_SELECTED);
+        $crew->setAvailability(EventId::fromString('Fri May 29'), AvailabilityStatus::SELECTED);
 
         $this->crewRepository->save($crew);
     }

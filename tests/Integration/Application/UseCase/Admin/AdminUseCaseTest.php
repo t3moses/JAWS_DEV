@@ -159,9 +159,9 @@ class AdminUseCaseTest extends IntegrationTestCase
         $this->boatRepository->save($boat2);
 
         // Set crew availability (all crews available)
-        $crew1->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
-        $crew2->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
-        $crew3->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew1->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
+        $crew2->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
+        $crew3->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
         $this->crewRepository->save($crew1);
         $this->crewRepository->save($crew2);
         $this->crewRepository->save($crew3);
@@ -232,7 +232,7 @@ class AdminUseCaseTest extends IntegrationTestCase
                 experience: null
             );
             $crew->setUserId($user->getId());
-            $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+            $crew->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
             $this->crewRepository->save($crew);
         }
 
@@ -298,9 +298,9 @@ class AdminUseCaseTest extends IntegrationTestCase
         $crew2 = $this->crewRepository->findByKey(CrewKey::fromName('Bob', 'Jones'));
         $crew3 = $this->crewRepository->findByKey(CrewKey::fromName('Charlie', 'Brown'));
 
-        $crew1->setAvailability($eventId, AvailabilityStatus::UNAVAILABLE);
-        $crew2->setAvailability($eventId, AvailabilityStatus::UNAVAILABLE);
-        $crew3->setAvailability($eventId, AvailabilityStatus::UNAVAILABLE);
+        $crew1->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
+        $crew2->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
+        $crew3->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
 
         $this->crewRepository->save($crew1);
         $this->crewRepository->save($crew2);

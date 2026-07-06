@@ -5,30 +5,19 @@ declare(strict_types=1);
 namespace App\Domain\Enum;
 
 /**
- * Availability Status
+ * Availability Status (Compressed 0-1)
  *
- * Defines the possible availability states for crew members for each event.
+ * After event completion, crew_availability.status is set to indicate selection for next event:
+ * 0 = registered available but not selected (or not registered)
+ * 1 = registered available and selected for next event (guaranteed assignment rank)
  */
 enum AvailabilityStatus: int
 {
-    case UNAVAILABLE = 0;  // Cannot participate
-    case AVAILABLE = 1;    // Can participate
-    case GUARANTEED = 2;   // Selected for event
-    case WITHDRAWN = 3;    // Explicitly withdrawn
+    case NOT_SELECTED = 0;  // Available but not selected for next event
+    case SELECTED = 1;      // Selected for next event
 
-    /**
-     * Check if status means crew can participate
-     */
-    public function canParticipate(): bool
+    public function isSelected(): bool
     {
-        return $this === self::AVAILABLE || $this === self::GUARANTEED;
-    }
-
-    /**
-     * Check if status means crew is assigned to a boat
-     */
-    public function isAssigned(): bool
-    {
-        return $this === self::GUARANTEED;
+        return $this === self::SELECTED;
     }
 }

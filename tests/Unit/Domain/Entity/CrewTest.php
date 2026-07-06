@@ -57,7 +57,7 @@ class CrewTest extends TestCase
 
         $rank = $crew->getRank();
         // Assert
-        $this->assertEquals(0, $rank->getDimension(CrewRankDimension::COMMITMENT));
+        $this->assertEquals(2, $rank->getDimension(CrewRankDimension::COMMITMENT));
         $this->assertEquals(1, $rank->getDimension(CrewRankDimension::MEMBERSHIP)); // Valid membership number '12345'
         $this->assertEquals(0, $rank->getDimension(CrewRankDimension::ABSENCE));
     }
@@ -251,7 +251,7 @@ class CrewTest extends TestCase
         $eventId = EventId::fromString('Fri May 29');
 
         // Assert
-        $this->assertEquals(AvailabilityStatus::UNAVAILABLE, $crew->getAvailability($eventId));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED, $crew->getAvailability($eventId));
     }
 
     public function testSetAndGetAvailability(): void
@@ -260,10 +260,10 @@ class CrewTest extends TestCase
         $crew = $this->createCrew();
         $eventId = EventId::fromString('Fri May 29');
 
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
 
         // Assert
-        $this->assertEquals(AvailabilityStatus::AVAILABLE, $crew->getAvailability($eventId));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED, $crew->getAvailability($eventId));
     }
 
     public function testGetAllAvailability(): void
@@ -273,14 +273,14 @@ class CrewTest extends TestCase
         $eventId1 = EventId::fromString('Fri May 29');
         $eventId2 = EventId::fromString('Sat May 30');
 
-        $crew->setAvailability($eventId1, AvailabilityStatus::AVAILABLE);
-        $crew->setAvailability($eventId2, AvailabilityStatus::GUARANTEED);
+        $crew->setAvailability($eventId1, AvailabilityStatus::NOT_SELECTED);
+        $crew->setAvailability($eventId2, AvailabilityStatus::SELECTED);
 
         $availability = $crew->getAllAvailability();
 
         // Assert
-        $this->assertEquals(AvailabilityStatus::AVAILABLE, $availability['Fri May 29']);
-        $this->assertEquals(AvailabilityStatus::GUARANTEED, $availability['Sat May 30']);
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED, $availability['Fri May 29']);
+        $this->assertEquals(AvailabilityStatus::SELECTED, $availability['Sat May 30']);
     }
 
     public function testSetAllAvailability(): void
@@ -292,11 +292,11 @@ class CrewTest extends TestCase
             EventId::fromString('Sat May 30')
         ];
 
-        $crew->setAllAvailability($eventIds, AvailabilityStatus::AVAILABLE);
+        $crew->setAllAvailability($eventIds, AvailabilityStatus::NOT_SELECTED);
 
         // Assert
-        $this->assertEquals(AvailabilityStatus::AVAILABLE, $crew->getAvailability($eventIds[0]));
-        $this->assertEquals(AvailabilityStatus::AVAILABLE, $crew->getAvailability($eventIds[1]));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED, $crew->getAvailability($eventIds[0]));
+        $this->assertEquals(AvailabilityStatus::NOT_SELECTED, $crew->getAvailability($eventIds[1]));
     }
 
     public function testIsAvailableForReturnsFalseWhenUnavailable(): void
@@ -315,7 +315,7 @@ class CrewTest extends TestCase
         $crew = $this->createCrew();
         $eventId = EventId::fromString('Fri May 29');
 
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
 
         // Assert
         $this->assertTrue($crew->isAvailableFor($eventId));
@@ -327,7 +327,7 @@ class CrewTest extends TestCase
         $crew = $this->createCrew();
         $eventId = EventId::fromString('Fri May 29');
 
-        $crew->setAvailability($eventId, AvailabilityStatus::GUARANTEED);
+        $crew->setAvailability($eventId, AvailabilityStatus::SELECTED);
 
         // Assert
         $this->assertTrue($crew->isAvailableFor($eventId));
@@ -339,7 +339,7 @@ class CrewTest extends TestCase
         $crew = $this->createCrew();
         $eventId = EventId::fromString('Fri May 29');
 
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
 
         // Assert
         $this->assertFalse($crew->isAssignedTo($eventId));
@@ -351,7 +351,7 @@ class CrewTest extends TestCase
         $crew = $this->createCrew();
         $eventId = EventId::fromString('Fri May 29');
 
-        $crew->setAvailability($eventId, AvailabilityStatus::GUARANTEED);
+        $crew->setAvailability($eventId, AvailabilityStatus::SELECTED);
 
         // Assert
         $this->assertTrue($crew->isAssignedTo($eventId));

@@ -198,26 +198,31 @@ class SquadTest extends TestCase
         $eventId = EventId::fromString('Fri May 29');
 
         $crew1 = $this->createCrew('johndoe', 'John', 'Doe');
-        $crew1->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew1->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
 
         $crew2 = $this->createCrew('janedoe', 'Jane', 'Doe');
-        $crew2->setAvailability($eventId, AvailabilityStatus::UNAVAILABLE);
+        $crew2->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
 
         $crew3 = $this->createCrew('bobsmith', 'Bob', 'Smith');
-        $crew3->setAvailability($eventId, AvailabilityStatus::GUARANTEED);
+        $crew3->setAvailability($eventId, AvailabilityStatus::SELECTED);
+
+        $crew4 = $this->createCrew('alicesmith', 'Alice', 'Smith');
+        // crew4 has no availability record
 
         $squad->add($crew1);
         $squad->add($crew2);
         $squad->add($crew3);
+        $squad->add($crew4);
 
         // Act
         $available = $squad->getAvailableFor($eventId);
 
-        // Assert
-        $this->assertCount(2, $available);
+        // Assert — only crews with availability records (crew1, crew2, crew3) should be available
+        $this->assertCount(3, $available);
         $this->assertContains($crew1, $available);
+        $this->assertContains($crew2, $available);
         $this->assertContains($crew3, $available);
-        $this->assertNotContains($crew2, $available);
+        $this->assertNotContains($crew4, $available);
     }
 
     public function testGetAvailableForReturnsEmptyArrayWhenNoneAvailable(): void
@@ -243,13 +248,13 @@ class SquadTest extends TestCase
         $eventId = EventId::fromString('Fri May 29');
 
         $crew1 = $this->createCrew('johndoe', 'John', 'Doe');
-        $crew1->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew1->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
 
         $crew2 = $this->createCrew('janedoe', 'Jane', 'Doe');
-        $crew2->setAvailability($eventId, AvailabilityStatus::GUARANTEED);
+        $crew2->setAvailability($eventId, AvailabilityStatus::SELECTED);
 
         $crew3 = $this->createCrew('bobsmith', 'Bob', 'Smith');
-        $crew3->setAvailability($eventId, AvailabilityStatus::GUARANTEED);
+        $crew3->setAvailability($eventId, AvailabilityStatus::SELECTED);
 
         $squad->add($crew1);
         $squad->add($crew2);
@@ -272,7 +277,7 @@ class SquadTest extends TestCase
         $eventId = EventId::fromString('Fri May 29');
 
         $crew = $this->createCrew('johndoe', 'John', 'Doe');
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
         $squad->add($crew);
 
         // Act

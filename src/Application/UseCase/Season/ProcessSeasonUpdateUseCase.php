@@ -422,7 +422,7 @@ class ProcessSeasonUpdateUseCase
     /**
      * Update availability statuses for selected boats and crews
      *
-     * Selected entities get status GUARANTEED (2)
+     * Selected crews get status 1 (selected for next event)
      *
      * @param array<Boat> $selectedBoats
      * @param array<Crew> $selectedCrews
@@ -434,13 +434,10 @@ class ProcessSeasonUpdateUseCase
         array $selectedCrews,
         EventId $eventId
     ): array {
-        // Update boat statuses (boats don't have availability status in same way, but we track selection via berths)
-        // No-op for boats as berths already indicate selection
-
-        // Update crew statuses to GUARANTEED and track modified crews
+        // Update crew statuses to 1 (selected) and track modified crews
         $modifiedCrews = [];
         foreach ($selectedCrews as $crew) {
-            $crew->setAvailability($eventId, AvailabilityStatus::GUARANTEED);
+            $crew->setAvailability($eventId, AvailabilityStatus::SELECTED);
             $modifiedCrews[$crew->getKey()->toString()] = $crew;
         }
 
@@ -495,20 +492,54 @@ class ProcessSeasonUpdateUseCase
      * history, and whitelist data), we directly update only the specific availability
      * statuses that changed. This dramatically reduces database operations.
      *
+     * Only persists status=1 (selected); status=0 records are not persisted (or cleared).
+     *
      * @param array<string, Crew> $modifiedCrews Modified crews keyed by crew key
      */
     private function persistChanges(array $modifiedCrews): void
     {
-        // For each modified crew, update only their GUARANTEED availability statuses
+        // For each modified crew, update only their SELECTED (1) availability statuses
         foreach ($modifiedCrews as $crew) {
             foreach ($crew->getAllAvailability() as $eventIdString => $status) {
-                if ($status === AvailabilityStatus::GUARANTEED) {
+                if ($status === AvailabilityStatus::SELECTED) {
                     $this->crewRepository->updateAvailability(
                         $crew->getKey(),
                         EventId::fromString($eventIdString),
                         $status
                     );
                 }
+            }
+        }
+    }
+
+    /**
+     * Phase 7: Update next event's crew availability based on current event completion
+     *
+     * After an event completes, crews selected for that event get status=1 (selected)
+     * for the next event, reflecting their "commitment to continue." Unselected crews
+     * remain at status=0 (not selected) unless explicitly registered for the next event.
+     *
+     * @param EventId $nextEventId Future event ID to update availability for
+     * @param array<string> $selectedCrewKeys Crew keys selected in the just-completed event
+     */
+    private function updateNextEventAvailabilityAfterCompletion(
+        EventId $nextEventId,
+        array $selectedCrewKeys
+    ): void {
+        // For crews selected in completed event who are also available for next event,
+        // mark their status as 1 (selected). This persists selection intent across events.
+        foreach ($this->squad->all() as $crew) {
+            $crewKey = $crew->getKey()->toString();
+            $isSelected = in_array($crewKey, $selectedCrewKeys, true);
+            $isAvailableForNext = $crew->getAvailability($nextEventId) !== null;
+
+            if ($isAvailableForNext && $isSelected) {
+                $crew->setAvailability($nextEventId, AvailabilityStatus::SELECTED);
+                $this->crewRepository->updateAvailability(
+                    $crew->getKey(),
+                    $nextEventId,
+                    AvailabilityStatus::SELECTED
+                );
             }
         }
     }

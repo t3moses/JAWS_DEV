@@ -174,28 +174,45 @@ class RankingServiceTest extends TestCase
         $this->assertEquals(1, $crew2->getRank()->getDimension(CrewRankDimension::ABSENCE));
     }
 
-    // Tests that crew with guaranteed availability receives commitment rank of 3 (high priority)
+    // Tests that assigned crew receives commitment rank of 3 (highest priority)
     public function testUpdateCrewCommitmentRanksWithGuaranteed(): void
     {
         // Arrange
         $crew = $this->createCrew('johndoe');
         $eventId = EventId::fromString('Fri May 29');
-        $crew->setAvailability($eventId, AvailabilityStatus::GUARANTEED);
+        $crew->setAvailability($eventId, AvailabilityStatus::SELECTED);
 
-        // Act
-        $this->service->updateCrewCommitmentRanks([$crew], $eventId);
+        // Act — crew is in assignedCrewKeys
+        $this->service->updateCrewCommitmentRanks([$crew], $eventId, ['johndoe']);
 
-        // Assert
+        // Assert — rank should be 3 (assigned)
         $this->assertEquals(3, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
     }
 
-    // Tests that crew with available status receives commitment rank of 2 (normal priority)
-    public function testUpdateCrewCommitmentRanksWithAvailable(): void
+    // Tests that crew with NOT_SELECTED status keeps stored commitment rank unchanged
+    public function testUpdateCrewCommitmentRanksPreservesStoredRank(): void
     {
         // Arrange
         $crew = $this->createCrew('johndoe');
         $eventId = EventId::fromString('Fri May 29');
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
+        // Crew has stored rank of 2
+        $crew->setRankDimension(CrewRankDimension::COMMITMENT, 2);
+
+        // Act — crew not assigned
+        $this->service->updateCrewCommitmentRanks([$crew], $eventId);
+
+        // Assert — rank stays at stored value
+        $this->assertEquals(2, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
+    }
+
+    // Tests that crew with SELECTED status keeps stored commitment rank unchanged
+    public function testUpdateCrewCommitmentRanksWithSelected(): void
+    {
+        // Arrange
+        $crew = $this->createCrew('johndoe');
+        $eventId = EventId::fromString('Fri May 29');
+        $crew->setAvailability($eventId, AvailabilityStatus::SELECTED);
 
         // Act
         $this->service->updateCrewCommitmentRanks([$crew], $eventId);
@@ -204,62 +221,30 @@ class RankingServiceTest extends TestCase
         $this->assertEquals(2, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
     }
 
-    // Tests that crew with withdrawn status receives commitment rank of 1 (admin no-show penalty)
-    public function testUpdateCrewCommitmentRanksWithWithdrawn(): void
-    {
-        // Arrange
-        $crew = $this->createCrew('johndoe');
-        $eventId = EventId::fromString('Fri May 29');
-        $crew->setAvailability($eventId, AvailabilityStatus::WITHDRAWN);
-
-        // Act
-        $this->service->updateCrewCommitmentRanks([$crew], $eventId);
-
-        // Assert
-        $this->assertEquals(1, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
-    }
-
-    // Tests that crew with unavailable status receives commitment rank of 0 (no priority)
-    public function testUpdateCrewCommitmentRanksWithUnavailable(): void
-    {
-        // Arrange
-        $crew = $this->createCrew('johndoe');
-        $eventId = EventId::fromString('Fri May 29');
-        $crew->setAvailability($eventId, AvailabilityStatus::UNAVAILABLE);
-
-        // Act
-        $this->service->updateCrewCommitmentRanks([$crew], $eventId);
-
-        // Assert
-        $this->assertEquals(0, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
-    }
-
-    // Tests commitment ranking calculation across multiple crews with different availability
+    // Tests commitment ranking calculation across multiple crews with assignment
     public function testUpdateCrewCommitmentRanksWithMultipleCrews(): void
     {
         // Arrange
         $crew1 = $this->createCrew('johndoe');
         $crew2 = $this->createCrew('janedoe');
         $eventId = EventId::fromString('Fri May 29');
-
-        $crew1->setAvailability($eventId, AvailabilityStatus::GUARANTEED);
-        $crew2->setAvailability($eventId, AvailabilityStatus::UNAVAILABLE);
+        $crew1->setRankDimension(CrewRankDimension::COMMITMENT, 2);
+        $crew2->setRankDimension(CrewRankDimension::COMMITMENT, 2);
 
         // Act
-        $this->service->updateCrewCommitmentRanks([$crew1, $crew2], $eventId);
+        $this->service->updateCrewCommitmentRanks([$crew1, $crew2], $eventId, ['johndoe']);
 
-        // Assert
+        // Assert — assigned crew gets rank 3, other keeps stored value
         $this->assertEquals(3, $crew1->getRank()->getDimension(CrewRankDimension::COMMITMENT));
-        $this->assertEquals(0, $crew2->getRank()->getDimension(CrewRankDimension::COMMITMENT));
+        $this->assertEquals(2, $crew2->getRank()->getDimension(CrewRankDimension::COMMITMENT));
     }
 
-    // Tests that admin penalty (rank=1) is preserved when crew is not assigned and doesn't re-register
+    // Tests that admin penalty (rank=1) persists when crew is not assigned
     public function testAdminPenaltyPreserved(): void
     {
         // Arrange
         $crew = $this->createCrew('johndoe');
         $eventId = EventId::fromString('Fri May 29');
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
         // Simulate stored admin penalty
         $crew->setRankDimension(CrewRankDimension::COMMITMENT, 1);
 
@@ -276,7 +261,6 @@ class RankingServiceTest extends TestCase
         // Arrange
         $crew = $this->createCrew('johndoe');
         $eventId = EventId::fromString('Fri May 29');
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
         // Crew has admin penalty stored
         $crew->setRankDimension(CrewRankDimension::COMMITMENT, 1);
 
@@ -287,39 +271,38 @@ class RankingServiceTest extends TestCase
         $this->assertEquals(3, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
     }
 
-    // Tests that previously assigned crew (rank=3) not reassigned resets to normal priority (rank=2)
-    public function testPreviouslyAssignedResetsToTwo(): void
+    // Tests that unassigned crew keeps their stored committed rank
+    public function testUnassignedCrewKeepsStoredRank(): void
     {
         // Arrange
         $crew = $this->createCrew('johndoe');
         $eventId = EventId::fromString('Fri May 29');
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
         // Crew had rank=3 from previous assignment run
         $crew->setRankDimension(CrewRankDimension::COMMITMENT, 3);
 
         // Act — crew is NOT in assignedCrewKeys this time
         $this->service->updateCrewCommitmentRanks([$crew], $eventId, []);
 
-        // Assert — resets to normal available priority
-        $this->assertEquals(2, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
+        // Assert — keeps stored value (3)
+        $this->assertEquals(3, $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT));
     }
 
     // Tests that calculateCrewRank returns a 4D rank (availability, commitment, membership, absence)
-    public function testCalculateCrewRankWithWithdrawn(): void
+    public function testCalculateCrewRankWithNotSelected(): void
     {
         // Arrange
         $crew = $this->createCrew('johndoe');
         $eventId = EventId::fromString('Fri May 29');
-        $crew->setAvailability($eventId, AvailabilityStatus::WITHDRAWN);
-        // Withdrawn crews are not selected (availability=0), commitment defaults to 0
+        $crew->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
+        // Not selected crews have availability=0, commitment defaults to 2 (normal)
         // membership is 1 (has valid number 12345), absence is 0 (no past events)
 
         // Act
         $rank = $this->service->calculateCrewRank($crew, [], $eventId);
 
-        // Assert — 4D rank: [availability=0, commitment=0, membership=1, absence=0]
+        // Assert — 4D rank: [availability=0, commitment=2, membership=1, absence=0]
         $this->assertEquals(0, $rank->getDimension(CrewRankDimension::AVAILABILITY));
-        $this->assertEquals(0, $rank->getDimension(CrewRankDimension::COMMITMENT));
+        $this->assertEquals(2, $rank->getDimension(CrewRankDimension::COMMITMENT));
         $this->assertEquals(1, $rank->getDimension(CrewRankDimension::MEMBERSHIP));
         $this->assertEquals(0, $rank->getDimension(CrewRankDimension::ABSENCE));
     }
@@ -373,7 +356,7 @@ class RankingServiceTest extends TestCase
         $crew = $this->createCrew('johndoe');
         $eventId = EventId::fromString('Fri May 29');
         $crew->setHistory(EventId::fromString('Sat May 30'), '');
-        $crew->setAvailability($eventId, AvailabilityStatus::AVAILABLE);
+        $crew->setAvailability($eventId, AvailabilityStatus::NOT_SELECTED);
 
         // Act
         $this->service->updateAllCrewRanks([$crew], ['Sat May 30'], $eventId);

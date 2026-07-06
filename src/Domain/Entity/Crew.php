@@ -46,8 +46,8 @@ class Crew
     ) {
         // Initialize default rank with 4 dimensions: [availability, commitment, membership, absence]
         $this->rank = Rank::forCrew(
-            availability: 0, // Default: not available for event
-            commitment: 0,   // Default: unavailable
+            availability: 0, // Default: not selected for event
+            commitment: 2,   // Default: normal priority (persistent, admin-set)
             membership: self::calculateMembershipRank($membershipNumber),
             absence: 0       // Default: no absences
         );
@@ -271,12 +271,28 @@ class Crew
 
     public function getAvailability(EventId $eventId): AvailabilityStatus
     {
-        return $this->availability[$eventId->toString()] ?? AvailabilityStatus::UNAVAILABLE;
+        return $this->availability[$eventId->toString()] ?? AvailabilityStatus::NOT_SELECTED;
     }
 
     public function setAvailability(EventId $eventId, AvailabilityStatus $status): void
     {
         $this->availability[$eventId->toString()] = $status;
+    }
+
+    /**
+     * Check if crew has registered/is available for an event
+     */
+    public function isAvailableFor(EventId $eventId): bool
+    {
+        return isset($this->availability[$eventId->toString()]);
+    }
+
+    /**
+     * Check if crew is assigned/selected for an event
+     */
+    public function isAssignedTo(EventId $eventId): bool
+    {
+        return $this->getAvailability($eventId) === AvailabilityStatus::SELECTED;
     }
 
     /**
@@ -295,16 +311,6 @@ class Crew
         foreach ($eventIds as $eventId) {
             $this->setAvailability($eventId, $status);
         }
-    }
-
-    public function isAvailableFor(EventId $eventId): bool
-    {
-        return $this->getAvailability($eventId)->canParticipate();
-    }
-
-    public function isAssignedTo(EventId $eventId): bool
-    {
-        return $this->getAvailability($eventId)->isAssigned();
     }
 
     // === History ===
