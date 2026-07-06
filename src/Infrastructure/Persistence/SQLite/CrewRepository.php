@@ -129,7 +129,7 @@ class CrewRepository implements CrewRepositoryInterface
         $stmt = $this->pdo->prepare('
             SELECT c.* FROM crews c
             INNER JOIN crew_availability ca ON c.id = ca.crew_id
-            WHERE ca.event_id = :event_id AND ca.status = 1
+            WHERE ca.event_id = :event_id
             ORDER BY c.display_name
         ');
         $stmt->execute(['event_id' => $eventId->toString()]);

@@ -54,7 +54,7 @@ interface CrewRepositoryInterface
      * Get crew members available for a specific event
      *
      * @param EventId $eventId
-     * @return array<Crew> Crews with availability record for the event
+     * @return array<Crew> Crews with crew_availability record for the event
      */
     public function findAvailableForEvent(EventId $eventId): array;
 
@@ -62,7 +62,7 @@ interface CrewRepositoryInterface
      * Get crew members assigned to a specific event
      *
      * @param EventId $eventId
-     * @return array<Crew> Crews with status SELECTED (1)
+     * @return array<Crew> Crews with crew_availability record for the event (same as findAvailableForEvent)
      */
     public function findAssignedToEvent(EventId $eventId): array;
 
