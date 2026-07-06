@@ -13,7 +13,7 @@ parameters:
         maximumNumberOfProcesses: 1
     ignoreErrors:
         -
-            message: '#^Method App\\Domain\\Service\\AssignmentService::trace\(\) is unused\.$#'
-            identifier: method.unused
+            message: '#^Strict comparison using === between non-empty-string and false will always evaluate to false\.$#'
+            identifier: identical.alwaysFalse
             count: 1
-            path: src/Domain/Service/AssignmentService.php
+            path: src/Infrastructure/Service/PhpPasswordService.php

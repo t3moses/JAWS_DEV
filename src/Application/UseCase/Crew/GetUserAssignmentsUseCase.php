@@ -136,9 +136,9 @@ class GetUserAssignmentsUseCase
                             $crews
                         );
 
-                        // For boat owners with crew assigned, status is GUARANTEED (2)
+                        // For boat owners with crew assigned, status is SELECTED (1)
                         // If the boat is in crewed_boats, it's confirmed for the event
-                        $availabilityStatus = 2; // GUARANTEED
+                        $availabilityStatus = 1; // SELECTED
 
                         $assignments[] = new AssignmentResponse(
                             eventId: $eventIdString,

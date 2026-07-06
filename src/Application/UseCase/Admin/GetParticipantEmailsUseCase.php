@@ -15,7 +15,7 @@ use App\Domain\ValueObject\EventId;
  * Get Participant Emails Use Case
  *
  * Returns registered participant emails for an event, grouped by role.
- * Boat owners = boats with berths > 0; crew members = status AVAILABLE or GUARANTEED.
+ * Boat owners = boats with berths > 0; crew members = any crew_availability record.
  */
 class GetParticipantEmailsUseCase
 {

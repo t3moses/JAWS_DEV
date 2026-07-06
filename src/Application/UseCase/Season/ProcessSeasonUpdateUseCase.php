@@ -228,7 +228,7 @@ class ProcessSeasonUpdateUseCase
         $this->transactionService->begin();
         try {
             $flotillasSaved = 0;
-            foreach ($serializedFlotillas ?? [] as $eventIdString => $serializedFlotilla) {
+            foreach ($serializedFlotillas as $eventIdString => $serializedFlotilla) {
                 $this->seasonRepository->saveFlotilla(EventId::fromString($eventIdString), $serializedFlotilla);
                 $flotillasSaved++;
             }
@@ -508,38 +508,6 @@ class ProcessSeasonUpdateUseCase
                         $status
                     );
                 }
-            }
-        }
-    }
-
-    /**
-     * Phase 7: Update next event's crew availability based on current event completion
-     *
-     * After an event completes, crews selected for that event get status=1 (selected)
-     * for the next event, reflecting their "commitment to continue." Unselected crews
-     * remain at status=0 (not selected) unless explicitly registered for the next event.
-     *
-     * @param EventId $nextEventId Future event ID to update availability for
-     * @param array<string> $selectedCrewKeys Crew keys selected in the just-completed event
-     */
-    private function updateNextEventAvailabilityAfterCompletion(
-        EventId $nextEventId,
-        array $selectedCrewKeys
-    ): void {
-        // For crews selected in completed event who are also available for next event,
-        // mark their status as 1 (selected). This persists selection intent across events.
-        foreach ($this->squad->all() as $crew) {
-            $crewKey = $crew->getKey()->toString();
-            $isSelected = in_array($crewKey, $selectedCrewKeys, true);
-            $isAvailableForNext = $crew->getAvailability($nextEventId) !== null;
-
-            if ($isAvailableForNext && $isSelected) {
-                $crew->setAvailability($nextEventId, AvailabilityStatus::SELECTED);
-                $this->crewRepository->updateAvailability(
-                    $crew->getKey(),
-                    $nextEventId,
-                    AvailabilityStatus::SELECTED
-                );
             }
         }
     }

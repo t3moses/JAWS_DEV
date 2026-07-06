@@ -52,7 +52,7 @@ class SendCrewReminderUseCase
             return compact('sent', 'skipped', 'details');
         }
 
-        // Load all registered crew (status AVAILABLE=1 or GUARANTEED=2)
+        // Load all registered crew (any crew_availability record)
         $crews = $this->crewRepository->findAvailableForEvent($eventId);
 
         if (empty($crews)) {

@@ -79,13 +79,12 @@ class UpdateCrewAvailabilityUseCase
                 throw new EventNotFoundException($eventId);
             }
 
-            // Map boolean to AvailabilityStatus enum
-            $status = $availability['isAvailable']
-                ? AvailabilityStatus::AVAILABLE
-                : AvailabilityStatus::UNAVAILABLE;
-
-            // Use targeted update instead of loading, modifying, and saving entire entity
-            $this->crewRepository->updateAvailability($crewKey, $eventId, $status);
+            // Map boolean: true = register as available (NOT_SELECTED), false = withdraw (delete record)
+            if ($availability['isAvailable']) {
+                $this->crewRepository->updateAvailability($crewKey, $eventId, AvailabilityStatus::NOT_SELECTED);
+            } else {
+                $this->crewRepository->deleteAvailability($crewKey, $eventId);
+            }
         }
 
         // Update commitment rank immediately if the next event was included in the request.

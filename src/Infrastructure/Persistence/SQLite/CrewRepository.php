@@ -115,7 +115,7 @@ class CrewRepository implements CrewRepositoryInterface
         $stmt = $this->pdo->prepare('
             SELECT c.* FROM crews c
             INNER JOIN crew_availability ca ON c.id = ca.crew_id
-            WHERE ca.event_id = :event_id AND ca.status IN (1, 2)
+            WHERE ca.event_id = :event_id
             ORDER BY c.display_name
         ');
         $stmt->execute(['event_id' => $eventId->toString()]);
@@ -129,7 +129,7 @@ class CrewRepository implements CrewRepositoryInterface
         $stmt = $this->pdo->prepare('
             SELECT c.* FROM crews c
             INNER JOIN crew_availability ca ON c.id = ca.crew_id
-            WHERE ca.event_id = :event_id AND ca.status = 2
+            WHERE ca.event_id = :event_id AND ca.status = 1
             ORDER BY c.display_name
         ');
         $stmt->execute(['event_id' => $eventId->toString()]);
@@ -176,6 +176,23 @@ class CrewRepository implements CrewRepositoryInterface
             'crew_id' => $crew->getId(),
             'event_id' => $eventId->toString(),
             'status' => $status->value,
+        ]);
+    }
+
+    public function deleteAvailability(CrewKey $key, EventId $eventId): void
+    {
+        $crew = $this->findByKey($key);
+        if ($crew === null) {
+            throw new \RuntimeException("Crew not found: {$key->toString()}");
+        }
+
+        $stmt = $this->pdo->prepare('
+            DELETE FROM crew_availability
+            WHERE crew_id = :crew_id AND event_id = :event_id
+        ');
+        $stmt->execute([
+            'crew_id' => $crew->getId(),
+            'event_id' => $eventId->toString(),
         ]);
     }
 

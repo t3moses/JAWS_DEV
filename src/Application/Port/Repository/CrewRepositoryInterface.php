@@ -54,7 +54,7 @@ interface CrewRepositoryInterface
      * Get crew members available for a specific event
      *
      * @param EventId $eventId
-     * @return array<Crew> Crews with status AVAILABLE or GUARANTEED
+     * @return array<Crew> Crews with availability record for the event
      */
     public function findAvailableForEvent(EventId $eventId): array;
 
@@ -62,7 +62,7 @@ interface CrewRepositoryInterface
      * Get crew members assigned to a specific event
      *
      * @param EventId $eventId
-     * @return array<Crew> Crews with status GUARANTEED
+     * @return array<Crew> Crews with status SELECTED (1)
      */
     public function findAssignedToEvent(EventId $eventId): array;
 
@@ -99,6 +99,15 @@ interface CrewRepositoryInterface
      * @return void
      */
     public function updateAvailability(CrewKey $key, EventId $eventId, AvailabilityStatus $status): void;
+
+    /**
+     * Delete crew availability record for a specific event (marks as withdrawn/unavailable)
+     *
+     * @param CrewKey $key
+     * @param EventId $eventId
+     * @return void
+     */
+    public function deleteAvailability(CrewKey $key, EventId $eventId): void;
 
     /**
      * Update crew assignment history for a specific event
