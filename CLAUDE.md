@@ -65,7 +65,7 @@ Dependencies flow inward only: `Presentation → Infrastructure → Application 
 
 - **Entities:** `Boat.php`, `Crew.php`, `User.php`
 - **Value Objects:** `BoatKey`, `CrewKey`, `EventId`, `Rank` (immutable identifiers)
-- **Enums:** `AvailabilityStatus` (0-3), `SkillLevel` (0-2), `AssignmentRule` (6 rules), `BoatRankDimension`, `CrewRankDimension`, `TimeSource`
+- **Enums:** `AvailabilityStatus` (0-1), `SkillLevel` (0-2), `AssignmentRule` (6 rules), `BoatRankDimension`, `CrewRankDimension`, `TimeSource`
 - **Collections:** `Fleet.php`, `Squad.php` (in-memory)
 - **Domain Services** ⚠️ CRITICAL:
   - `SelectionService.php` — Ranking & selection (CRC32 seeding, lexicographic sort, 3 capacity cases)
@@ -109,7 +109,7 @@ Key use cases:
 2. **Selection** (`SelectionService`) — Rank, shuffle (`crc32($eventId)`), capacity match (3 cases)
 3. **Consolidation** — Form flotilla; separate crewed boats from waitlist
 4. **Assignment** (`AssignmentService`) — **Next event only**: iterative constraint-based swapping (6 rules)
-5. **Persist** — Update crew statuses (GUARANTEED), history, save flotilla JSON
+5. **Persist** — Update crew statuses (SELECTED), history, save flotilla JSON
 
 ## Database Schema
 
@@ -120,7 +120,7 @@ Key use cases:
 2. `crews` — name, partner_key, email, skill, membership_number, ranking
 3. `events` — event_id, event_date, start/finish_time, status
 4. `boat_availability` — berths per boat per event
-5. `crew_availability` — status (0-3) per crew per event
+5. `crew_availability` — status (0-1) per crew per event; row absence = withdrawn
 6. `boat_history` — participation ('Y' or '')
 7. `crew_history` — crew-to-boat per event
 8. `crew_whitelist` — crew preferences for specific boats
@@ -134,13 +134,14 @@ Features: FK constraints, CASCADE deletes, composite indexes, WAL mode, auto-upd
 ## Ranking System
 
 **Boats:** `[flexibility, absence]` (2D)
-**Crews:** `[commitment, membership, absence]` (3D)
+**Crews:** `[availability, commitment, membership, absence]` (4D)
 
 Compared lexicographically, higher = higher priority (sorted descending). Ties broken by `srand(crc32($eventId))`.
 
 - `flexibility` — boats only: 0 if flex (owner also crew), else 1
+- `availability` — crews only, primary dimension: 1 if `crew_availability.status`=1 (SELECTED) for the next event, else 0
 - `absence` — count of past no-shows (deprioritizes unreliable participants)
-- `commitment` — 3=assigned, 2=available, 1=admin penalty, 0=unavailable/withdrawn
+- `commitment` — 3=assigned (transient boost, this cycle only), 2/1/0=admin-set persistent priority
 - `membership` — 0=valid NSC membership, 1=invalid
 
 ## Assignment Optimization
@@ -201,7 +202,7 @@ For each rule: find highest-loss crew → find best-grad swap → swap if improv
 
 **Flex:** Boat owners who also register as crew. Sets boat `flexibility` rank to 0. Prevents double-counting in capacity matching. Detection logic is inlined in `RankingService`.
 
-**Availability States:** UNAVAILABLE(0), AVAILABLE(1), GUARANTEED(2), WITHDRAWN(3)
+**Availability States:** `crew_availability.status` is 0=NOT_SELECTED (available but not selected for next event), 1=SELECTED (selected for next event). Withdrawal is represented by deleting the `crew_availability` row, not a status value.
 
 **Blackout Logic:** Registration blocked during events (default 10:00-18:00). Configured in `season_config`. Throws `BlackoutWindowException` → HTTP 403.
 
