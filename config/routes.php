@@ -222,6 +222,15 @@ return [
         'auth' => true,
     ],
 
+    // Manually recalculate season pipeline (ranking, selection, flotillas)
+    [
+        'method' => 'POST',
+        'path' => '/api/admin/season/recalculate',
+        'controller' => AdminController::class,
+        'action' => 'recalculate',
+        'auth' => true,
+    ],
+
     // Get All Users
     [
         'method' => 'GET',

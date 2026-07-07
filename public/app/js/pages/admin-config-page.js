@@ -123,6 +123,9 @@ function setupEventListeners() {
         e.preventDefault();
         await saveConfig();
     });
+
+    // Recalculate pipeline
+    document.getElementById('recalculate-btn').addEventListener('click', recalculatePipeline);
 }
 
 /**
@@ -252,5 +255,27 @@ async function saveConfig() {
         // Remove loading state
         submitBtn.classList.remove('loading');
         submitBtn.disabled = false;
+    }
+}
+
+/**
+ * Manually re-run the season update pipeline
+ */
+async function recalculatePipeline() {
+    const recalculateBtn = document.getElementById('recalculate-btn');
+
+    try {
+        recalculateBtn.classList.add('loading');
+        recalculateBtn.disabled = true;
+
+        const result = await adminService.recalculatePipeline();
+
+        showToast(`Recalculated: ${result.events_processed} event(s) processed, ${result.flotillas_generated} flotilla(s) generated`, 'success');
+    } catch (error) {
+        console.error('Failed to recalculate season pipeline:', error);
+        showToast(error.message || 'Failed to recalculate season pipeline', 'error');
+    } finally {
+        recalculateBtn.classList.remove('loading');
+        recalculateBtn.disabled = false;
     }
 }

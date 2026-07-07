@@ -217,6 +217,28 @@ class AdminController
     }
 
     /**
+     * POST /api/admin/season/recalculate
+     *
+     * Manually re-runs the season update pipeline (ranking, selection, and
+     * flotilla generation) without changing any configuration. Useful after
+     * direct data edits that bypass the normal user-action triggers.
+     *
+     * @param array $auth Authentication context
+     */
+    public function recalculate(array $auth): JsonResponse
+    {
+        if (!$this->isAdmin($auth)) {
+            return JsonResponse::error('Admin privileges required', 403);
+        }
+
+        // Lock contention (\RuntimeException, code 409) is left to propagate to
+        // ErrorHandlerMiddleware, which the frontend already retries automatically.
+        $result = $this->processSeasonUpdateUseCase->execute();
+
+        return JsonResponse::success($result);
+    }
+
+    /**
      * GET /api/admin/users
      *
      * Returns a list of all registered users (no password hashes).

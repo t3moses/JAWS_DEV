@@ -89,6 +89,25 @@ export async function updateSeasonConfig(configData) {
 }
 
 /**
+ * Manually re-run the season update pipeline (ranking, selection, flotillas)
+ * @returns {Promise<Object>} Result with events_processed and flotillas_generated counts
+ */
+export async function recalculatePipeline() {
+    try {
+        const response = await apiService.post(API_CONFIG.ENDPOINTS.ADMIN_RECALCULATE, {});
+
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to recalculate season pipeline');
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('AdminService: Failed to recalculate season pipeline:', error);
+        throw error;
+    }
+}
+
+/**
  * Get all registered users
  * @returns {Promise<Object[]>} Array of user summaries
  */

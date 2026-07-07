@@ -37,6 +37,7 @@ export const API_CONFIG = {
         ADMIN_PARTICIPANTS: '/admin/participants/:eventId',
         ADMIN_CUSTOM_NOTIFICATION: '/admin/notifications/:eventId/custom',
         ADMIN_CONFIG: '/admin/config',
+        ADMIN_RECALCULATE: '/admin/season/recalculate',
         ADMIN_USERS: '/admin/users',
         ADMIN_USER_ADMIN: '/admin/users/:id/admin',
         ADMIN_USER_DETAIL: '/admin/users/:userId',
