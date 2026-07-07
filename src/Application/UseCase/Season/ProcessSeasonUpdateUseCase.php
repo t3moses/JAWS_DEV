@@ -108,10 +108,14 @@ class ProcessSeasonUpdateUseCase
         $boatHistoryUpdates = $this->syncBoatHistory($fleet);
         $crewHistoryUpdates = $this->syncCrewHistory($squad);
 
-        // Refresh commitment ranks in-memory from current availability
+        // Refresh commitment and availability ranks in-memory from current availability
         // (DB values may be stale if the simulated date or next event has changed)
         if ($nextEventId !== null) {
             $this->rankingService->updateCrewCommitmentRanks(
+                $squad->all(),
+                EventId::fromString($nextEventId)
+            );
+            $this->rankingService->updateCrewAvailabilityRanks(
                 $squad->all(),
                 EventId::fromString($nextEventId)
             );

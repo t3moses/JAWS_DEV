@@ -33,17 +33,7 @@ class RankingService
         array $pastEventIds,
         ?EventId $nextEventId = null
     ): Rank {
-        // Calculate availability (0-1: whether crew was selected/participated in event)
-        // 1 = available and selected/participated (status=1 in crew_availability)
-        // 0 = not available or status=0
-        // Higher value = higher priority (SelectionService sorts descending)
-        $availabilityDimension = 0;
-        if ($nextEventId !== null) {
-            $availability = $crew->getAvailability($nextEventId);
-            // Check if crew has a crew_availability record with status=1
-            // status=1 means they were selected for or participated in a past event
-            $availabilityDimension = ($availability->value === 1) ? 1 : 0;
-        }
+        $availabilityDimension = $this->resolveAvailabilityDimension($crew, $nextEventId);
 
         // Get crew's persistent commitment rank (admin-set, 0-2)
         // Uses the crew_rank_commitment from database, not auto-calculated
@@ -139,6 +129,42 @@ class RankingService
             }
             $crew->setRankDimension(CrewRankDimension::ABSENCE, $absences);
         }
+    }
+
+    /**
+     * Update availability rank dimension for crews based on their selection status
+     * for the next event (crew_availability.status = 1 → SELECTED)
+     *
+     * Availability is the primary (most significant) crew rank dimension, so this
+     * must be refreshed every pipeline run — it is not persisted independently and
+     * otherwise only gets set once, at registration time.
+     *
+     * @param array<Crew> $crews
+     * @param EventId $nextEventId
+     */
+    public function updateCrewAvailabilityRanks(array $crews, EventId $nextEventId): void
+    {
+        foreach ($crews as $crew) {
+            $crew->setRankDimension(
+                CrewRankDimension::AVAILABILITY,
+                $this->resolveAvailabilityDimension($crew, $nextEventId)
+            );
+        }
+    }
+
+    /**
+     * Resolve the availability rank dimension (0-1) for a crew against the next event
+     *
+     * 1 = crew has a crew_availability record with status=1 (SELECTED) for the next event
+     * 0 = not available, or no next event to compare against
+     */
+    private function resolveAvailabilityDimension(Crew $crew, ?EventId $nextEventId): int
+    {
+        if ($nextEventId === null) {
+            return 0;
+        }
+
+        return $crew->getAvailability($nextEventId)->value === 1 ? 1 : 0;
     }
 
     /**
