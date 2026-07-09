@@ -49,6 +49,9 @@ Thumbs.db
 # Temporary test files
 /tests/temp/
 
+# Scratch SQL snippets
+/SQL/
+
 # Node modules (if frontend ever added to this repo)
 /node_modules/
 /public/app/node_modules/
