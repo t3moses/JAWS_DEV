@@ -158,6 +158,14 @@ class ProcessSeasonUpdateUseCase
                 'waitlisted_crews' => count($selectionResult['waitlisted_crews']),
             ]);
 
+            // Shuffle selected crews deterministically before they're paired to boats,
+            // so boat assignment doesn't just mirror rank order. Waitlist crews are left
+            // in rank order since promotion later relies on that ordering.
+            $selectionResult['selected_crews'] = $this->shuffleDeterministically(
+                $selectionResult['selected_crews'],
+                $eventId
+            );
+
             // Add flex boat owners to crew waitlist when their boat is cut
             $existingCrewDisplayNames = array_values(array_filter(
                 array_map(fn($c) => $c->getDisplayName(), $squad->all()),
@@ -351,6 +359,22 @@ class ProcessSeasonUpdateUseCase
             'waitlisted_boats' => $this->selectionService->getWaitlistBoats(),
             'waitlisted_crews' => $this->selectionService->getWaitlistCrews(),
         ];
+    }
+
+    /**
+     * Deterministically shuffle a list, seeded by event ID so the same event always
+     * produces the same order. Mirrors SelectionService's own CRC32-seeded shuffle.
+     *
+     * @param array<Crew> $crews
+     * @param EventId $eventId
+     * @return array<Crew>
+     */
+    private function shuffleDeterministically(array $crews, EventId $eventId): array
+    {
+        mt_srand(crc32($eventId->toString()));
+        shuffle($crews);
+
+        return $crews;
     }
 
     /**
