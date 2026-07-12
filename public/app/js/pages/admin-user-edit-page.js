@@ -199,9 +199,8 @@ function renderCommitment(crew) {
     const select = document.getElementById('commitment-select');
     const saveBtn = document.getElementById('commitment-save-btn');
 
-    // Only allow setting penalty (1) or restoring normal (2)
     const rank = crew.rank_commitment ?? 2;
-    select.value = String(rank === 1 ? 1 : 2);
+    select.value = String(rank);
 
     saveBtn.addEventListener('click', () => handleCommitmentSave(select));
 
@@ -215,13 +214,13 @@ async function handleCommitmentSave(select) {
     try {
         const result = await adminService.setCrewCommitmentRank(targetUserData.crew.key, parseInt(select.value, 10));
         targetUserData.crew.rank_commitment = result.rank_commitment;
-        select.value = String(result.rank_commitment === 1 ? 1 : 2);
+        select.value = String(result.rank_commitment);
         showToast('Commitment rank updated successfully.', 'success');
     } catch (error) {
         console.error('Failed to update commitment rank:', error);
         showToast(error.message || 'Failed to update commitment rank', 'error');
         const rank = targetUserData.crew.rank_commitment ?? 2;
-        select.value = String(rank === 1 ? 1 : 2);
+        select.value = String(rank);
     } finally {
         btn.disabled = false;
     }
