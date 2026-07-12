@@ -108,13 +108,9 @@ class ProcessSeasonUpdateUseCase
         $boatHistoryUpdates = $this->syncBoatHistory($fleet);
         $crewHistoryUpdates = $this->syncCrewHistory($squad);
 
-        // Refresh commitment and availability ranks in-memory from current availability
+        // Refresh availability rank in-memory from current availability
         // (DB values may be stale if the simulated date or next event has changed)
         if ($nextEventId !== null) {
-            $this->rankingService->updateCrewCommitmentRanks(
-                $squad->all(),
-                EventId::fromString($nextEventId)
-            );
             $this->rankingService->updateCrewAvailabilityRanks(
                 $squad->all(),
                 EventId::fromString($nextEventId)
@@ -129,7 +125,6 @@ class ProcessSeasonUpdateUseCase
         $eventsProcessed = 0;
         $flotillasGenerated = 0;
         $modifiedCrews = [];
-        $commitmentCrews = null;
         $serializedFlotillas = [];
 
         // Build locked crews set for next event (Rule 2: protect existing assignments)
@@ -197,16 +192,6 @@ class ProcessSeasonUpdateUseCase
                     'event_id'           => $eventId->toString(),
                     'crewed_boats_count' => count($flotilla['crewed_boats']),
                 ]);
-
-                // Update commitment ranks for all crew based on assignment result
-                // Assigned crew get rank=3; others are set by availability; admin penalties (rank=1) persist
-                $assignedCrewKeys = array_map(
-                    fn(Crew $crew) => $crew->getKey()->toString(),
-                    $selectionResult['selected_crews']
-                );
-                $allCrews = $squad->all();
-                $this->rankingService->updateCrewCommitmentRanks($allCrews, $eventId, $assignedCrewKeys);
-                $commitmentCrews = $allCrews;
             }
 
             // Phase 3.5: Promote waitlisted crews to boats with spare capacity
@@ -254,10 +239,6 @@ class ProcessSeasonUpdateUseCase
 
             if ($nextEventId !== null) {
                 $this->persistChanges($modifiedCrews, EventId::fromString($nextEventId));
-            }
-
-            if ($commitmentCrews !== null) {
-                $this->persistCommitmentRanks($commitmentCrews);
             }
 
             // Persist boat history entries (upsert — idempotent)
@@ -784,18 +765,6 @@ class ProcessSeasonUpdateUseCase
         }
 
         return $updates;
-    }
-
-    /**
-     * Persist updated commitment ranks to database (ONLY rank_commitment column)
-     *
-     * @param array<Crew> $crews Crews with updated commitment ranks
-     */
-    private function persistCommitmentRanks(array $crews): void
-    {
-        foreach ($crews as $crew) {
-            $this->crewRepository->updateRankCommitment($crew);
-        }
     }
 
     /**

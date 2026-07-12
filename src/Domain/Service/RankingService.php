@@ -168,32 +168,6 @@ class RankingService
     }
 
     /**
-     * Update commitment rank for crews based on assignment for the next event
-     *
-     * Commitment rank is now persistent and admin-set (0-2), but we temporarily boost
-     * assigned crews to rank 3 for sorting purposes in this cycle only.
-     *
-     * @param array<Crew> $crews
-     * @param EventId $nextEventId
-     * @param array<string> $assignedCrewKeys Crew keys assigned to the next event
-     */
-    public function updateCrewCommitmentRanks(array $crews, EventId $nextEventId, array $assignedCrewKeys = []): void
-    {
-        foreach ($crews as $crew) {
-            $storedRank = $crew->getRank()->getDimension(CrewRankDimension::COMMITMENT);
-
-            // Crew assigned to next event gets highest priority (overrides penalty)
-            if (in_array($crew->getKey()->toString(), $assignedCrewKeys, true)) {
-                $crew->setRankDimension(CrewRankDimension::COMMITMENT, 3);
-                continue;
-            }
-
-            // Crew not assigned: keep their persistent stored rank (0, 1, or 2)
-            // No need to recalculate; admin sets this value
-        }
-    }
-
-    /**
      * Update membership rank for a crew
      *
      * @param Crew $crew
@@ -226,7 +200,7 @@ class RankingService
     public function updateAllCrewRanks(array $crews, array $pastEventIds, EventId $nextEventId): void
     {
         $this->updateCrewAbsenceRanks($crews, $pastEventIds);
-        $this->updateCrewCommitmentRanks($crews, $nextEventId);
+        // Commitment rank is persistent and admin/user-set; not recalculated here.
         // Flexibility and membership ranks are updated elsewhere
     }
 }
