@@ -108,15 +108,6 @@ class ProcessSeasonUpdateUseCase
         $boatHistoryUpdates = $this->syncBoatHistory($fleet);
         $crewHistoryUpdates = $this->syncCrewHistory($squad);
 
-        // Refresh availability rank in-memory from current availability
-        // (DB values may be stale if the simulated date or next event has changed)
-        if ($nextEventId !== null) {
-            $this->rankingService->updateCrewAvailabilityRanks(
-                $squad->all(),
-                EventId::fromString($nextEventId)
-            );
-        }
-
         $this->logger->info('season_update.start', [
             'future_events_count' => count($futureEvents),
             'next_event_id'       => $nextEventId,
@@ -141,6 +132,11 @@ class ProcessSeasonUpdateUseCase
         // Process each future event (in-memory only — no DB writes yet)
         foreach ($futureEvents as $eventIdString) {
             $eventId = EventId::fromString($eventIdString);
+
+            // Refresh availability rank in-memory for THIS event before selecting it.
+            // Each event has its own crew_availability status, so this must be
+            // recalculated per event rather than reused across the whole loop.
+            $this->rankingService->updateCrewAvailabilityRanks($squad->all(), $eventId);
 
             // Phase 1: Selection (rank and capacity match)
             $selectionResult = $this->runSelection($fleet, $squad, $eventId);
