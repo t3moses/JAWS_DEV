@@ -129,10 +129,10 @@ async function populateAssignments() {
         const response = await get(API_CONFIG.ENDPOINTS.ASSIGNMENTS);
         const assignments = response.data?.assignments || [];
 
-        // Filter for guaranteed assignments only (status = 2)
-        const guaranteedAssignments = assignments.filter(a => a.availabilityStatus === 2 && a.boatName);
+        // Filter for assignments where a boat has actually been matched
+        const boatAssignments = assignments.filter(a => a.boatName);
 
-        if (guaranteedAssignments.length === 0) {
+        if (boatAssignments.length === 0) {
             // Show empty state
             container.innerHTML = `
                 <div class="empty-state">
@@ -148,7 +148,7 @@ async function populateAssignments() {
         container.innerHTML = '';
 
         // Render each assignment
-        guaranteedAssignments.forEach(assignment => {
+        boatAssignments.forEach(assignment => {
             const card = document.createElement('div');
             card.className = 'assignment-card';
 

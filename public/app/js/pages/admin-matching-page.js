@@ -228,10 +228,8 @@ function renderCrewsTable(crews) {
     };
 
     const availabilityText = {
-        0: 'Unavailable',
-        1: 'Available',
-        2: 'Guaranteed',
-        3: 'Withdrawn'
+        0: 'Not Selected',
+        1: 'Selected'
     };
 
     const table = `

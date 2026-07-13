@@ -65,8 +65,10 @@ export function isSignedIn() {
 
 /**
  * Transform availabilities object to eventAvailability object
- * @param {Object} availabilities - Object with display names as keys and values
- *                                   For crew: status codes (0=unavailable, 1=available, 2=guaranteed, 3=withdrawn)
+ * @param {Object} availabilities - Object with event IDs as keys and values
+ *                                   For crew: status codes (0=not selected, 1=selected) — an
+ *                                   entry's mere presence means the crew is registered/available;
+ *                                   row absence (no entry) means withdrawn.
  *                                   For boats: berth counts (0, 1, 2, 3, 4)
  * @param {string} accountType - 'crew' or 'boat_owner'
  * @returns {Object} eventAvailability object { "Fri Jun 12": true, "Fri Jun 19": false, ... }
@@ -79,8 +81,9 @@ function transformAvailabilities(availabilities, accountType) {
     const eventAvailability = {};
     Object.entries(availabilities).forEach(([eventId, value]) => {
         if (accountType === 'crew') {
-            // For crew: Status codes 1 & 2 mean available (true), 0 & 3 mean unavailable (false)
-            eventAvailability[eventId] = (value === 1 || value === 2);
+            // Presence of an entry means the crew has a crew_availability row (registered/available).
+            // The status value (0=not selected, 1=selected) doesn't affect availability itself.
+            eventAvailability[eventId] = true;
         } else {
             // For boat owners: Any berth count > 0 means available (true)
             eventAvailability[eventId] = value > 0;
