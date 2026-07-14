@@ -339,7 +339,9 @@ $container->set(\App\Application\UseCase\Admin\GetConfigUseCase::class, function
 
 $container->set(\App\Application\UseCase\Admin\GetAllUsersUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\GetAllUsersUseCase(
-        $c->get(UserRepositoryInterface::class)
+        $c->get(UserRepositoryInterface::class),
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(BoatRepositoryInterface::class)
     );
 });
 

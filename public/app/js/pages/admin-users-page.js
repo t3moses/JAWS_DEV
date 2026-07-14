@@ -66,7 +66,7 @@ function renderUsersTable(container, users) {
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Email</th>
+                    <th>Name</th>
                     <th>Account Type</th>
                     <th></th>
                 </tr>
@@ -89,10 +89,11 @@ function renderUserRow(user) {
         ? '<span class="user-badge boat-owner">⛵ Boat Owner</span>'
         : '<span class="user-badge">🌊 Crew Member</span>';
     const adminBadge = user.is_admin ? ' <span class="admin-badge">Admin</span>' : '';
+    const displayName = user.display_name || user.email;
 
     return `
         <tr>
-            <td>${escapeHtml(user.email)}${adminBadge}</td>
+            <td>${escapeHtml(displayName)}${adminBadge}</td>
             <td>${accountBadge}</td>
             <td><a href="admin-user-edit.html?userId=${user.id}" class="btn btn-sm btn-secondary">Edit</a></td>
         </tr>
