@@ -141,7 +141,7 @@ Compared lexicographically, higher = higher priority (sorted descending). Ties b
 - `flexibility` — boats only: 0 if flex (owner also crew), else 1
 - `availability` — crews only, primary dimension: 1 if `crew_availability.status`=1 (SELECTED) for the next event, else 0
 - `absence` — count of past no-shows (deprioritizes unreliable participants)
-- `commitment` — 3=assigned (transient boost, this cycle only), 2/1/0=admin-set persistent priority
+- `commitment` — 2/1/0, admin-set persistent priority; the only writer is `SetCrewCommitmentRankUseCase` (`PATCH /api/admin/crews/{crewKey}/commitment-rank`). New crews default to 2 on registration; nothing else (pipeline runs, a crew's own availability changes) mutates it.
 - `membership` — 0=valid NSC membership, 1=invalid
 
 ## Assignment Optimization
