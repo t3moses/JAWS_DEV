@@ -673,6 +673,11 @@ class CrewRepository implements CrewRepositoryInterface
 
         $crew->setId((int)$row['id']);
 
+        // Set user_id if present
+        if (isset($row['user_id']) && $row['user_id'] !== null) {
+            $crew->setUserId((int)$row['user_id']);
+        }
+
         $rank = Rank::forCrew(
             availability: 0, // Database loads don't set availability (event-specific)
             commitment: (int)$row['commitment_rank'],

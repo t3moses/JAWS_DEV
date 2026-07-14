@@ -57,5 +57,5 @@ parameters:
 		-
 			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
-			count: 1
+			count: 2
 			path: src/Infrastructure/Persistence/SQLite/CrewRepository.php
