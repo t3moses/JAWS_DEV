@@ -413,6 +413,49 @@ curl -X GET "http://localhost:8000/api/assignments" \
 
 ---
 
+### POST /api/assignments/crew-flags
+
+Boat owner only. Flags crew members who were assigned to the caller's boat,
+decrementing each flagged crew's `commitment_rank` by the number of times
+they were flagged (clamped to 0-2). Each `(eventId, crewKey)` pair is
+independently verified against the persisted flotilla for that event — a
+boat owner can only flag crew genuinely assigned to their own boat.
+
+**Request:**
+```bash
+curl -X POST "http://localhost:8000/api/assignments/crew-flags" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "flags": [
+      { "eventId": "Fri May 29", "crewKey": "johndoe" },
+      { "eventId": "Fri Jun 05", "crewKey": "johndoe" }
+    ]
+  }'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "flagged": [
+      {
+        "crew_key": "johndoe",
+        "display_name": "John Doe",
+        "flag_count": 2,
+        "rank_commitment": 0
+      }
+    ]
+  }
+}
+```
+
+Flags for `(eventId, crewKey)` pairs that don't match a real assignment to
+the caller's boat are silently dropped and never appear in the response.
+
+---
+
 ### GET /api/flotillas
 
 Get all flotillas for all events.

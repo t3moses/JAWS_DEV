@@ -241,6 +241,16 @@ $container->set(\App\Application\UseCase\Crew\GetUserAssignmentsUseCase::class, 
     );
 });
 
+$container->set(\App\Application\UseCase\Boat\FlagAssignedCrewUseCase::class, function ($c) {
+    return new \App\Application\UseCase\Boat\FlagAssignedCrewUseCase(
+        $c->get(BoatRepositoryInterface::class),
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(EventRepositoryInterface::class),
+        $c->get(SeasonRepositoryInterface::class),
+        $c->get(LoggerInterface::class)
+    );
+});
+
 // Event Use Cases
 $container->set(\App\Application\UseCase\Event\GetAllEventsUseCase::class, function ($c) {
     return new \App\Application\UseCase\Event\GetAllEventsUseCase(
@@ -541,7 +551,8 @@ $container->set(\App\Presentation\Controller\AvailabilityController::class, func
 
 $container->set(\App\Presentation\Controller\AssignmentController::class, function ($c) {
     return new \App\Presentation\Controller\AssignmentController(
-        $c->get(\App\Application\UseCase\Crew\GetUserAssignmentsUseCase::class)
+        $c->get(\App\Application\UseCase\Crew\GetUserAssignmentsUseCase::class),
+        $c->get(\App\Application\UseCase\Boat\FlagAssignedCrewUseCase::class)
     );
 });
 

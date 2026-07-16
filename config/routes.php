@@ -173,6 +173,15 @@ return [
         'auth' => true,
     ],
 
+    // Boat owner flags crew assigned to their boat (decrements commitment rank)
+    [
+        'method' => 'POST',
+        'path' => '/api/assignments/crew-flags',
+        'controller' => AssignmentController::class,
+        'action' => 'flagCrew',
+        'auth' => true,
+    ],
+
     // =======================
     // Admin Endpoints
     // =======================

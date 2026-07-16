@@ -25,6 +25,18 @@ parameters:
 			path: src/Application/DTO/Request/UpdateAvailabilityRequest.php
 
 		-
+			message: '#^Call to function is_array\(\) with array\{eventId\: string, crewKey\: string\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Application/DTO/Request/FlagAssignedCrewRequest.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 2
+			path: src/Application/DTO/Request/FlagAssignedCrewRequest.php
+
+		-
 			message: '#^Call to function is_int\(\) with string will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 2

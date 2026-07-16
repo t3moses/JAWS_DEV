@@ -578,6 +578,22 @@ main {
   box-shadow: 0 2px 8px rgba(0, 188, 212, 0.3);
 }
 
+.crew-tag-btn {
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crew-tag-btn:hover {
+  filter: brightness(1.08);
+}
+
+.crew-tag-btn.flagged {
+  background: #ff6b6b;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+}
+
 .waitlist {
   background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
   padding: 1.5rem 2rem;

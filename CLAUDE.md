@@ -141,7 +141,7 @@ Compared lexicographically, higher = higher priority (sorted descending). Ties b
 - `flexibility` — boats only: 0 if flex (owner also crew), else 1
 - `availability` — crews only, primary dimension: 1 if `crew_availability.status`=1 (SELECTED) for the next event, else 0
 - `absence` — count of past no-shows (deprioritizes unreliable participants)
-- `commitment` — 2/1/0, admin-set persistent priority; the only writer is `SetCrewCommitmentRankUseCase` (`PATCH /api/admin/crews/{crewKey}/commitment-rank`). New crews default to 2 on registration; nothing else (pipeline runs, a crew's own availability changes) mutates it.
+- `commitment` — 2/1/0, persistent priority. New crews default to 2 on registration. Two writers: an admin can set it directly (`SetCrewCommitmentRankUseCase`, `PATCH /api/admin/crews/{crewKey}/commitment-rank`); a boat owner can decrement it for crew genuinely assigned to their boat (`FlagAssignedCrewUseCase`, `POST /api/assignments/crew-flags`, server-verified against the persisted flotilla, clamped to 0-2). Nothing else (pipeline runs, a crew's own availability changes) mutates it.
 - `membership` — 0=valid NSC membership, 1=invalid
 
 ## Assignment Optimization
@@ -179,6 +179,7 @@ For each rule: find highest-loss crew → find best-grad swap → swap if improv
 | GET | /api/users/me/availability | AvailabilityController::getCrewAvailability |
 | PATCH | /api/users/me/availability | AvailabilityController::updateAvailability |
 | GET | /api/assignments | AssignmentController::getUserAssignments |
+| POST | /api/assignments/crew-flags | AssignmentController::flagCrew |
 | GET | /api/admin/config | AdminController::getConfig |
 | PATCH | /api/admin/config | AdminController::updateConfig |
 | GET | /api/admin/matching/{eventId} | AdminController::getMatchingData |

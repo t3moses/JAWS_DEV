@@ -3,7 +3,7 @@
  * Handles user profile operations via API
  */
 
-import { patch } from './apiService.js';
+import { patch, post } from './apiService.js';
 import { API_CONFIG } from './config.js';
 
 /**
@@ -52,5 +52,27 @@ export async function updateBatchAvailability(availabilities) {
     } catch (error) {
         console.error('Error updating batch availability:', error);
         return { success: false, error: error.message || 'Failed to update availability' };
+    }
+}
+
+/**
+ * Flag crew members assigned to the caller's boat, decrementing each flagged
+ * crew's commitment rank by the number of times they were flagged.
+ * @param {Array<{eventId: string, crewKey: string}>} flags
+ * @returns {Promise<{success: boolean, data?: any, error?: string}>}
+ */
+export async function flagAssignedCrew(flags) {
+    try {
+        const response = await post(API_CONFIG.ENDPOINTS.ASSIGNMENT_CREW_FLAGS, { flags });
+
+        if (response?.success === false) {
+            console.error('Flagging crew failed:', response.error);
+            return { success: false, error: response.error || 'Failed to flag crew' };
+        }
+
+        return { success: true, data: response?.data };
+    } catch (error) {
+        console.error('Error flagging crew:', error);
+        return { success: false, error: error.message || 'Failed to flag crew' };
     }
 }

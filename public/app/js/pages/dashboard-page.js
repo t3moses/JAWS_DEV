@@ -6,7 +6,7 @@
 import { requireAuth, getCurrentUser, signOut } from '../authService.js';
 import { updateAuthenticatedNavigation, addAdminLink } from '../navigationService.js';
 import { getAllEvents, isDeadlinePassed } from '../eventService.js';
-import { updateBatchAvailability } from '../userService.js';
+import { updateBatchAvailability, flagAssignedCrew } from '../userService.js';
 import { get } from '../apiService.js';
 import { API_CONFIG } from '../config.js';
 import { showSuccess, showError, showInfo } from '../toastService.js';
@@ -147,6 +147,8 @@ async function populateAssignments() {
         // Clear container
         container.innerHTML = '';
 
+        const isBoatOwner = user.accountType !== 'crew';
+
         // Render each assignment
         boatAssignments.forEach(assignment => {
             const card = document.createElement('div');
@@ -164,16 +166,19 @@ async function populateAssignments() {
             // Format time range
             const timeRange = `${formatTime(assignment.startTime)} - ${formatTime(assignment.finishTime)}`;
 
-            // Build crewmates HTML
+            // Build crewmates HTML. For boat owners, each crew name is a togglable
+            // flag button (see handleSaveCrewFlags); for crew members viewing their
+            // own crewmates, it stays a plain tag.
             let crewmatesHTML = '';
             if (assignment.crewmates && assignment.crewmates.length > 0) {
-                crewmatesHTML = `
-                    <div class="assignment-crew">
-                        ${assignment.crewmates
-                            .map(c => `<span class="crew-tag">${c.display_name}</span>`)
-                            .join('')}
-                    </div>
-                `;
+                const tags = assignment.crewmates.map(c => (
+                    isBoatOwner
+                        ? `<button type="button" class="crew-tag crew-tag-btn"
+                                   data-event-id="${assignment.eventId}"
+                                   data-crew-key="${c.key}">${c.display_name}</button>`
+                        : `<span class="crew-tag">${c.display_name}</span>`
+                )).join('');
+                crewmatesHTML = `<div class="assignment-crew">${tags}</div>`;
             }
 
             card.innerHTML = `
@@ -184,10 +189,78 @@ async function populateAssignments() {
 
             container.appendChild(card);
         });
+
+        // Toggle a crew flag button between turquoise (unflagged) and orange (flagged)
+        container.querySelectorAll('.crew-tag-btn').forEach(btn => {
+            btn.addEventListener('click', () => btn.classList.toggle('flagged'));
+        });
+
+        // Boat owners get a Save Changes button to submit flagged crew
+        if (isBoatOwner) {
+            const saveWrapper = document.createElement('div');
+            saveWrapper.style.textAlign = 'center';
+            saveWrapper.style.marginTop = '2rem';
+            saveWrapper.innerHTML = '<button id="save-crew-flags" class="btn btn-primary">Save Changes</button>';
+            container.appendChild(saveWrapper);
+
+            document.getElementById('save-crew-flags').addEventListener('click', handleSaveCrewFlags);
+        }
     } catch (error) {
         console.error('Failed to load assignments:', error);
         container.innerHTML = '<div class="alert alert-error">Failed to load assignments. Please refresh the page.</div>';
     }
+}
+
+/**
+ * Handle the "My Boat Assignments" Save Changes click: collect every crew name
+ * button currently flagged orange, list flagged crews with how many times each
+ * was flagged, and submit those flags so their commitment rank is decremented.
+ */
+async function handleSaveCrewFlags() {
+    const saveButton = document.getElementById('save-crew-flags');
+    const originalLabel = saveButton.textContent;
+
+    const flaggedButtons = Array.from(
+        document.querySelectorAll('#assignments-container .crew-tag-btn.flagged')
+    );
+
+    if (flaggedButtons.length === 0) {
+        showInfo('No changes to save.', 2000);
+        return;
+    }
+
+    const flags = flaggedButtons.map(btn => ({
+        eventId: btn.dataset.eventId,
+        crewKey: btn.dataset.crewKey
+    }));
+
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving...';
+
+    const result = await flagAssignedCrew(flags);
+
+    saveButton.disabled = false;
+    saveButton.textContent = originalLabel;
+
+    if (!result.success) {
+        showError(result.error || 'Failed to save flagged crew');
+        return;
+    }
+
+    const flagged = result.data?.flagged || [];
+    if (flagged.length === 0) {
+        showInfo('No changes to save.', 2000);
+        return;
+    }
+
+    const summary = flagged
+        .map(f => `${f.display_name || f.crew_key} (×${f.flag_count})`)
+        .join(', ');
+    showSuccess(`Flagged: ${summary}. Commitment rank updated.`);
+
+    // Clear flags now that they've been applied, so re-clicking Save without
+    // re-flagging anything doesn't decrement the same crew again.
+    flaggedButtons.forEach(btn => btn.classList.remove('flagged'));
 }
 
 /**
