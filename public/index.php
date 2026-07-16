@@ -59,7 +59,10 @@ $router = new \App\Presentation\Router($routes);
 try {
     // Get request method and path
     $method = $_SERVER['REQUEST_METHOD'];
-    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    // parse_url() returns false/null for malformed request URIs (e.g. malformed
+    // scanner traffic); coerce to '' so the falsy check below and preg_match()
+    // always receive a string.
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '';
 
     // Serve frontend for non-API routes
     if (!$path || !str_starts_with($path, '/api')) {
