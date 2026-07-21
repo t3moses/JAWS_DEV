@@ -60,7 +60,13 @@ function renderUsersTable(container, users) {
         return;
     }
 
-    const rows = users.map(user => renderUserRow(user)).join('');
+    const sortedUsers = [...users].sort((a, b) => {
+        const nameA = (a.display_name || a.email).toLowerCase();
+        const nameB = (b.display_name || b.email).toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+
+    const rows = sortedUsers.map(user => renderUserRow(user)).join('');
 
     container.innerHTML = `
         <table class="data-table">
