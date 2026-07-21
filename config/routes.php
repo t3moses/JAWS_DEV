@@ -267,6 +267,15 @@ return [
         'auth' => true,
     ],
 
+    // Delete User (and linked crew/boat profile)
+    [
+        'method' => 'DELETE',
+        'path' => '/api/admin/users/{userId}',
+        'controller' => AdminController::class,
+        'action' => 'deleteUser',
+        'auth' => true,
+    ],
+
     // Get All Crews (for partner picker)
     [
         'method' => 'GET',

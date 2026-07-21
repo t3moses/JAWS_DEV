@@ -168,6 +168,26 @@ export async function getUserDetail(userId) {
 }
 
 /**
+ * Permanently delete a user account and its linked crew or boat profile
+ * @param {number} userId - Target user ID
+ * @returns {Promise<Object>} { deleted: true, user_id: number }
+ */
+export async function deleteUser(userId) {
+    try {
+        const response = await apiService.deleteRequest(API_CONFIG.ENDPOINTS.ADMIN_USER_DETAIL, { userId });
+
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to delete user');
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('AdminService: Failed to delete user:', error);
+        throw error;
+    }
+}
+
+/**
  * Get all crew members (for partner picker)
  * @returns {Promise<Object[]>} Array of crew summaries
  */

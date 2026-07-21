@@ -17,6 +17,7 @@ use App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase;
 use App\Application\UseCase\Admin\SendCustomNotificationUseCase;
 use App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase;
 use App\Application\UseCase\Admin\SetUserAdminUseCase;
+use App\Application\UseCase\Admin\DeleteUserUseCase;
 use App\Application\UseCase\Admin\UpdateCrewProfileUseCase;
 use App\Application\UseCase\Season\ProcessSeasonUpdateUseCase;
 use App\Application\UseCase\Season\UpdateConfigUseCase;
@@ -48,6 +49,7 @@ class AdminControllerTest extends TestCase
             $this->createStub(AddToCrewWhitelistUseCase::class),
             $this->createStub(RemoveFromCrewWhitelistUseCase::class),
             $this->createStub(SetCrewCommitmentRankUseCase::class),
+            $this->createStub(DeleteUserUseCase::class),
         );
     }
 

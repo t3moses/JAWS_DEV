@@ -369,6 +369,17 @@ $container->set(\App\Application\UseCase\Admin\GetUserDetailUseCase::class, func
     );
 });
 
+$container->set(\App\Application\UseCase\Admin\DeleteUserUseCase::class, function ($c) {
+    return new \App\Application\UseCase\Admin\DeleteUserUseCase(
+        $c->get(UserRepositoryInterface::class),
+        $c->get(CrewRepositoryInterface::class),
+        $c->get(BoatRepositoryInterface::class),
+        $c->get(PasswordResetTokenRepositoryInterface::class),
+        $c->get(TransactionServiceInterface::class),
+        $c->get(LoggerInterface::class)
+    );
+});
+
 $container->set(\App\Application\UseCase\Admin\GetAllCrewsUseCase::class, function ($c) {
     return new \App\Application\UseCase\Admin\GetAllCrewsUseCase(
         $c->get(CrewRepositoryInterface::class)
@@ -572,7 +583,8 @@ $container->set(\App\Presentation\Controller\AdminController::class, function ($
         $c->get(\App\Application\UseCase\Admin\UpdateCrewProfileUseCase::class),
         $c->get(\App\Application\UseCase\Admin\AddToCrewWhitelistUseCase::class),
         $c->get(\App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase::class),
-        $c->get(\App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase::class)
+        $c->get(\App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase::class),
+        $c->get(\App\Application\UseCase\Admin\DeleteUserUseCase::class)
     );
 });
 

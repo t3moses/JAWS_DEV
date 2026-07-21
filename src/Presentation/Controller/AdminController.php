@@ -17,6 +17,7 @@ use App\Application\UseCase\Admin\UpdateCrewProfileUseCase;
 use App\Application\UseCase\Admin\AddToCrewWhitelistUseCase;
 use App\Application\UseCase\Admin\RemoveFromCrewWhitelistUseCase;
 use App\Application\UseCase\Admin\SetCrewCommitmentRankUseCase;
+use App\Application\UseCase\Admin\DeleteUserUseCase;
 use App\Application\UseCase\Season\UpdateConfigUseCase;
 use App\Application\UseCase\Season\ProcessSeasonUpdateUseCase;
 use App\Application\DTO\Request\UpdateConfigRequest;
@@ -49,6 +50,7 @@ class AdminController
         private AddToCrewWhitelistUseCase $addToCrewWhitelistUseCase,
         private RemoveFromCrewWhitelistUseCase $removeFromCrewWhitelistUseCase,
         private SetCrewCommitmentRankUseCase $setCrewCommitmentRankUseCase,
+        private DeleteUserUseCase $deleteUserUseCase,
     ) {
     }
 
@@ -311,6 +313,36 @@ class AdminController
             $result = $this->getUserDetailUseCase->execute($userId);
 
             return JsonResponse::success($result);
+        } catch (\RuntimeException $e) {
+            return JsonResponse::notFound($e->getMessage());
+        } catch (\Exception $e) {
+            return JsonResponse::serverError($e->getMessage());
+        }
+    }
+
+    /**
+     * DELETE /api/admin/users/{userId}
+     *
+     * Permanently deletes a user account and its linked crew or boat profile.
+     *
+     * @param array $params Route parameters (userId)
+     * @param array $auth   Authentication context
+     */
+    public function deleteUser(array $params, array $auth): JsonResponse
+    {
+        if (!$this->isAdmin($auth)) {
+            return JsonResponse::error('Admin privileges required', 403);
+        }
+
+        try {
+            $targetUserId = (int)$params['userId'];
+            $requestingUserId = (int)$auth['user_id'];
+
+            $this->deleteUserUseCase->execute($targetUserId, $requestingUserId);
+
+            return JsonResponse::success(['deleted' => true, 'user_id' => $targetUserId]);
+        } catch (ValidationException $e) {
+            return JsonResponse::error($e->getMessage(), 400, $e->getErrors());
         } catch (\RuntimeException $e) {
             return JsonResponse::notFound($e->getMessage());
         } catch (\Exception $e) {

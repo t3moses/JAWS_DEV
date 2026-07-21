@@ -311,4 +311,122 @@ class AdminApiTest extends TestCase
 
         $this->cleanupTestUser($adminData['userId']);
     }
+
+    // =======================
+    // DELETE /api/admin/users/{userId}
+    // =======================
+
+    public function testDeleteUserRequiresAuthentication(): void
+    {
+        $response = $this->makeRequest('DELETE', "{$this->baseUrl}/admin/users/999999");
+
+        $this->assertEquals(401, $response['status']);
+    }
+
+    public function testDeleteUserRequiresAdminPrivileges(): void
+    {
+        $adminData = $this->createTestAdmin($this->baseUrl);
+        $crewData  = $this->createTestCrew($this->baseUrl);
+
+        $response = $this->makeRequest(
+            'DELETE',
+            "{$this->baseUrl}/admin/users/{$adminData['userId']}",
+            null,
+            ["Authorization: Bearer {$crewData['token']}"]
+        );
+
+        $this->assertEquals(403, $response['status']);
+
+        $this->cleanupTestUser($adminData['userId']);
+        $this->cleanupTestUser($crewData['userId']);
+    }
+
+    public function testDeleteUserRemovesCrewAccountAndProfile(): void
+    {
+        $adminData = $this->createTestAdmin($this->baseUrl);
+        $crewData  = $this->createTestCrew($this->baseUrl);
+
+        $response = $this->makeRequest(
+            'DELETE',
+            "{$this->baseUrl}/admin/users/{$crewData['userId']}",
+            null,
+            ["Authorization: Bearer {$adminData['token']}"]
+        );
+
+        $this->assertEquals(200, $response['status']);
+        $this->assertTrue($response['body']['success']);
+        $this->assertTrue($response['body']['data']['deleted']);
+
+        // The deleted user can no longer be fetched
+        $getResponse = $this->makeRequest(
+            'GET',
+            "{$this->baseUrl}/admin/users/{$crewData['userId']}",
+            null,
+            ["Authorization: Bearer {$adminData['token']}"]
+        );
+        $this->assertEquals(404, $getResponse['status']);
+
+        $this->cleanupTestUser($adminData['userId']);
+        $this->cleanupTestUser($crewData['userId']);
+    }
+
+    public function testDeleteUserRemovesBoatOwnerAccountAndProfile(): void
+    {
+        $adminData = $this->createTestAdmin($this->baseUrl);
+        $boatData  = $this->createTestBoatOwner($this->baseUrl);
+
+        $response = $this->makeRequest(
+            'DELETE',
+            "{$this->baseUrl}/admin/users/{$boatData['userId']}",
+            null,
+            ["Authorization: Bearer {$adminData['token']}"]
+        );
+
+        $this->assertEquals(200, $response['status']);
+        $this->assertTrue($response['body']['success']);
+
+        $getResponse = $this->makeRequest(
+            'GET',
+            "{$this->baseUrl}/admin/users/{$boatData['userId']}",
+            null,
+            ["Authorization: Bearer {$adminData['token']}"]
+        );
+        $this->assertEquals(404, $getResponse['status']);
+
+        $this->cleanupTestUser($adminData['userId']);
+        $this->cleanupTestUser($boatData['userId']);
+    }
+
+    public function testDeleteUserReturnsBadRequestWhenTargetingSelf(): void
+    {
+        $adminData = $this->createTestAdmin($this->baseUrl);
+
+        $response = $this->makeRequest(
+            'DELETE',
+            "{$this->baseUrl}/admin/users/{$adminData['userId']}",
+            null,
+            ["Authorization: Bearer {$adminData['token']}"]
+        );
+
+        $this->assertEquals(400, $response['status']);
+        $this->assertFalse($response['body']['success']);
+
+        $this->cleanupTestUser($adminData['userId']);
+    }
+
+    public function testDeleteUserReturnsNotFoundForUnknownUser(): void
+    {
+        $adminData = $this->createTestAdmin($this->baseUrl);
+
+        $response = $this->makeRequest(
+            'DELETE',
+            "{$this->baseUrl}/admin/users/999999",
+            null,
+            ["Authorization: Bearer {$adminData['token']}"]
+        );
+
+        $this->assertEquals(404, $response['status']);
+
+        $this->cleanupTestUser($adminData['userId']);
+    }
 }
