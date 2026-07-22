@@ -117,9 +117,9 @@
                     <select id="commitment-select" class="form-control">
                         <option value="2">Normal (2)</option>
                         <option value="1">Low Priority (1)</option>
-                        <option value="0">Unavailable/Withdrawn (0)</option>
+                        <option value="0">Lowest priority (0)</option>
                     </select>
-                    <p class="help-text">Commitment rank is admin-set and persistent. "Normal" is the default. Use "Low Priority" to deprioritize or "Unavailable" to exclude from selection.</p>
+                    <p class="help-text">Commitment rank is admin-set and persistent. "Normal" is the default. Use "Low Priority" or "Lowest priority" to deprioritize.</p>
                     <button id="commitment-save-btn" class="btn btn-primary">Save Commitment Rank</button>
                 </div>
             </div>
@@ -128,7 +128,7 @@
             <div id="section-partner" class="form-section" style="display:none;">
                 <h2>Partner Assignment</h2>
                 <div class="field-group">
-                    <label for="partner-select">Preferred Sailing Partner</label>
+                    <label for="partner-select">Avoid pairing</label>
                     <select id="partner-select" class="form-control">
                         <option value="">None</option>
                     </select>
@@ -139,7 +139,7 @@
             <!-- Whitelist Management (crew only) -->
             <div id="section-whitelist" class="form-section" style="display:none;">
                 <h2>Boat Whitelist</h2>
-                <p class="help-text">Boats this crew member has expressed a preference for.</p>
+                <p class="help-text">Boats available to the crew member.</p>
 
                 <div id="whitelist-table-container">
                     <p class="text-muted">No boats whitelisted.</p>
