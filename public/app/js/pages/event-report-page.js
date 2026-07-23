@@ -133,7 +133,7 @@ async function generateReport(eventId) {
 
         // Render report sections
         renderEventHeader(eventData.event);
-        renderAssignmentsTable(eventData.flotilla?.crewedBoats || []);
+        renderAssignmentsTable(eventData.flotilla?.crewedBoats || [], eventId);
         renderWaitlist(eventData.flotilla?.waitlistBoats || [], eventData.flotilla?.waitlistCrews || []);
         renderSummary(eventData.flotilla || {});
 
@@ -174,9 +174,53 @@ function renderEventHeader(event) {
 }
 
 /**
+ * Compute the assignment-rule compliance string for a crewed boat.
+ * Returns a subset of the letters "AWSPR", one per rule the assignment complies with:
+ *   A - assistance not required, or a competent (skill 2) crew is aboard
+ *   W - every assigned crew has this boat in their whitelist
+ *   S - crew skill levels span no more than one level
+ *   P - no assigned crew is the partner of another assigned crew
+ *   R - no assigned crew has been assigned to this boat at an earlier event
+ */
+function computeCompliance(assignment, eventId) {
+    const boat = assignment.boat;
+    const crews = assignment.crews || [];
+    let compliance = '';
+
+    if (!boat.assistanceRequired || crews.some(c => c.skill === 2)) {
+        compliance += 'A';
+    }
+
+    if (crews.every(c => (c.whitelist || []).includes(boat.key))) {
+        compliance += 'W';
+    }
+
+    const skills = crews.map(c => c.skill);
+    const skillSpread = skills.length > 0 ? Math.max(...skills) - Math.min(...skills) : 0;
+    if (skillSpread <= 1) {
+        compliance += 'S';
+    }
+
+    const crewKeys = new Set(crews.map(c => c.key));
+    if (!crews.some(c => c.partnerKey && c.partnerKey !== c.key && crewKeys.has(c.partnerKey))) {
+        compliance += 'P';
+    }
+
+    const repeatOk = crews.every(c => {
+        const history = c.history || {};
+        return Object.entries(history).every(([evId, boatKey]) => evId === eventId || boatKey !== boat.key);
+    });
+    if (repeatOk) {
+        compliance += 'R';
+    }
+
+    return compliance;
+}
+
+/**
  * Render crew assignments table
  */
-function renderAssignmentsTable(crewedBoats) {
+function renderAssignmentsTable(crewedBoats, eventId) {
     const tbody = document.getElementById('assignments-tbody');
     tbody.innerHTML = '';
 
@@ -203,10 +247,10 @@ function renderAssignmentsTable(crewedBoats) {
         const crewNames = assignment.crews.map(c => c.displayName).join(', ');
         crewCell.textContent = crewNames || 'No crew assigned';
 
-        // Crew count
-        const countCell = row.insertCell(2);
-        countCell.textContent = assignment.crews.length;
-        countCell.style.textAlign = 'center';
+        // Compliance
+        const complianceCell = row.insertCell(2);
+        complianceCell.textContent = computeCompliance(assignment, eventId);
+        complianceCell.style.textAlign = 'center';
     });
 }
 
