@@ -25,7 +25,9 @@ use Psr\Log\LoggerInterface;
  * face value. Each pair is independently verified against the actual
  * persisted flotilla for that event before it counts toward the decrement,
  * so a boat owner can only flag crew who were genuinely assigned to their
- * own boat.
+ * own boat. Flags are also restricted to past events only — the next
+ * event's assignment can still change before it happens, so it isn't
+ * eligible for flagging yet.
  */
 class FlagAssignedCrewUseCase
 {
@@ -51,12 +53,18 @@ class FlagAssignedCrewUseCase
             throw new BoatNotFoundException("No boat found for user ID: {$userId}");
         }
 
+        // Only events that have already happened are eligible for flagging.
+        $pastEventIds = array_flip($this->eventRepository->findPastEvents());
+
         // Verify each (eventId, crewKey) pair against the real persisted flotilla,
         // de-duplicating so a repeated pair can't be counted more than once.
         $verifiedCrewKeys = [];
         foreach ($flags as $flag) {
             $pairKey = $flag['eventId'] . '|' . $flag['crewKey'];
             if (isset($verifiedCrewKeys[$pairKey])) {
+                continue;
+            }
+            if (!isset($pastEventIds[$flag['eventId']])) {
                 continue;
             }
             if ($this->wasAssignedToBoat($flag['eventId'], $flag['crewKey'], $boat->getKey()->toString())) {

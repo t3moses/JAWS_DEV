@@ -148,6 +148,7 @@ async function populateAssignments() {
         container.innerHTML = '';
 
         const isBoatOwner = user.accountType !== 'crew';
+        let hasFlaggableAssignment = false;
 
         // Render each assignment
         boatAssignments.forEach(assignment => {
@@ -166,13 +167,21 @@ async function populateAssignments() {
             // Format time range
             const timeRange = `${formatTime(assignment.startTime)} - ${formatTime(assignment.finishTime)}`;
 
-            // Build crewmates HTML. For boat owners, each crew name is a togglable
-            // flag button (see handleSaveCrewFlags); for crew members viewing their
-            // own crewmates, it stays a plain tag.
+            // Build crewmates HTML. For boat owners, crew names for past events are
+            // togglable flag buttons (see handleSaveCrewFlags) so commitment rank can
+            // only be decremented once an assignment is final; the next/future event
+            // isn't flaggable yet, and crew members viewing their own crewmates always
+            // see a plain tag.
+            const eventHasPassed = hasEventOccurred(assignment.eventDate, assignment.finishTime);
+            const canFlag = isBoatOwner && eventHasPassed;
+            if (canFlag) {
+                hasFlaggableAssignment = true;
+            }
+
             let crewmatesHTML = '';
             if (assignment.crewmates && assignment.crewmates.length > 0) {
                 const tags = assignment.crewmates.map(c => (
-                    isBoatOwner
+                    canFlag
                         ? `<button type="button" class="crew-tag crew-tag-btn"
                                    data-event-id="${assignment.eventId}"
                                    data-crew-key="${c.key}">${c.display_name}</button>`
@@ -195,8 +204,9 @@ async function populateAssignments() {
             btn.addEventListener('click', () => btn.classList.toggle('flagged'));
         });
 
-        // Boat owners get a Save Changes button to submit flagged crew
-        if (isBoatOwner) {
+        // Boat owners get a Save Changes button to submit flagged crew, but only
+        // when at least one past-event assignment is actually flaggable
+        if (hasFlaggableAssignment) {
             const saveWrapper = document.createElement('div');
             saveWrapper.style.textAlign = 'center';
             saveWrapper.style.marginTop = '2rem';
@@ -261,6 +271,14 @@ async function handleSaveCrewFlags() {
     // Clear flags now that they've been applied, so re-clicking Save without
     // re-flagging anything doesn't decrement the same crew again.
     flaggedButtons.forEach(btn => btn.classList.remove('flagged'));
+}
+
+/**
+ * Check whether an event has already finished (mirrors the server's
+ * EventRepository::findPastEvents definition: event_date/finish_time < now).
+ */
+function hasEventOccurred(eventDate, finishTime) {
+    return new Date() > new Date(`${eventDate}T${finishTime}`);
 }
 
 /**
