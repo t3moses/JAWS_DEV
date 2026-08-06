@@ -32,7 +32,7 @@ class LoginUseCaseTest extends IntegrationTestCase
 
         $this->userRepository = new UserRepository();
         $this->passwordService = new PhpPasswordService();
-        $tokenService = new JwtTokenService();
+        $tokenService = new JwtTokenService('test-secret-key-for-integration-tests');
 
         $this->useCase = new LoginUseCase(
             $this->userRepository,

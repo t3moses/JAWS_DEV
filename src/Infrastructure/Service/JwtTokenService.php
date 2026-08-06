@@ -26,18 +26,13 @@ class JwtTokenService implements TokenServiceInterface
     private int $expirationMinutes;
 
     /**
-     * @param string|null $secret Secret key for signing tokens (from env or default)
+     * @param string $secret Secret key for signing tokens
      * @param int $expirationMinutes Token expiration time in minutes
      */
-    public function __construct(?string $secret = null, int $expirationMinutes = 60)
+    public function __construct(string $secret, int $expirationMinutes = 60)
     {
-        $this->secret = $secret ?? getenv('JWT_SECRET') ?: 'CHANGE_THIS_SECRET_IN_PRODUCTION';
+        $this->secret = $secret;
         $this->expirationMinutes = $expirationMinutes;
-
-        // Warn if using default secret in production
-        if ($this->secret === 'CHANGE_THIS_SECRET_IN_PRODUCTION' && getenv('APP_ENV') === 'production') {
-            error_log('WARNING: Using default JWT secret in production. Set JWT_SECRET environment variable.');
-        }
     }
 
     /**
