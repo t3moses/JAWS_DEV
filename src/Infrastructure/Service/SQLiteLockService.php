@@ -146,17 +146,47 @@ class SQLiteLockService implements LockServiceInterface
             throw new LockTimeoutException($lockName, $waitSeconds);
         }
 
-        try {
-            // Execute callback while holding lock
-            return $callback();
-        } finally {
-            // Always release lock, even if callback throws
+        $released = false;
+        $release = function () use ($lockName, &$released): void {
+            if ($released) {
+                return;
+            }
+            $released = true;
+
+            // A non-catchable fatal (max execution time exceeded, memory
+            // exhausted) skips finally blocks and destructors, so a
+            // transaction the callback left open would otherwise stay open
+            // for the life of this connection. Roll it back before
+            // releasing the lock.
+            if ($this->pdo->inTransaction()) {
+                try {
+                    $this->pdo->rollBack();
+                } catch (PDOException $e) {
+                    error_log("Failed to roll back stuck transaction for lock '{$lockName}': " . $e->getMessage());
+                }
+            }
+
             try {
                 $this->release($lockName);
             } catch (\RuntimeException $e) {
                 // Log but don't throw - we don't want to mask callback exceptions
                 error_log("Failed to release lock '{$lockName}': " . $e->getMessage());
             }
+        };
+
+        // Safety net for the fatals described above: the finally block below
+        // covers every normal and catchable-exception exit, but is itself
+        // skipped by those fatals. Shutdown functions run regardless, so this
+        // is the only hook that still fires in that case. On the normal path
+        // $release() below runs first and this becomes a no-op.
+        register_shutdown_function($release);
+
+        try {
+            // Execute callback while holding lock
+            return $callback();
+        } finally {
+            // Always release lock, even if callback throws
+            $release();
         }
     }
 

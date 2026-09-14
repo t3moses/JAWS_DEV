@@ -44,8 +44,8 @@ curl http://localhost:8000/api/events
 **Smart Features**
 - Blackout windows prevent changes during event hours
 - History tracking adjusts rankings based on past participation
-- Partner preferences keep requested partnerships together
-- Skill distribution balances experience across boats
+- Partner identification attempts to prevent partners sailing together
+- Skill distribution concentrates experience by boat
 
 ## Technology Stack
 
