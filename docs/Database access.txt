@@ -1,0 +1,21 @@
+The SQLite database is accessed by both the web app and cron.  The web app is created by the user daemon and cron is created by the user bitnami.  There is also a group called daemon, which is the primary group of the user daemon, and a group called bitnami which is the primary group of the user bitnami.  Users and processes may belong to additional groups called supplementary groups.  But data files belong to a single group; by default the primary group of the user or process that created them.
+
+So, the web app's groups are its creator's groups, including the primary group, daemon, and cron's groups are its creator's groups, including the primary group, bitnami.  
+
+Files are accessible, subject to the permission bits, to the owner and to processes whose groups include the file's group.
+
+When a process opens an SQLite database, side-car files are created. By default their group is the primary group of the creating process (daemon for the web app, bitnami for cron). SQLite gives them the same permission bits as the main database file.
+
+The web app may attempt to access the database after it was opened, and before it was closed, for a cron operation.  And vice-versa.  Setting aside permission issues, this is allowed behaviour.  And, the database will remain open, with the side-car files in place, until the last of the two processes has closed the database.
+
+However, the web app's groups do not include cron's primary group, bitnami, and cron's groups do not include the web app's primary group, daemon.  So, while the side-car files are open for one process, they will not be accessible by the other.
+
+This problem can be overcome by forcing the side-car files to a specific group and adding that group as a supplementary group to each process's user, and thereby to the process.
+
+A simple way to do this is to force the side-car files' group to be the same as its directory (i.e. daemon in this case), regardless of which process opened the database.  And adding the group daemon to the user bitnami and thereby to cron.
+
+Cron gets its group memberships from its owner (bitnami), which now includes daemon, so cron can access the side-car files regardless of how they were created because they allow access by members of the daemon group.
+
+The web app is already a member of the daemon group.  So, it is able to access the side-car files opened by cron.
+
+The directory and the database file must be group-writable.

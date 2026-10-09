@@ -1,0 +1,107 @@
+To generate barcodes ...
+composer require picqer/php-barcode-generator
+
+Multi-tenant with subdomains.
+
+Solution: Single IP, single server, many subdomains
+
+One wildcard DNS record: *.sailsforce.org A 16.54.93.63 — every subdomain resolves to the same IP
+on that one Lightsail instance
+
+Apache uses name-based virtual hosting: it looks at the Host header in the incoming request to decide which /etc/apache2/sites-available/'subdomain'.conf to apply.  Here's an example.
+
+<VirtualHost www.sailfriday.sailsforce.org:80>
+ ServerAdmin webmaster@localhost
+ DocumentRoot /var/www/html/sailsforce/sailfriday/public
+ ErrorLog ${APACHE_LOG_DIR}/error.log
+ CustomLog ${APACHE_LOG_DIR}/access.log combined
+ <Directory /var/www/html/sailsforce/sailfriday/public>
+  # .htaccess directives take precedence
+  AllowOverride All
+  # All sources can access
+  Require all granted
+ </Directory>
+</VirtualHost>
+
+Use one .conf file per subdomain with two <VirtualHost> sections; one for port :80 and one for port :443.
+
+Recommended layout
+sites-available/
+ 000-default.conf # first in alphabetical order is a catch-all
+ sailsforce.org.conf # for ease of management, the file name matches the host name
+ sailfriday.sailsforce.org.conf
+ sailpast.sailsforce.org.conf
+Each file holds two <VirtualHost> directives for the hostname; the :80 redirect and the :443 site.
+
+# sailfriday.sailsforce.org.conf
+<VirtualHost *:80>
+    ServerName sailfriday.sailsforce.org
+    Redirect permanent /https:sailfriday.sailsforce.org/ # just redirects to port :443
+</VirtualHost>
+<VirtualHost *:443>
+    ServerName sailfriday.sailsforce.org
+    DocumentRoot /var/www/html/sailsforce/sailfriday/public
+    SSLEngine on
+    SSLCertificateFile    /etc/letsencrypt/live/sailsforce.org/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/sailsforce.org/privkey.pem
+    ErrorLog  ${APACHE_LOG_DIR}/api_error.log
+    CustomLog ${APACHE_LOG_DIR}/api_access.log combined
+</VirtualHost>
+<Directory /var/www/html/sailsforce/sailfriday/public>
+    AllowOverride All # .htaccess directives in a directory take precedence
+    Require all granted # All sources can access
+</Directory>
+
+Why per-site beats per-port
+You can turn one site on or off by itself. a2dissite sailfriday.sailsforce.org takes down one subdomain without editing a shared file. With per-port files you can't do that.
+Everything for a site is in one place. You change a site's settings together, often on both ports, so splitting by port means editing two files.
+Certbot works better. certbot --apache handles one vhost per file most reliably. It can fail or produce messy output when a file has several :443 vhosts.
+Mistakes stay small. A typo affects one file you can find quickly, not a shared file serving every subdomain. (apachectl configtest still checks everything.)
+Diffs and version control are cleaner.
+
+Requests that match no ServerName go to the first vhost loaded, and files load in alphabetical order. Keep a catch-all like 000-default.conf so stray hostnames don't land on a real site.
+Shared settings: put common config in conf-available/ (enabled with a2enconf), or in a snippet you Include from each site. Don't copy it into every file.
+Ports: Listen directives go in ports.conf, not in the site files.
+A single file can work for a few tiny vhosts that will never change. Per-site files cost you nothing, though, and they scale better.
+
+Use a2ensite sailfriday.sailsforce.org to create the entry in sites-enabled.
+
+admin@ip-172-26-7-75:/etc/apache2/sites-available$ ls -la
+...
+-rw-r--r-- 1 root root 1386 Jun 20 17:32 000-default.conf
+-rw-r--r-- 1 root root 6195 Jun  5 10:55 default-ssl.conf
+
+admin@ip-172-26-7-75:/etc/apache2/sites-enabled$ ls -la
+...
+lrwxrwxrwx 1 root root   35 Jun 10 09:04 000-default.conf -> ../sites-available/000-default.conf
+
+A wildcard Let's Encrypt certificate would have to be issued via DNS-01 challenge (not HTTP-01/standalone) since Let's Encrypt can't wildcard-verify over HTTP — that means whatever DNS provider sailsforce.org uses needs an ACME DNS plugin (certbot has plugins for Route53, Cloudflare, etc.)
+
+After editing .conf files, reload Apache:
+sudo systemctl reload apache2 # Doesn't drop open connections
+
+In the public directory
+
+# .htaccess
+
+# Redirect all requests that aren't real files/directories to index.php
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Only if the request is not over HTTPS, convert the scheme to HTTPS.
+# Respond 301 to make clients use HTTPS in future.
+# L makes this the final rewrite rule in the file.
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# Block direct access to sensitive files
+<FilesMatch "\.(db|env|sqlite)$">
+    Require all denied
+</FilesMatch>
+
+# PHP settings (only works if AllowOverride includes "Options" or "All")
+php_value upload_max_filesize 10M
+php_value post_max_size 10M
+

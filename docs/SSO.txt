@@ -1,0 +1,89 @@
+Use a central auth subdomain and a signed cookie.
+
+Identity data is held in auth.db.  App data is held in each subdomain's database, e.g. sailfriday.db.
+
+auth.sailsforce.org            → auth.db (user_id, is_domain_admin, first_name, last_name, email, is_member, password_hash)
+sailfriday.sailsforce.org      → sailfriday.db  (app data keyed by user_id)
+sailsaturday.sailsforce.org    → sailsaturday.db  ( ditto )
+
+Seed auth.db with one record whose is_domain_admin field is set true.  This user can set subdomain admins.
+
+Only sailsforce/auth/sso.php handles domain registrations and logins.  sailsforce/sailfriday/ handles registration of subdomain data.
+
+After a successful login, sailsforce/auth/sso.php sets a signed cookie on .sailsforce.org containing domain-level claims (those that are common to more than one app, see above) and adds an expiry time.
+
+Each app checks the signature with a public key. It doesn't need to query the auth database at all.
+Each app creates or updates a row for that user in its own SQLite database.
+Use Ed25519 signatures (libsodium, built into PHP 7.2+) rather than a shared HMAC secret. With Ed25519, only the auth server holds the private key, so a compromised app can't create login tokens.
+
+Generate the keys once:
+
+$kp = sodium_crypto_sign_keypair();
+file_put_contents('/etc/sso/secret.key', sodium_crypto_sign_secretkey($kp)); // auth host only, chmod 600
+file_put_contents('/etc/sso/public.key', sodium_crypto_sign_publickey($kp)); // every app
+
+/sso.php
+
+<?php
+function b64u_enc(string $s): string { return rtrim(strtr(base64_encode($s), '+/', '-_'), '='); }
+function b64u_dec(string $s): string { return base64_decode(strtr($s, '-_', '+/')); }
+
+function sso_issue(array $claims, int $ttl = 3600): void {
+// Set a cookie on .sailsforce.org containing domain-level claims
+    $claims['exp'] = time() + $ttl; // add expiry time
+    $payload = json_encode($claims);
+    $sig = sodium_crypto_sign_detached($payload, file_get_contents('/etc/sso/secret.key'));
+    setcookie('sso', b64u_enc($payload) . '.' . b64u_enc($sig), [
+        'expires' => $claims['exp'], 'path' => '/', 'domain' => '.sailsforce.org',
+        'secure' => true, 'httponly' => true, 'samesite' => 'Lax',
+    ]);
+}
+
+function sso_user(): ?array {
+// Return domain-claims from cookie or null if the cookie is malformed or expired
+// A valid cookie comprises two elements: data and signature separated by '.'
+// Each component is b64u_enc encoded, and the date is a json structure
+// $c is an associative array from the date component
+// returns the decoded data array, if not expired, otherwise null
+    $parts = explode('.', $_COOKIE['sso'] ?? '');
+    if (count($parts) !== 2) return null;
+    [$p, $s] = array_map('b64u_dec', $parts);
+    if (!sodium_crypto_sign_verify_detached($s, $p, file_get_contents('/etc/sso/public.key'))) return null;
+    $c = json_decode($p, true);
+    return ($c && $c['exp'] > time()) ? $c : null;
+}
+
+Code snippets:
+
+For login, in auth.sailsforce.org, after checking the email and password with password_verify():
+
+sso_issue(['user_id' => $user['user_id'], 'is_domain_admin' => $user['is_domain_admin'], 'first_name' => $user['first_name'], 'last_name' => $user['last_name'], 'email' => $user['email'], 'is_member' => $user['is_member']);
+
+$ret = $_GET['return'] ?? ''; // Get the URL of the calling function
+$host = parse_url($ret, PHP_URL_HOST) ?? ''; // Get the calling function host name
+// Only allow redirects back to sailsforce subdomains; otherwise this is an open redirect
+if (!preg_match('/(^|\.)sailsforce\.org$/', $host)) $ret = 'https://sailsforce.org/';
+header("Location: $ret");
+
+In each app, at the top of protected pages:
+
+$sso = sso_user(); // returns array of claims
+if (!$sso) { // null claims
+    $here = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+    header('Location: https://auth.sailsforce.org/login.php?return=' . urlencode($here));
+    exit;
+}
+// else $sso contains claims
+$db = new PDO('sqlite:/var/lib/sailfriday/sailfriday.db');
+$db->prepare('INSERT INTO users (user_id, is_domain_admin, first_name, last_name, email, is_member);
+              ON CONFLICT(user_id) DO UPDATE SET email = excluded.email')
+   ->execute([$sso['user_id'], $sso['is_domain_admin'], $sso['first_name'], $sso['last_name'], $sso['email'], $sso['is_member']]);
+
+(The ON CONFLICT … DO UPDATE upsert needs SQLite 3.24+, which current Debian releases ship.)
+
+Logout: auth.sailsforce.org/logout.php clears the cookie by setting sso on .sailsforce.org with an expiry in the past. Keep the token lifetime short (15–60 minutes) and refresh it silently. If you need instant revocation, add a per-user token_version field to the claims and have apps check it occasionally.
+
+Things to watch
+Every subdomain can read .example.com cookies. Don't host untrusted content on any subdomain.
+Keep auth on HTTPS everywhere. Your force-HTTPS rule from before helps here.
+Enable WAL mode on each database (PRAGMA journal_mode=WAL;). It handles concurrent PHP requests much better.
