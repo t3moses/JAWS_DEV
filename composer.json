@@ -1,6 +1,6 @@
 {
     "name": "jaws/sailing-club",
-    "description": "JAWS - Social Day Cruising Program Management System",
+    "description": "JAWS - Sail Friday Program Management System",
     "license": "proprietary",
     "type": "project",
     "require": {

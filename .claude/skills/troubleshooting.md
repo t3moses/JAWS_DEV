@@ -49,7 +49,7 @@ php -S localhost:8000 -t public
 
 ### Database Permission Errors
 
-**Symptom:** Cannot write to database / Permission denied
+**Symptom:** Cannot write to database / Permission denied, or `PDOException: SQLSTATE[HY000]: General error: 8 attempt to write a readonly database`
 
 **Development:**
 ```bash
@@ -61,8 +61,18 @@ chmod 775 database/
 ```bash
 sudo chown bitnami:daemon /opt/bitnami/jaws/database/jaws.db
 sudo chmod 664 /opt/bitnami/jaws/database/jaws.db
-sudo chmod 775 /opt/bitnami/jaws/database/
+sudo chown bitnami:daemon /opt/bitnami/jaws/database
+sudo chmod 2775 /opt/bitnami/jaws/database   # setgid (2) is required, not optional - see below
 ```
+
+**Why setgid, and a recurring root cause to check first:** if `jaws.db` itself already shows correct ownership (`bitnami:daemon`, mode `664`) but writes still fail intermittently, the culprit is almost always the hourly `notify.php` cron jobs (`crontab -l -u bitnami`) rather than a one-off permission slip. They run as `bitnami`, which is **not** in the `daemon` group. `Connection.php` runs in WAL mode, which uses two sidecar files: `jaws.db-shm` (created by the *first* connection to touch the database, read or write — needed by every connection to coordinate) and `jaws.db-wal` (created/extended only by a write transaction). Both are normally short-lived — SQLite checkpoints and removes them once the last connection closes cleanly, which happens after nearly every PHP request here — so **you generally won't catch them present with a plain `ls -la`**; don't take their absence as proof this isn't the cause.
+
+The failure is a **race**, not a stuck file: if a cron connection (as `bitnami`) has `jaws.db-shm` open at the moment a web request (as `daemon`) tries to write, and `database/` lacks setgid, that sidecar file is group `bitnami` and the write fails — even though a `ls -la` moments later shows nothing wrong. This produced exactly this error in production on 2026-09-14 for about two hours: the hourly cron ticks at 08:00 and 09:00 each queried `events` and, on at least one tick, won this race against a login/password-reset write. Confirm the pattern (not the file) with:
+```bash
+grep "readonly database" /opt/bitnami/jaws/logs/app-*.log   # look for clusters near :00 cron ticks
+crontab -l -u bitnami                                       # confirm hourly DB-touching cron exists
+```
+`chmod 2775` (not plain `775`) is the actual fix — it makes every new sidecar file inherit group `daemon` regardless of which user's connection creates it, so the race can no longer land on a group-mismatched file. See `docs/DEPLOYMENT.md` Step 7 for the full explanation.
 
 ---
 

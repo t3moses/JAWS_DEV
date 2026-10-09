@@ -17,7 +17,7 @@ Complete documentation for the JAWS REST API, including authentication, endpoint
 
 ## Overview
 
-The JAWS API is a REST/JSON API that provides programmatic access to the Social Day Cruising program management system. It supports:
+The JAWS API is a REST/JSON API that provides programmatic access to the Sail Friday program management system. It supports:
 
 - **Event Management**: View sailing events and schedules
 - **Availability Updates**: Register boats and crew availability

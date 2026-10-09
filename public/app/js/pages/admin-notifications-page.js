@@ -141,7 +141,7 @@ async function loadParticipants(eventId) {
         syncCardState('crew');
 
         // Pre-fill default subject and update summary
-        document.getElementById('subject').value = `NSC Social Day Cruising \u2013 ${eventId}`;
+        document.getElementById('subject').value = `NSC Sail Friday \u2013 ${eventId}`;
         updateRecipientSummary();
 
         // Reveal compose section

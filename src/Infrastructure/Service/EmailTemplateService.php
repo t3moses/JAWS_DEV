@@ -94,7 +94,7 @@ class EmailTemplateService implements EmailTemplateServiceInterface
                 </div>
             </div>
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
             </div>
         </div>
     </div>
@@ -176,7 +176,7 @@ HTML;
                 </div>
             </div>
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
             </div>
         </div>
     </div>
@@ -264,7 +264,7 @@ HTML;
                 </div>
             </div>
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
             </div>
         </div>
     </div>
@@ -346,7 +346,7 @@ HTML;
                 </div>
             </div>
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
             </div>
         </div>
     </div>
@@ -384,7 +384,7 @@ HTML;
 <body>
     <div class="container">
         <div class="header">
-            <h2>Social Day Cruising - Reminder</h2>
+            <h2>Sail Friday - Reminder</h2>
         </div>
         <div class="content">
             <p>Hi {$firstName},</p>
@@ -409,8 +409,8 @@ HTML;
             <p>Please ensure you are ready at the dock by start time. If your plans have changed, update your availability as soon as possible.</p>
 
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
-                <p>If you have any questions, try the Social Day Cruising network on WhatsApp.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
+                <p>If you have any questions, try the Sail Friday network on WhatsApp.</p>
             </div>
         </div>
     </div>
@@ -452,7 +452,7 @@ HTML;
 <body>
     <div class="container">
         <div class="header">
-            <h2>Social Day Cruising - Reminder</h2>
+            <h2>Sail Friday - Reminder</h2>
         </div>
         <div class="content">
             <p>Hi {$ownerFirstName},</p>
@@ -481,8 +481,8 @@ HTML;
             <p>In the event she is no longer available, please be sure to withdraw her before the deadline. Otherwise, we look forward to seeing you at {$friendlyTime}.</p>
 
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
-                <p>If you have any questions, try the Social Day Cruising network on WhatsApp.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
+                <p>If you have any questions, try the Sail Friday network on WhatsApp.</p>
             </div>
         </div>
     </div>
@@ -560,7 +560,7 @@ SECTION;
 <body>
     <div class="container">
         <div class="header">
-            <h2>Social Day Cruising - Crew List</h2>
+            <h2>Sail Friday - Crew List</h2>
         </div>
         <div class="content">
             <p><strong>Event:</strong> {$eventId} &mdash; {$friendlyDate}</p>
@@ -569,7 +569,7 @@ SECTION;
             {$boatSections}
 
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
             </div>
         </div>
     </div>
@@ -629,7 +629,7 @@ ROW;
 <body>
     <div class="container">
         <div class="header">
-            <h2>Social Day Cruising - Your Crew List</h2>
+            <h2>Sail Friday - Your Crew List</h2>
         </div>
         <div class="content">
             <p>Hi {$owner},</p>
@@ -648,8 +648,8 @@ ROW;
             <p>You can help us to improve the experience for both owners and crew by flagging no-shows.  This helps us ensure that places are taken by people who actually want to practice and improve their sailing skills, become or remain crewing members and possibly even become boat owners themselves.  After the event, sign-in to your account, scroll down to the My Boat Assignments section, find the event, select the crew who was missing and click the no-show button.  Your fellow owners and committed crews will thank you.</p>
 
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
-                <p>If you have any questions, try the Social Day Cruising network on WhatsApp.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
+                <p>If you have any questions, try the Sail Friday network on WhatsApp.</p>
             </div>
         </div>
     </div>
@@ -695,7 +695,7 @@ HTML;
 <body>
     <div class="container">
         <div class="header">
-            <h2>Social Day Cruising - Your Boat Assignment</h2>
+            <h2>Sail Friday - Your Boat Assignment</h2>
         </div>
         <div class="content">
             <p>Hi {$name},</p>
@@ -732,8 +732,8 @@ HTML;
             This will affect your standing for future events.</p>
 
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
-                <p>If you have any questions, try the Social Day Cruising network on WhatsApp.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
+                <p>If you have any questions, try the Sail Friday network on WhatsApp.</p>
             </div>
         </div>
     </div>
@@ -761,7 +761,7 @@ HTML;
 <body>
     <div class="container">
         <div class="header">
-            <h2>Welcome to the Nepean Sailing Club Social Day Cruising program</h2>
+            <h2>Welcome to the Nepean Sailing Club Sail Friday program</h2>
         </div>
         <div class="content">
             <p>Hi {$displayName},</p>
@@ -784,7 +784,7 @@ HTML;
             And, if you don't find the answer there, you can contact the program organizer by email at
             <a href="mailto:nsc-sdc@nsc.ca">nsc-sdc@nsc.ca</a>.</p>
 
-            <p>We hope you find the Social Day Cruising program to be of value in your sailing journey.</p>
+            <p>We hope you find the Sail Friday program to be of value in your sailing journey.</p>
         </div>
     </div>
 </body>
@@ -869,7 +869,7 @@ CSS;
             <h2>Password Reset Request</h2>
         </div>
         <div class="content">
-            <p>We received a request to reset the password for your Social Day Cruising account.</p>
+            <p>We received a request to reset the password for your Sail Friday account.</p>
 
             <p>Click the button below to choose a new password. This link expires at <strong>{$expiryFormatted}</strong>.</p>
 
@@ -883,7 +883,7 @@ CSS;
             <p>If you did not request a password reset, you can safely ignore this email. Your password will not change.</p>
 
             <div class="footer">
-                <p>This is an automated notification from the Social Day Cruising sailing management system.</p>
+                <p>This is an automated notification from the Sail Friday sailing management system.</p>
             </div>
         </div>
     </div>

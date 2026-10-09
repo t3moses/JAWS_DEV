@@ -90,7 +90,7 @@ class SendCrewListUseCase
         }
 
         $cc_count = count($ccEmails);
-        $subject = "Crew List for Social Day Cruising - {$eventId->toString()}";
+        $subject = "Crew List for Sail Friday - {$eventId->toString()}";
 
         $body = $this->emailTemplateService->renderCrewListNotification(
             $eventId->toString(),

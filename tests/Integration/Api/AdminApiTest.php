@@ -430,7 +430,7 @@ class AdminApiTest extends TestCase
     public function testNotifyUserRequiresAuthentication(): void
     {
         $response = $this->makeRequest('POST', "{$this->baseUrl}/admin/users/999999/notify", [
-            'subject' => 'NSC Social Day Cruising',
+            'subject' => 'NSC Sail Friday',
             'message' => 'Hello',
         ]);
 
@@ -445,7 +445,7 @@ class AdminApiTest extends TestCase
         $response = $this->makeRequest(
             'POST',
             "{$this->baseUrl}/admin/users/{$adminData['userId']}/notify",
-            ['subject' => 'NSC Social Day Cruising', 'message' => 'Hello'],
+            ['subject' => 'NSC Sail Friday', 'message' => 'Hello'],
             ["Authorization: Bearer {$crewData['token']}"]
         );
 
@@ -463,7 +463,7 @@ class AdminApiTest extends TestCase
         $response = $this->makeRequest(
             'POST',
             "{$this->baseUrl}/admin/users/{$crewData['userId']}/notify",
-            ['subject' => 'NSC Social Day Cruising', 'message' => '   '],
+            ['subject' => 'NSC Sail Friday', 'message' => '   '],
             ["Authorization: Bearer {$adminData['token']}"]
         );
 
@@ -481,7 +481,7 @@ class AdminApiTest extends TestCase
         $response = $this->makeRequest(
             'POST',
             "{$this->baseUrl}/admin/users/999999/notify",
-            ['subject' => 'NSC Social Day Cruising', 'message' => 'Hello'],
+            ['subject' => 'NSC Sail Friday', 'message' => 'Hello'],
             ["Authorization: Bearer {$adminData['token']}"]
         );
 
@@ -498,7 +498,7 @@ class AdminApiTest extends TestCase
         $response = $this->makeRequest(
             'POST',
             "{$this->baseUrl}/admin/users/{$crewData['userId']}/notify",
-            ['subject' => 'NSC Social Day Cruising', 'message' => 'Please note the schedule change.'],
+            ['subject' => 'NSC Sail Friday', 'message' => 'Please note the schedule change.'],
             ["Authorization: Bearer {$adminData['token']}"]
         );
 

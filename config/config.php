@@ -33,7 +33,7 @@ return [
     // Email Settings
     'email' => [
         'from_address' => getenv('EMAIL_FROM') ?: 'noreply@nsc-sdc.ca',
-        'from_name' => getenv('EMAIL_FROM_NAME') ?: 'Nepean Sailing Club - Social Day Cruising',
+        'from_name' => getenv('EMAIL_FROM_NAME') ?: 'Nepean Sailing Club - Sail Friday',
         'admin_notification_email' => getenv('ADMIN_NOTIFICATION_EMAIL') ?: 'nsc-sdc@nsc.ca',
         'registration_notification_email_secondary' => getenv('REGISTRATION_NOTIFICATION_EMAIL_SECONDARY') ?: 'admin@nsc.ca',
     ],

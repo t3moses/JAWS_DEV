@@ -68,8 +68,10 @@ sudo chown -R bitnami:daemon /opt/bitnami/jaws
 # Install dependencies (production mode)
 composer install --optimize-autoloader --no-dev
 
-# Set database permissions
-sudo chmod 775 database
+# Set database permissions (2775 = setgid, required so the hourly bitnami
+# cron can't leave WAL/SHM files group-owned in a way daemon can't write -
+# see docs/DEPLOYMENT.md Step 7)
+sudo chmod 2775 database
 sudo chmod 664 database/jaws.db
 
 # Restart Apache
@@ -186,9 +188,11 @@ sudo /opt/bitnami/ctlscript.sh restart apache
 
 ### Permission Denied
 
+If this recurs after already applying the fix once (or the error is specifically `attempt to write a readonly database` while `jaws.db` itself looks fine), the cause is likely the hourly `notify.php` cron leaving WAL/SHM sidecar files owned `bitnami:bitnami` — see `docs/DEPLOYMENT.md` Step 7 and `.claude/skills/troubleshooting.md`. `2775` (setgid), not `775`, is what prevents recurrence.
+
 ```bash
 sudo chown -R bitnami:daemon /opt/bitnami/jaws
-sudo chmod 775 database
+sudo chmod 2775 database
 sudo chmod 664 database/jaws.db
 ```
 

@@ -6,6 +6,7 @@ Complete guide for deploying JAWS to production on AWS Lightsail.
 
 - [Pre-Deployment Checklist](#pre-deployment-checklist)
 - [AWS Lightsail Deployment](#aws-lightsail-deployment)
+- [Dev Environment (Debian, No Bitnami)](#dev-environment-debian-no-bitnami)
 - [Environment Configuration](#environment-configuration)
 - [Database Management](#database-management)
 - [Cron Jobs](#cron-jobs)
@@ -34,6 +35,8 @@ Before deploying to production, verify the following:
 ## AWS Lightsail Deployment
 
 JAWS is deployed on AWS Lightsail with a Bitnami LAMP stack. This guide follows [Bitnami's best practices for custom PHP applications](https://docs.bitnami.com/general/infrastructure/lamp/administration/create-custom-application-php/).
+
+**This entire section is Bitnami-specific** — paths (`/opt/bitnami/...`), users (`bitnami`), and the web server group (`daemon`) only apply to the production server. The dev server is a plain Debian box with none of these conventions; see [Dev Environment (Debian, No Bitnami)](#dev-environment-debian-no-bitnami) instead.
 
 ### Prerequisites
 
@@ -401,7 +404,8 @@ sudo find /opt/bitnami/jaws/public -type d -exec chmod 755 {} \;
 sudo find /opt/bitnami/jaws/public -type f -exec chmod 644 {} \;
 
 # Database - read/write for Apache (daemon group)
-sudo chmod 775 /opt/bitnami/jaws/database
+# The setgid bit (leading 2) is required, not optional - see note below.
+sudo chmod 2775 /opt/bitnami/jaws/database
 sudo chmod 664 /opt/bitnami/jaws/database/jaws.db
 ```
 
@@ -409,12 +413,20 @@ sudo chmod 664 /opt/bitnami/jaws/database/jaws.db
 
 | Item | Permission | Octal | Reason |
 |------|------------|-------|--------|
-| Database directory | `drwxrwxr-x` | 775 | Apache daemon needs to create WAL/SHM journal files |
+| Database directory | `drwxrwsr-x` | 2775 | Apache daemon needs to create WAL/SHM journal files; setgid keeps them group `daemon` regardless of which user creates them |
 | Database file | `-rw-rw-r--` | 664 | Apache daemon needs write access for SQLite |
 | Standard directories | `drwxr-xr-x` | 755 | Owner full access, group/world read/execute |
 | Standard files | `-rw-r--r--` | 644 | Owner read/write, group/world read |
 
 **Ownership:** `bitnami:daemon` follows Bitnami conventions, where `daemon` is the group Apache runs under.
+
+**Why the setgid bit on `database/` is required, not cosmetic:** the hourly `notify.php` cron jobs (see [Cron Jobs](#cron-jobs)) run as user `bitnami`, which is **not** a member of the `daemon` group. `Connection.php` runs in WAL mode (`PRAGMA journal_mode = WAL`), which uses two sidecar files: `jaws.db-shm` (shared-memory wal-index, created by the **first connection to touch the database** — read or write, since every connection needs it to know whether a WAL file holds newer data) and `jaws.db-wal` (the actual log of pending changes, created/extended only by a **write transaction**). Both are normally short-lived: SQLite checkpoints and removes them when the last connection to the database closes cleanly, which is the common case here since each PHP request opens and closes its own connection — so in steady state, `database/` normally has neither file present.
+
+The failure is a **race, not a persistent broken state**: if a cron connection (as `bitnami`, wrong group) has `jaws.db-shm` open at the exact moment an Apache request (as `daemon`) tries to commit a write, that write needs to update the shared wal-index and fails, because it can only read the `bitnami`-group file, not write it:
+```
+SQLSTATE[HY000]: General error: 8 attempt to write a readonly database
+```
+This happened in production on 2026-09-14: three `notify.php` cron jobs tick at the top of every hour, each opening its own connection to check the event date before exiting even when nothing needs to be sent. One of the 08:00 or 09:00 ticks won this race against a web request, and failures continued intermittently for about two hours — each failure being a fresh instance of the same race, not one stuck file — until a clean connection closed and left the sidecar files with usable permissions again. `chmod 2775` (setgid) makes every new file created in `database/` inherit group `daemon` regardless of which user creates it, so the race can no longer land on a group-mismatched file. Plain `775` without setgid will regress to this bug the next time cron wins that race.
 
 #### Step 8: Verify Environment Configuration
 
@@ -481,6 +493,35 @@ sudo tail -f /opt/bitnami/apache/logs/jaws-error.log
 
 ---
 
+## Dev Environment (Debian, No Bitnami)
+
+The dev server (`admin@172-26-7-75`, hostname pattern `ip-172-26-7-75`) is a plain **Debian 12 (bookworm)** Lightsail instance with a hand-installed Apache/PHP stack — **not** Bitnami. None of the `/opt/bitnami/...` paths, the `bitnami` user, or the `daemon` group apply here. Confirmed 2026-09-15:
+
+| | Production (Bitnami) | Dev (Debian) |
+|---|---|---|
+| App root | `/opt/bitnami/jaws` | `/var/www/html` |
+| Web server user/group | Apache runs as `daemon` | Apache runs as `www-data:www-data` (uid 33) |
+| Deploy/SSH user | `bitnami` | `admin` |
+| Cron | hourly `notify.php` runs as `bitnami` (separate identity from the web server — this is *why* production needs the setgid/ACL workaround in [Cron Jobs](#cron-jobs)) | **`cron` is not installed** — no scheduled jobs exist yet, confirmed via `systemctl status cron` (unit not found) and empty `/etc/cron.d/` (only stock Debian entries) |
+
+**Practical effect:** because dev has no cron identity distinct from the web server, the WAL-sidecar-file permission bug described in [Cron Jobs](#cron-jobs) and [Troubleshooting](#troubleshooting) (`attempt to write a readonly database` from a cron-owned `jaws.db-wal`) **cannot currently occur on dev** — only `www-data` ever touches the database. Don't port the `chmod 2775` / `usermod -aG daemon bitnami` / `setfacl` workaround here; it solves a problem this box doesn't have.
+
+**Equivalent permission commands for dev:**
+```bash
+sudo chown -R www-data:www-data /var/www/html
+sudo chmod 775 /var/www/html/database
+sudo chmod 664 /var/www/html/database/jaws.db
+```
+
+**If you add the `notify.php` cron to dev later**, install `cron` and schedule it via `/etc/cron.d/jaws-notify` with the user column set to `www-data` (root-owned files under `/etc/cron.d/` support a user field that a plain per-user crontab doesn't), so cron and Apache share one identity and this bug class never gets introduced:
+```
+0 * * * * www-data /usr/bin/php /var/www/html/bin/notify.php --type=reminder >> /var/www/html/logs/cron.log 2>&1
+0 * * * * www-data /usr/bin/php /var/www/html/bin/notify.php --type=assignment-reminder >> /var/www/html/logs/cron.log 2>&1
+0 * * * * www-data /usr/bin/php /var/www/html/bin/notify.php --type=owner-crew-list >> /var/www/html/logs/cron.log 2>&1
+```
+
+---
+
 ## Environment Configuration
 
 Production environment variables must be configured in `.env` file.
@@ -509,7 +550,7 @@ JWT_EXPIRATION_MINUTES=60
 MJ_APIKEY_PUBLIC=your_mailjet_public_api_key
 MJ_APIKEY_PRIVATE=your_mailjet_private_api_key
 EMAIL_FROM=noreply@nsc-sdc.ca
-EMAIL_FROM_NAME="Nepean Sailing Club - Social Day Cruising"
+EMAIL_FROM_NAME="Nepean Sailing Club - Sail Friday"
 ADMIN_NOTIFICATION_EMAIL=nsc-sdc@nsc.ca
 
 # Application
@@ -1212,9 +1253,9 @@ After rolling back:
    ```
    Should return: `wal`
 
-#### Issue: "Permission denied" when accessing database
+#### Issue: "Permission denied" when accessing database, or `attempt to write a readonly database`
 
-**Cause:** Incorrect file permissions
+**Cause:** Incorrect file permissions, or — if `jaws.db` already looks correct — a race between the hourly `notify.php` cron (runs as `bitnami`, not in the `daemon` group) and a web request, where cron's connection briefly holds `jaws.db-wal`/`jaws.db-shm` owned `bitnami:bitnami`. It won't necessarily still be present by the time you check with `ls`. See the setgid explanation under [Step 7: Set Final File Permissions](#step-7-set-final-file-permissions) for the full mechanism; this hit production on 2026-09-14.
 
 **Solution:**
 
@@ -1222,7 +1263,7 @@ After rolling back:
 sudo chown bitnami:daemon /opt/bitnami/jaws/database/jaws.db
 sudo chmod 664 /opt/bitnami/jaws/database/jaws.db
 sudo chown bitnami:daemon /opt/bitnami/jaws/database
-sudo chmod 775 /opt/bitnami/jaws/database
+sudo chmod 2775 /opt/bitnami/jaws/database   # setgid - do not drop the leading 2
 ```
 
 #### Issue: "JWT token invalid" after deployment

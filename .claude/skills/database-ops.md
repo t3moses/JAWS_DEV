@@ -310,6 +310,12 @@ chmod 775 database/
 # Fix permissions (production)
 sudo chown bitnami:daemon /opt/bitnami/jaws/database/jaws.db
 sudo chmod 664 /opt/bitnami/jaws/database/jaws.db
+sudo chown bitnami:daemon /opt/bitnami/jaws/database
+sudo chmod 2775 /opt/bitnami/jaws/database   # setgid - the hourly bitnami
+                                               # cron will otherwise leave
+                                               # WAL/SHM files daemon can't
+                                               # write to (docs/DEPLOYMENT.md
+                                               # Step 7)
 ```
 
 ## Safety Checklist

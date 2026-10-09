@@ -620,7 +620,7 @@ git push origin feature/add-crew-notes
 
 ## Thank You!
 
-Thank you for contributing to JAWS! Your contributions help improve the Social Day Cruising program at Nepean Sailing Club.
+Thank you for contributing to JAWS! Your contributions help improve the Sail Friday program at Nepean Sailing Club.
 
 ---
 

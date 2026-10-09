@@ -61,7 +61,7 @@ class SendBoatOwnerReminderUseCase
             return compact('sent', 'skipped', 'details');
         }
 
-        $subject = "Reminder: Social Day Cruising tomorrow - {$eventId->toString()}";
+        $subject = "Reminder: Sail Friday tomorrow - {$eventId->toString()}";
 
         foreach ($boats as $boat) {
             $boatName = $boat->getDisplayName() ?? $boat->getKey()->toString();

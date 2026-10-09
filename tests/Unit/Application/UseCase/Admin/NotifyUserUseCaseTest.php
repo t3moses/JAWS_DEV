@@ -72,7 +72,7 @@ class NotifyUserUseCaseTest extends TestCase
             ->method('send')
             ->with(
                 'jane@example.com',
-                'NSC Social Day Cruising',
+                'NSC Sail Friday',
                 $this->stringContains('See you Saturday'),
             )
             ->willReturn(true);
@@ -81,7 +81,7 @@ class NotifyUserUseCaseTest extends TestCase
 
         $result = $useCase->execute(
             targetUserId: 5,
-            subject: 'NSC Social Day Cruising',
+            subject: 'NSC Sail Friday',
             message: "Hello,\nSee you Saturday.",
         );
 

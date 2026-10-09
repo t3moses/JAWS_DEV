@@ -318,8 +318,13 @@ jobs:
             sudo find /opt/bitnami/jaws/public -type d -exec chmod 755 {} \;
             sudo find /opt/bitnami/jaws/public -type f -exec chmod 644 {} \;
 
-            # Database - read/write for Apache (daemon group)
-            sudo chmod 775 /opt/bitnami/jaws/database
+            # Database - read/write for Apache (daemon group). Setgid (2775,
+            # not 775) is required: the hourly notify.php cron runs as
+            # bitnami, which is not in the daemon group, and in WAL mode even
+            # a read-only query can leave jaws.db-wal/-shm owned bitnami:bitnami
+            # without it - breaking web writes until the WAL is recreated.
+            # See docs/DEPLOYMENT.md Step 7.
+            sudo chmod 2775 /opt/bitnami/jaws/database
             sudo chmod 664 /opt/bitnami/jaws/database/jaws.db
 
             # Logs - writable by Monolog (PHP/daemon) and cron (bitnami)

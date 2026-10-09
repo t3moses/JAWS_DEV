@@ -403,7 +403,7 @@ class RegisterUseCase
     private function sendWelcomeEmail(User $user, string $displayName): void
     {
         try {
-            $subject = 'Welcome to the Nepean Sailing Club Social Day Cruising program';
+            $subject = 'Welcome to the Nepean Sailing Club Sail Friday program';
             $body = $this->emailTemplateService->renderWelcomeNotification($displayName);
 
             $futureEventIds = $this->eventRepository->findFutureEvents();
@@ -418,7 +418,7 @@ class RegisterUseCase
                     'date'        => new \DateTimeImmutable($eventData['event_date']),
                     'start_time'  => $eventData['start_time'],
                     'finish_time' => $eventData['finish_time'],
-                    'description' => 'Social Day Cruising Event - https://nsc-sdc.ca/events.html',
+                    'description' => 'Sail Friday Event - https://nsc-sdc.ca/events.html',
                     'location'    => 'Nepean Sailing Club',
                 ];
             }

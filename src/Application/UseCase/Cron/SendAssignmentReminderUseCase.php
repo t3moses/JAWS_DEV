@@ -61,7 +61,7 @@ class SendAssignmentReminderUseCase
             return compact('sent', 'skipped', 'details');
         }
 
-        $subject = "Your boat assignment for Social Day Cruising - {$eventId->toString()}";
+        $subject = "Your boat assignment for Sail Friday - {$eventId->toString()}";
 
         foreach ($flotilla['crewed_boats'] as $crewedBoat) {
             $boat = $crewedBoat['boat'];

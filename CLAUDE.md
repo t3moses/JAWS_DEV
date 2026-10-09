@@ -31,7 +31,7 @@ When performing any of the tasks below, **read the corresponding skill file firs
 
 ## Project Overview
 
-JAWS is a PHP REST API for Nepean Sailing Club's Social Day Cruising program. Manages boat fleet, crew registration, and intelligent crew-to-boat assignment for seasonal sailing events.
+JAWS is a PHP REST API for Nepean Sailing Club's Sail Friday program. Manages boat fleet, crew registration, and intelligent crew-to-boat assignment for seasonal sailing events.
 
 **Architecture:** Clean Architecture (4 layers: Domain, Application, Infrastructure, Presentation)
 **Database:** SQLite with Phinx migrations

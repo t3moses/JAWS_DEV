@@ -60,7 +60,7 @@ class SendCrewReminderUseCase
             return compact('sent', 'skipped', 'details');
         }
 
-        $subject = "Reminder: Social Day Cruising tomorrow - {$eventId->toString()}";
+        $subject = "Reminder: Sail Friday tomorrow - {$eventId->toString()}";
 
         foreach ($crews as $crew) {
             $userId = $crew->getUserId();

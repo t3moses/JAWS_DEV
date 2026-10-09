@@ -418,7 +418,7 @@ async function handleWhitelistRemove(boatKey) {
 function renderNotifyUser(user) {
     const section = document.getElementById('section-notify-user');
     document.getElementById('notify-to').value = user.email;
-    document.getElementById('notify-subject').value = 'NSC Social Day Cruising';
+    document.getElementById('notify-subject').value = 'NSC Sail Friday';
     document.getElementById('notify-message').value = '';
 
     document.getElementById('notify-send-btn').addEventListener('click', () => handleNotifyUser(user));

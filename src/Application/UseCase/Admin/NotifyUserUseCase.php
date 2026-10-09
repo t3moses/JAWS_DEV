@@ -53,7 +53,7 @@ class NotifyUserUseCase
 
         $htmlBody  = nl2br(htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
         $fromEmail = getenv('EMAIL_FROM') ?: 'noreply@example.com';
-        $fromName  = getenv('EMAIL_FROM_NAME') ?: 'NSC Social Day Cruising';
+        $fromName  = getenv('EMAIL_FROM_NAME') ?: 'NSC Sail Friday';
 
         $sent = $this->emailService->send($user->getEmail(), $subject, $htmlBody, $fromName, $fromEmail);
 

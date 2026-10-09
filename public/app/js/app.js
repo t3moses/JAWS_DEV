@@ -1,10 +1,10 @@
 /**
  * Application Initialization
- * Main entry point for NSC Social Day Cruising application
+ * Main entry point for NSC Sail Friday application
  */
 
 import { getCurrentEnvironment } from './config.js';
 
 // Log application initialization
-console.log(`NSC Social Day Cruising - Environment: ${getCurrentEnvironment()}`);
+console.log(`NSC Sail Friday - Environment: ${getCurrentEnvironment()}`);
 console.log('Application initialized - API mode');

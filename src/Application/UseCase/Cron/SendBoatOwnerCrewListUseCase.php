@@ -61,7 +61,7 @@ class SendBoatOwnerCrewListUseCase
             return compact('sent', 'skipped', 'details');
         }
 
-        $subject = "Your crew list for Social Day Cruising - {$eventId->toString()}";
+        $subject = "Your crew list for Sail Friday - {$eventId->toString()}";
 
         foreach ($flotilla['crewed_boats'] as $crewedBoat) {
             $boat = $crewedBoat['boat'];
